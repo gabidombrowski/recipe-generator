@@ -1,0 +1,9 @@
+{
+  "id": "cook-lebanese",
+  "description": "Lebanese cook recipe within 25 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Lebanese",
+    "maxCookMinutes": 25
+  }
+}

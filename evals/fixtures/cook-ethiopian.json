@@ -1,0 +1,9 @@
+{
+  "id": "cook-ethiopian",
+  "description": "Ethiopian cook recipe within 30 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Ethiopian",
+    "maxCookMinutes": 30
+  }
+}

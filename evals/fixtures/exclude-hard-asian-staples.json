@@ -1,0 +1,16 @@
+{
+  "id": "exclude-hard-asian-staples",
+  "description": "Excludes the staples the cuisine is built on, forcing real substitution",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Chinese",
+    "maxCookMinutes": 25
+  },
+  "excluded": [
+    "soy sauce",
+    "oyster sauce",
+    "fish sauce",
+    "rice vinegar",
+    "sesame"
+  ]
+}

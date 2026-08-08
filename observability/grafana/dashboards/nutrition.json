@@ -1,0 +1,139 @@
+{
+  "uid": "nutrition-overview",
+  "title": "Nutrition",
+  "tags": ["recipe-generator"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "LLM request latency",
+      "description": "p50 / p95 per operation. Recipe generation retries on schema failure, so a rising p95 usually means the model is needing more attempts.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, operation) (rate(llm_latency_bucket[30m])))",
+          "legendFormat": "p50 {{operation}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(llm_latency_bucket[30m])))",
+          "legendFormat": "p95 {{operation}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "LLM cost per day",
+      "description": "USD, computed from token counts at the rates in src/server/telemetry.ts. Cache reads bill at 0.1x and are already accounted for.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "custom": { "drawStyle": "bars", "fillOpacity": 60 } }
+      },
+      "targets": [
+        {
+          "expr": "sum by (operation) (increase(llm_cost_usd_total[1d]))",
+          "legendFormat": "{{operation}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Scheduler runs",
+      "description": "Weekly generation outcomes. 'skipped' is healthy — it means the week was already planned and the run was correctly idempotent.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 70 } }
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (increase(scheduler_runs_total[1d]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Planner fallbacks and verifier verdicts",
+      "description": "How often the agentic planner failed verification and the deterministic planner took over. A rising rejection count is a prompt problem, not an outage — the week still gets planned.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        {
+          "expr": "sum by (reason) (increase(planner_fallbacks_total[1d]))",
+          "legendFormat": "fallback: {{reason}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (verdict) (increase(planner_verifier_verdicts_total[1d]))",
+          "legendFormat": "verifier: {{verdict}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Eval pass rate by assertion",
+      "description": "Ingested from the CI eval report. Hard gates should sit flat at 1.0; a dip is a merge blocker that already fired in CI, shown here as a trend.",
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "spanNulls": true },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 0.95 },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "eval_assertion_pass_rate",
+          "legendFormat": "{{assertion}} ({{gate}})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Latest eval run",
+      "description": "Overall pass/fail, red-team hard-gate failures, and cost of the last eval run.",
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "targets": [
+        { "expr": "eval_run_passed", "legendFormat": "passed", "refId": "A" },
+        {
+          "expr": "eval_redteam_hard_gate_failures",
+          "legendFormat": "red-team failures",
+          "refId": "B"
+        },
+        { "expr": "eval_run_cost_usd", "legendFormat": "cost USD", "refId": "C" },
+        {
+          "expr": "eval_tier2_mean_score",
+          "legendFormat": "tier2 {{dimension}}",
+          "refId": "D"
+        }
+      ]
+    }
+  ]
+}

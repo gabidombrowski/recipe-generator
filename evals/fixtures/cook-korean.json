@@ -1,0 +1,15 @@
+{
+  "id": "cook-korean",
+  "description": "Korean cook recipe within 20 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Korean",
+    "maxCookMinutes": 20
+  },
+  "tagLimits": [
+    {
+      "tag": "fermented",
+      "maxPerRecipe": 1
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "quick-mexican",
+  "description": "Mexican quick recipe within 8 minutes",
+  "request": {
+    "mealType": "quick",
+    "cuisine": "Mexican",
+    "maxCookMinutes": 8
+  }
+}

@@ -1,0 +1,210 @@
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { protectedProcedure, router } from "../init";
+import {
+  addFeedback,
+  excludedLower,
+  listGuidelines,
+  getFeedback,
+  getRecipe,
+  getSlot,
+  listFeedback,
+  listRecipes,
+  markPromoted,
+  writeSlots,
+} from "~/server/db/queries";
+import { getProfile } from "~/server/db/state";
+import { insertRecipe } from "~/server/db/recipes";
+import { isLlmConfigured } from "~/server/llm/client";
+import { generateRecipe, GenerationError } from "~/server/llm/generator";
+import { similarFavorites, upsertRecipeEmbedding } from "~/server/embeddings/index";
+import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
+import { loggerFor } from "~/server/logger";
+import { dayOfWeekFor } from "~/lib/days";
+import { isTrainingDay } from "~/lib/macros";
+import { feedbackVerdictSchema, isoDateSchema, mealTypeSchema } from "~/lib/schemas";
+
+/**
+ * AI generation and the feedback loop that feeds the eval suite.
+ *
+ * Rejections are not just logged — they can be promoted into `/evals/fixtures`,
+ * so the golden set grows out of real failures rather than out of cases someone
+ * imagined at the start. That is the whole point of feature 13: the eval suite
+ * should get harder in exactly the places the model actually gets things wrong.
+ */
+
+const log = loggerFor("generation");
+const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
+
+export const generationRouter = router({
+  available: protectedProcedure.query(() => ({ configured: isLlmConfigured() })),
+
+  generate: protectedProcedure
+    .input(
+      z.object({
+        mealType: mealTypeSchema,
+        cuisine: z.string().max(60).optional(),
+        maxCookMinutes: z.number().int().positive().max(180).optional(),
+        /** When set, the new recipe is assigned to this slot immediately. */
+        targetDate: isoDateSchema.optional(),
+        note: z.string().max(500).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!isLlmConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "ANTHROPIC_API_KEY is not set, so AI generation is unavailable.",
+        });
+      }
+
+      // Each generation costs real money; a runaway client must not be able to
+      // run up a bill.
+      const limit = rateLimit(
+        `generate:${ctx.session.user?.email ?? "unknown"}`,
+        RATE_LIMITS.generation,
+      );
+      if (!limit.ok) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Generation limit reached. Try again in ${limit.retryAfterSeconds}s.`,
+        });
+      }
+
+      const profile = getProfile();
+      const trainingDay = input.targetDate
+        ? isTrainingDay(profile, dayOfWeekFor(input.targetDate))
+        : true;
+
+      // Retrieve exemplars that resemble the request rather than arbitrary
+      // favourites — the retrieval is what makes few-shot prompting useful here.
+      const favorites = listRecipes().filter((r) => r.favorite);
+      const exemplars = await similarFavorites(
+        [input.cuisine, input.mealType, input.note].filter(Boolean).join(" "),
+        favorites,
+        3,
+      );
+
+      try {
+        const result = await generateRecipe(input, {
+          profile,
+          trainingDay,
+          excluded: excludedLower(),
+          guidelines: listGuidelines(),
+          exemplars,
+        });
+
+        const recipe = insertRecipe(result.recipe, {
+          source: "ai",
+          promptHash: result.promptHash,
+          modelString: result.modelString,
+        });
+
+        // Index immediately so it is searchable and can act as an exemplar.
+        await upsertRecipeEmbedding(recipe);
+
+        // Auto-assign so the grocery list updates without a second action.
+        if (input.targetDate && getSlot(input.targetDate)) {
+          writeSlots(
+            [
+              {
+                date: input.targetDate,
+                mealSource: getSlot(input.targetDate)!.mealSource,
+                recipeId: recipe.id,
+              },
+            ],
+            true,
+          );
+        }
+
+        log.info(
+          { recipe: recipe.name, costUsd: result.costUsd, attempts: result.attempts },
+          "recipe generated",
+        );
+
+        return {
+          recipe,
+          assignedTo: input.targetDate ?? null,
+          costUsd: result.costUsd,
+          attempts: result.attempts,
+        };
+      } catch (error) {
+        if (error instanceof GenerationError) {
+          throw new TRPCError({
+            code: "UNPROCESSABLE_CONTENT",
+            message: `${error.message}. Last issues: ${error.lastIssues?.join("; ") ?? "none"}`,
+          });
+        }
+        throw error;
+      }
+    }),
+
+  // -------------------------------------------------------------------------
+  // Feedback
+  // -------------------------------------------------------------------------
+
+  feedback: protectedProcedure
+    .input(z.object({ recipeId: z.number().int().positive().optional() }).default({}))
+    .query(({ input }) => listFeedback(input.recipeId)),
+
+  submitFeedback: protectedProcedure
+    .input(
+      z.object({
+        recipeId: z.number().int().positive(),
+        verdict: feedbackVerdictSchema,
+        reason: z.string().max(2000).default(""),
+      }),
+    )
+    .mutation(({ input }) => addFeedback(input.recipeId, input.verdict, input.reason)),
+
+  /**
+   * Turns a rejection into an eval fixture.
+   *
+   * The fixture records the request that produced the bad recipe plus the
+   * stated reason, so the next eval run reproduces the exact conditions. Named
+   * by feedback id so re-promoting is idempotent.
+   */
+  promoteToFixture: protectedProcedure
+    .input(z.object({ feedbackId: z.number().int().positive() }))
+    .mutation(({ input }) => {
+      const feedback = getFeedback(input.feedbackId);
+      if (!feedback) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such feedback entry." });
+      }
+
+      const recipe = getRecipe(feedback.recipeId);
+      if (!recipe) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "The recipe no longer exists." });
+      }
+
+      const fixture = {
+        id: `regression-${input.feedbackId}`,
+        description: `Promoted from a rejection of "${recipe.name}": ${feedback.reason || "no reason given"}`,
+        request: {
+          mealType: recipe.mealType,
+          cuisine: recipe.cuisine,
+          maxCookMinutes: recipe.cookMinutes,
+        },
+        excluded: excludedLower(),
+        origin: {
+          promotedFromFeedbackId: input.feedbackId,
+          rejectedRecipeName: recipe.name,
+          rejectedPromptHash: recipe.promptHash,
+          rejectedModelString: recipe.modelString,
+        },
+      };
+
+      const filename = `regression-${input.feedbackId}.json`;
+      writeFileSync(
+        join(FIXTURES_DIR, filename),
+        `${JSON.stringify(fixture, null, 2)}\n`,
+        "utf8",
+      );
+      markPromoted(input.feedbackId);
+
+      log.info({ filename }, "promoted rejection to eval fixture");
+      return { filename };
+    }),
+});

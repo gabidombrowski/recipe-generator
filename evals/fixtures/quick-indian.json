@@ -1,0 +1,9 @@
+{
+  "id": "quick-indian",
+  "description": "Indian quick recipe within 10 minutes",
+  "request": {
+    "mealType": "quick",
+    "cuisine": "Indian",
+    "maxCookMinutes": 10
+  }
+}

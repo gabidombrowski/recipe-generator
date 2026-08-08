@@ -1,0 +1,27 @@
+groups:
+  - name: recipe-generator
+    rules:
+      # The one alert that matters.
+      #
+      # Two conditions, one rule: the app being unreachable, or the weekly
+      # scheduler having failed. Both mean the same thing in practice — no plan
+      # and no grocery list this week — and both are things a single-user app
+      # can genuinely go days without noticing.
+      #
+      # Everything else in the dashboards is for looking at deliberately, not
+      # for waking anyone up.
+      - alert: NutritionAppNeedsAttention
+        expr: |
+          up{job="recipe-generator-health"} == 0
+            or
+          increase(scheduler_runs_total{status="failed"}[1h]) > 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Nutrition app is down or the weekly scheduler failed"
+          description: >-
+            Either /healthz has been unreachable for 5 minutes, or a scheduler
+            run reported status=failed in the last hour. Check
+            `docker compose logs app` (or `pm2 logs recipe-generator`) and the
+            Scheduler runs panel on the weekly plan page.

@@ -1,0 +1,9 @@
+{
+  "id": "quick-turkish",
+  "description": "Turkish quick recipe within 10 minutes",
+  "request": {
+    "mealType": "quick",
+    "cuisine": "Turkish",
+    "maxCookMinutes": 10
+  }
+}

@@ -1,0 +1,137 @@
+# Deploys to the app server the same way the other Next.js app on that host
+# does: build the standalone output, copy the static assets into it, rsync it
+# over, restart under pm2. It uses the same four secret names, so the values can
+# be copied straight across from that repo:
+#
+#   SERVER_HOST     the server's hostname
+#   SERVER_USER     the SSH user
+#   SERVER_SSH_KEY  the private key that user accepts
+#   APP_PATH        absolute path of the app directory on the server
+#
+# Plus this app's own runtime secrets, which pm2 reads from the server's .env:
+#   AUTH_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, ALLOWED_EMAIL,
+#   ANTHROPIC_API_KEY, DB_PATH, TZ, AUTH_URL
+#
+# A GHCR image is published alongside it for the container path in
+# docker-compose.yml. The rsync + pm2 job is the one that actually serves
+# traffic today.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    name: Build and deploy over SSH
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Builds, then completes the standalone output with the static assets,
+      # migrations and prompts it deliberately omits. The same script the
+      # smoke tests run, so what ships is what was tested.
+      - name: Build
+        run: npm run build:standalone
+        env:
+          # Build-time only. The running app reads the real values from the
+          # server's environment, which is why pm2 is restarted with
+          # --update-env below.
+          AUTH_SECRET: build-time-placeholder
+
+      - name: Deploy over rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          # No --delete: the SQLite database lives inside APP_PATH's data
+          # directory, and deleting it would be an unrecoverable data loss on
+          # every deploy.
+          switches: -az --omit-dir-times --no-perms --exclude 'data/'
+          path: .next/standalone/
+          remote_path: ${{ secrets.APP_PATH }}
+          remote_host: ${{ secrets.SERVER_HOST }}
+          remote_user: ${{ secrets.SERVER_USER }}
+          remote_key: ${{ secrets.SERVER_SSH_KEY }}
+          remote_port: 22
+
+      - name: Restart and verify
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.APP_PATH }}"
+
+            # Back up the SQLite file before the new code touches it. `.backup`
+            # is safe against a live connection in a way that `cp` is not.
+            if [ -f "${DB_PATH:-data/nutrition.db}" ]; then
+              sqlite3 "${DB_PATH:-data/nutrition.db}" ".backup 'data/pre-deploy.db'" || true
+            fi
+
+            # Migrations run on boot from instrumentation.ts, before the first
+            # request is served — so restarting is the migration step.
+            pm2 restart recipe-generator --update-env || pm2 start ecosystem.config.cjs
+            pm2 save
+
+            # Fail the deploy if the app does not come back healthy.
+            for i in $(seq 1 20); do
+              if curl -fsS "http://127.0.0.1:${PORT:-3200}/healthz" > /dev/null; then
+                echo "healthy after ${i} attempt(s)"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "app did not become healthy; check: pm2 logs recipe-generator"
+            exit 1
+
+  image:
+    name: Publish container image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

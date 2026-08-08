@@ -1,0 +1,9 @@
+{
+  "id": "cook-tight-15-mediterranean",
+  "description": "Tight ceiling, seafood-friendly cuisine",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Mediterranean",
+    "maxCookMinutes": 15
+  }
+}

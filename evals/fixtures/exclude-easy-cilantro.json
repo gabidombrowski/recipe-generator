@@ -1,0 +1,12 @@
+{
+  "id": "exclude-easy-cilantro",
+  "description": "Herb exclusion in a cuisine that leans on it",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Mexican",
+    "maxCookMinutes": 25
+  },
+  "excluded": [
+    "cilantro"
+  ]
+}

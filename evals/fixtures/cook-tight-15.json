@@ -1,0 +1,9 @@
+{
+  "id": "cook-tight-15",
+  "description": "Cook recipe with a hard 15-minute ceiling",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Sichuan",
+    "maxCookMinutes": 15
+  }
+}

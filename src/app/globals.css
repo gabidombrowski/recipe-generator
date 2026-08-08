@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/*
+ * A small, deliberate palette rather than a component library.
+ *
+ * Everything is expressed as CSS custom properties so light and dark are one
+ * definition each, and Tailwind utilities reference the tokens through
+ * @theme rather than hardcoding hex values across components.
+ */
+@theme {
+  --color-canvas: oklch(98.5% 0.004 100);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-sunken: oklch(96.5% 0.005 100);
+  --color-border: oklch(90% 0.006 100);
+  --color-ink: oklch(24% 0.012 90);
+  --color-ink-muted: oklch(52% 0.012 90);
+
+  --color-accent: oklch(52% 0.13 155);
+  --color-accent-soft: oklch(94% 0.04 155);
+
+  --color-training: oklch(50% 0.14 45);
+  --color-training-soft: oklch(95% 0.04 45);
+
+  --color-warn: oklch(52% 0.16 30);
+  --color-warn-soft: oklch(95% 0.05 30);
+
+  --color-flagged: oklch(48% 0.14 320);
+  --color-flagged-soft: oklch(95% 0.04 320);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-canvas: oklch(17% 0.008 90);
+    --color-surface: oklch(21% 0.009 90);
+    --color-surface-sunken: oklch(19% 0.008 90);
+    --color-border: oklch(30% 0.01 90);
+    --color-ink: oklch(94% 0.005 90);
+    --color-ink-muted: oklch(68% 0.01 90);
+
+    --color-accent: oklch(72% 0.15 155);
+    --color-accent-soft: oklch(28% 0.05 155);
+
+    --color-training: oklch(72% 0.14 45);
+    --color-training-soft: oklch(28% 0.05 45);
+
+    --color-warn: oklch(70% 0.16 30);
+    --color-warn-soft: oklch(28% 0.06 30);
+
+    --color-flagged: oklch(74% 0.13 320);
+    --color-flagged-soft: oklch(28% 0.05 320);
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect the setting rather than animating regardless. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

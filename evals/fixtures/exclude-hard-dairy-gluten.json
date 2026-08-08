@@ -1,0 +1,17 @@
+{
+  "id": "exclude-hard-dairy-gluten",
+  "description": "Broad category exclusions across a dairy-heavy cuisine",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "French",
+    "maxCookMinutes": 30
+  },
+  "excluded": [
+    "butter",
+    "cream",
+    "cheese",
+    "milk",
+    "flour",
+    "bread"
+  ]
+}

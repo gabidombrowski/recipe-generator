@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # The app's OpenTelemetry Prometheus exporter. Reachable on the compose
+  # network only — it is never published to a host port.
+  - job_name: recipe-generator
+    static_configs:
+      - targets: ["app:9464"]
+
+  # Liveness. `up` on this job is what the AppDown alert watches, and the
+  # endpoint is deliberately the same one the container health check uses.
+  - job_name: recipe-generator-health
+    metrics_path: /healthz
+    static_configs:
+      - targets: ["app:3000"]
+
+  # Eval results, converted from the CI report JSON into exposition format by
+  # `npm run evals:metrics` and served as a static file. This is what gives the
+  # eval pass-rate trend a history instead of a single latest number.
+  - job_name: recipe-generator-evals
+    scrape_interval: 5m
+    metrics_path: /eval-metrics.prom
+    static_configs:
+      - targets: ["eval-metrics:80"]

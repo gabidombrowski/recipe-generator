@@ -1,0 +1,12 @@
+{
+  "id": "exclude-easy-mushroom",
+  "description": "Single common exclusion",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Italian",
+    "maxCookMinutes": 25
+  },
+  "excluded": [
+    "mushroom"
+  ]
+}

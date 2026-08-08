@@ -1,0 +1,15 @@
+{
+  "id": "cook-vietnamese",
+  "description": "Vietnamese cook recipe within 20 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Vietnamese",
+    "maxCookMinutes": 20
+  },
+  "tagLimits": [
+    {
+      "tag": "fermented",
+      "maxPerRecipe": 1
+    }
+  ]
+}

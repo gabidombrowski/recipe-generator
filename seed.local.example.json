@@ -1,0 +1,25 @@
+{
+  "_comment": "Copy to seed.local.json and replace with your own values. seed.local.json is gitignored. If it is absent, the app opens the first-run setup wizard instead, which collects exactly these fields.",
+
+  "weightKg": 70.0,
+  "heightCm": 170.0,
+  "age": 30,
+  "sex": "female",
+  "activityFactor": 1.4,
+  "deficitKcal": 0,
+  "proteinPerKg": 1.6,
+  "fatPerKg": 0.8,
+
+  "trainingDays": ["Monday", "Wednesday", "Friday"],
+  "cookDays": ["Monday", "Thursday"],
+  "assemblyDays": ["Saturday", "Sunday"],
+
+  "shoppingDay": "Saturday",
+  "generationDay": "Sunday",
+  "generationTime": "06:00",
+  "timezone": "UTC",
+
+  "aiNovelRecipesPerWeek": 0,
+  "repeatWindowWeeks": 2,
+  "plannerMode": "deterministic"
+}

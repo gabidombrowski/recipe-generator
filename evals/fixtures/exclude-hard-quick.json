@@ -1,0 +1,15 @@
+{
+  "id": "exclude-hard-quick",
+  "description": "Quick meal with eggs and dairy off the table",
+  "request": {
+    "mealType": "quick",
+    "cuisine": "American",
+    "maxCookMinutes": 10
+  },
+  "excluded": [
+    "egg",
+    "cheese",
+    "milk",
+    "butter"
+  ]
+}

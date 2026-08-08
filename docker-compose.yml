@@ -1,0 +1,89 @@
+# The self-contained stack: app, tunnel, and the observability pair.
+#
+# Nothing publishes a host port. Public access is exclusively through the
+# Cloudflare Tunnel provisioned in `infra/`, which dials out — so the server
+# needs no inbound firewall rule at all, and Cloudflare Access authenticates
+# before a request ever reaches the app. App-level auth is the second layer.
+#
+# Grafana and Prometheus bind to loopback only. They are for the operator over
+# an SSH tunnel, not for the internet.
+
+services:
+  app:
+    build: .
+    image: ghcr.io/${GITHUB_REPOSITORY:-local/recipe-generator}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_PATH: /data/nutrition.db
+      TZ: ${TZ:-UTC}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:?AUTH_GITHUB_ID is required}
+      AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:?AUTH_GITHUB_SECRET is required}
+      AUTH_URL: ${AUTH_URL:?AUTH_URL is required}
+      ALLOWED_EMAIL: ${ALLOWED_EMAIL:?ALLOWED_EMAIL is required}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Reachable from Prometheus on the compose network, and nowhere else.
+      METRICS_HOST: 0.0.0.0
+      METRICS_PORT: 9464
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - nutrition-data:/data
+    networks: [internal]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # Outbound only. The token comes from the Terraform output.
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN is required}
+    depends_on: [app]
+    networks: [internal]
+
+  # Serves the eval report converted to Prometheus exposition format, so the
+  # eval pass-rate panel has a history rather than one latest value. Written by
+  # `npm run evals:metrics` from the nightly workflow's report artifact.
+  eval-metrics:
+    image: busybox:latest
+    restart: unless-stopped
+    command: httpd -f -p 80 -h /srv
+    volumes:
+      - ./observability/eval-metrics:/srv:ro
+    networks: [internal]
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=90d
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [internal]
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on: [prometheus]
+    networks: [internal]
+
+volumes:
+  nutrition-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  internal:
+    driver: bridge

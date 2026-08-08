@@ -1,0 +1,5 @@
+# A private, single-user application. Nothing here is meant to be indexed —
+# Cloudflare Access sits in front of it, so a crawler could not read it anyway,
+# but stating the intent costs nothing.
+User-agent: *
+Disallow: /

@@ -1,0 +1,9 @@
+{
+  "id": "assembly-californian",
+  "description": "Californian no-cook assembly plate",
+  "request": {
+    "mealType": "assembly",
+    "cuisine": "Californian",
+    "maxCookMinutes": 5
+  }
+}

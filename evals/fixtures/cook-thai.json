@@ -1,0 +1,15 @@
+{
+  "id": "cook-thai",
+  "description": "Thai cook recipe within 20 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Thai",
+    "maxCookMinutes": 20
+  },
+  "tagLimits": [
+    {
+      "tag": "fermented",
+      "maxPerRecipe": 1
+    }
+  ]
+}

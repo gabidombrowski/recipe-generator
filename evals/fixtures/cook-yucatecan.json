@@ -1,0 +1,9 @@
+{
+  "id": "cook-yucatecan",
+  "description": "Yucatecan cook recipe within 30 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Yucatecan",
+    "maxCookMinutes": 30
+  }
+}

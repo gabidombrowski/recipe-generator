@@ -1,0 +1,17 @@
+{
+  "id": "exclude-hard-nightshades",
+  "description": "Nightshade-free, which removes most of the usual colour",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Spanish",
+    "maxCookMinutes": 30
+  },
+  "excluded": [
+    "tomato",
+    "pepper",
+    "paprika",
+    "potato",
+    "eggplant",
+    "chili"
+  ]
+}

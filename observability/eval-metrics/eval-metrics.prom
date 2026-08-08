@@ -1,0 +1,4 @@
+# Placeholder so Prometheus has something to scrape before the first eval run.
+# Overwritten by `npm run evals:metrics`.
+# HELP eval_run_passed 1 when every hard gate was met.
+# TYPE eval_run_passed gauge

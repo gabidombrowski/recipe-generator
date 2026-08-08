@@ -1,0 +1,9 @@
+{
+  "id": "assembly-nordic",
+  "description": "Nordic no-cook assembly plate",
+  "request": {
+    "mealType": "assembly",
+    "cuisine": "Nordic",
+    "maxCookMinutes": 5
+  }
+}

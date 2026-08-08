@@ -1,0 +1,9 @@
+{
+  "id": "assembly-greek",
+  "description": "Greek no-cook assembly plate",
+  "request": {
+    "mealType": "assembly",
+    "cuisine": "Greek",
+    "maxCookMinutes": 5
+  }
+}

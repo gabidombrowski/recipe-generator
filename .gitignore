@@ -1,0 +1,72 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# production
+build/
+dist/
+
+# ---------------------------------------------------------------------------
+# Personal data. This repo is public; none of the following may ever be
+# committed. Committed code ships neutral defaults and reads real values from
+# the environment or from these gitignored files at runtime.
+# ---------------------------------------------------------------------------
+
+# secrets
+.env
+.env.local
+.env.*.local
+
+# the SQLite database and its write-ahead log / shared-memory sidecars
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# personal free-text context (nutrition-context.example.md is committed)
+nutrition-context.md
+
+# personal profile/settings seed (seed.local.example.json is committed)
+seed.local.json
+
+# terraform state and variable values (terraform.tfvars.example is committed)
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# local eval output (CI uploads its own copy as an artifact)
+evals/reports/
+eval-report.json
+
+# transformers.js model cache
+.cache/
+models/
+
+# testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# Claude Code local state
+.claude/settings.local.json

@@ -1,0 +1,9 @@
+{
+  "id": "cook-peruvian",
+  "description": "Peruvian cook recipe within 25 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Peruvian",
+    "maxCookMinutes": 25
+  }
+}

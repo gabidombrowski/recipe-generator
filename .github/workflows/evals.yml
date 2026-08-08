@@ -1,0 +1,104 @@
+name: Evals
+
+# Costs money on every run, so it is scoped deliberately: only changes that can
+# actually affect generation quality, plus a nightly run to catch drift in the
+# model rather than in the code.
+on:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "evals/**"
+      - "src/server/llm/**"
+      - "src/lib/schemas.ts"
+      - ".github/workflows/evals.yml"
+  push:
+    branches: [main]
+    paths:
+      - "prompts/**"
+      - "evals/**"
+      - "src/server/llm/**"
+      - "src/lib/schemas.ts"
+  schedule:
+    # 07:00 UTC nightly.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+concurrency:
+  # Never two paid runs on the same ref at once.
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  evals:
+    name: Generation evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run evals
+        id: evals
+        run: npm run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Convert report to Prometheus metrics
+        if: always()
+        run: npm run evals:metrics || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report-${{ github.run_id }}
+          path: |
+            evals/reports/eval-report.json
+            observability/eval-metrics/eval-metrics.prom
+          retention-days: 30
+
+      # A failing gate should be readable in the PR, not buried in a log.
+      - name: Comment the summary on the PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'evals/reports/eval-report.json';
+            if (!fs.existsSync(path)) return;
+
+            const r = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const rows = r.assertions
+              .map(a => `| ${a.meetsGate ? '✅' : '❌'} | \`${a.id}\` | ${(a.passRate * 100).toFixed(1)}% | ${(a.threshold * 100).toFixed(0)}% | ${a.gate} |`)
+              .join('\n');
+
+            const body = [
+              `### Evals: ${r.passed ? 'pass' : 'fail'}`,
+              '',
+              `\`${r.model}\` · prompt \`${r.promptHashes.recipeGenerator}\` · ${r.totalRuns} generations · $${r.totalCostUsd.toFixed(4)}`,
+              '',
+              '| | Assertion | Pass rate | Gate | |',
+              '|---|---|---|---|---|',
+              rows,
+              '',
+              `**Red team:** ${r.redTeam.runs} runs, ${r.redTeam.hardGateFailures} hard-gate failure(s)`,
+              `**Tier 2 (report only):** step coherence ${r.tier2.meanStepCoherence?.toFixed(2) ?? 'n/a'}/5 · seasoning boldness ${r.tier2.meanSeasoningBoldness?.toFixed(2) ?? 'n/a'}/5`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });

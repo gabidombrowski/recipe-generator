@@ -1,0 +1,24 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+#
+# The Cloudflare API token is NOT here — export it instead, so it cannot be
+# committed even by accident:
+#
+#   export CLOUDFLARE_API_TOKEN=...
+#
+# Token scopes: Zone:DNS:Edit, Account:Cloudflare Tunnel:Edit,
+# Account:Access: Apps and Policies:Edit.
+
+cloudflare_account_id = "0000000000000000000000000000000f"
+cloudflare_zone_id    = "0000000000000000000000000000000e"
+
+hostname      = "nutrition.example.com"
+allowed_email = "you@example.com"
+
+tunnel_name = "recipe-generator"
+
+# Compose stack: the app service on the internal network.
+origin_url = "http://app:3000"
+# pm2 deployment: the loopback port from ecosystem.config.cjs instead.
+# origin_url = "http://127.0.0.1:3200"
+
+session_duration = "24h"

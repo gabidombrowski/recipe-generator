@@ -1,0 +1,15 @@
+{
+  "id": "exclude-hard-assembly",
+  "description": "No-cook plate with the easy proteins removed",
+  "request": {
+    "mealType": "assembly",
+    "cuisine": "Mediterranean",
+    "maxCookMinutes": 5
+  },
+  "excluded": [
+    "cheese",
+    "yogurt",
+    "egg",
+    "tuna"
+  ]
+}

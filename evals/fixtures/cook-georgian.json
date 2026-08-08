@@ -1,0 +1,9 @@
+{
+  "id": "cook-georgian",
+  "description": "Georgian cook recipe within 30 minutes",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Georgian",
+    "maxCookMinutes": 30
+  }
+}

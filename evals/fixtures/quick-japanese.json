@@ -1,0 +1,9 @@
+{
+  "id": "quick-japanese",
+  "description": "Japanese quick recipe within 10 minutes",
+  "request": {
+    "mealType": "quick",
+    "cuisine": "Japanese",
+    "maxCookMinutes": 10
+  }
+}
