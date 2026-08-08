@@ -27,6 +27,13 @@ const base = {
   excluded: [] as string[],
   pantryStaples: [] as Array<{ name: string; onHand: boolean }>,
   flaggedTags: ["fermented"] as string[],
+  dailyStaples: [
+    { name: "pea protein powder", qty: 40, unit: "g" },
+    { name: "oat milk", qty: 1, unit: "cup" },
+    { name: "banana", qty: 1, unit: "each" },
+    { name: "frozen berries", qty: 0.75, unit: "cup" },
+    { name: "casein", qty: 30, unit: "g" },
+  ],
   checkedKeys: new Set<string>(),
 };
 

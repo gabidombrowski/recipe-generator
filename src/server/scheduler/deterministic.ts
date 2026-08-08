@@ -1,7 +1,8 @@
 import { dayOfWeekFor, type IsoDate } from "~/lib/days";
 import { computeMacroPlan, isTrainingDay } from "~/lib/macros";
 import { type Profile, type Recipe, type Settings } from "~/lib/schemas";
-import { type DietaryGuideline } from "~/lib/guidelines";
+import { type DietaryConfig } from "~/lib/constraints";
+import { tagCount } from "~/lib/guidelines";
 import {
   deriveSlotRoles,
   eligibleMealTypes,
@@ -64,8 +65,8 @@ export interface PlanWeekInput {
   recipes: readonly Recipe[];
   excludedLower: readonly string[];
   recentRecipeIds: ReadonlySet<number>;
-  /** User-entered dietary rules. Empty on a fresh install. */
-  guidelines: readonly DietaryGuideline[];
+  /** The user's resolved dietary configuration. Empty on a fresh install. */
+  config: DietaryConfig;
 }
 
 export interface PlanWeekResult {
@@ -86,7 +87,7 @@ export interface PlanWeekResult {
  * the run status rather than applied silently.
  */
 export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult {
-  const { weekStart, profile, settings, recipes, excludedLower, recentRecipeIds, guidelines } =
+  const { weekStart, profile, settings, recipes, excludedLower, recentRecipeIds, config } =
     input;
 
   const macroPlan = computeMacroPlan(profile);
@@ -121,14 +122,14 @@ export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult 
 
         // Tier 0 is the full rule set; each tier drops one constraint.
         if (tier < 1 && recentRecipeIds.has(recipe.id)) return false;
-        if (tier < 2 && macroSanityFailure(recipe, dayTargets.kcal) !== null) return false;
+        if (tier < 2 && macroSanityFailure(recipe, dayTargets.kcal, config) !== null) {
+          return false;
+        }
         if (tier < 3 && mealSource === "cook") {
-          for (const guideline of guidelines) {
-            if (!guideline.active || guideline.tag === null || guideline.maxCookPerWeek === null) {
-              continue;
-            }
-            if (!limitedTagsIn(recipe, [guideline]).length) continue;
-            if ((tagUsage.get(guideline.tag) ?? 0) >= guideline.maxCookPerWeek) return false;
+          for (const cap of config.tagCaps) {
+            if (cap.maxPerWeek === null) continue;
+            if (tagCount(recipe.tagCounts, cap.tag) === 0) continue;
+            if ((tagUsage.get(cap.tag.toLowerCase()) ?? 0) >= cap.maxPerWeek) return false;
           }
         }
         return true;
@@ -150,7 +151,7 @@ export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult 
         }
         usedThisWeek.add(choice.id);
         if (mealSource === "cook") {
-          for (const tag of limitedTagsIn(choice, guidelines)) {
+          for (const tag of limitedTagsIn(choice, config)) {
             tagUsage.set(tag, (tagUsage.get(tag) ?? 0) + 1);
           }
         }

@@ -1,13 +1,12 @@
-CREATE TABLE `dietary_guidelines` (
+CREATE TABLE `constraints` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`tag` text,
-	`max_per_recipe` integer,
-	`max_cook_per_week` integer,
-	`note` text DEFAULT '' NOT NULL,
+	`kind` text NOT NULL,
+	`payload` text NOT NULL,
 	`active` integer DEFAULT true NOT NULL,
 	`created_at` text DEFAULT (current_timestamp) NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX `constraints_kind_idx` ON `constraints` (`kind`);--> statement-breakpoint
 CREATE TABLE `excluded_ingredients` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -35,6 +34,14 @@ CREATE TABLE `grocery_checks` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `grocery_checks_week_line_unique` ON `grocery_checks` (`week_start`,`line_key`);--> statement-breakpoint
+CREATE TABLE `ingredient_tags` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`match_patterns` text DEFAULT '[]' NOT NULL,
+	`created_at` text DEFAULT (current_timestamp) NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `ingredient_tags_name_unique` ON `ingredient_tags` (`name`);--> statement-breakpoint
 CREATE TABLE `leftover_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`recipe_name` text NOT NULL,

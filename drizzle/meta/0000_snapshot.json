@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "76b13b61-1912-4afb-8933-0683925ce85f",
+  "id": "2d79dd77-8766-48cb-b73e-cd44225f6392",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "dietary_guidelines": {
-      "name": "dietary_guidelines",
+    "constraints": {
+      "name": "constraints",
       "columns": {
         "id": {
           "name": "id",
@@ -14,34 +14,19 @@
           "notNull": true,
           "autoincrement": true
         },
-        "tag": {
-          "name": "tag",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "max_per_recipe": {
-          "name": "max_per_recipe",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "max_cook_per_week": {
-          "name": "max_cook_per_week",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "note": {
-          "name": "note",
+        "kind": {
+          "name": "kind",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "''"
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
         "active": {
           "name": "active",
@@ -60,7 +45,15 @@
           "default": "(current_timestamp)"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "constraints_kind_idx": {
+          "name": "constraints_kind_idx",
+          "columns": [
+            "kind"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -229,6 +222,54 @@
           "columns": [
             "week_start",
             "line_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ingredient_tags": {
+      "name": "ingredient_tags",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "match_patterns": {
+          "name": "match_patterns",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(current_timestamp)"
+        }
+      },
+      "indexes": {
+        "ingredient_tags_name_unique": {
+          "name": "ingredient_tags_name_unique",
+          "columns": [
+            "name"
           ],
           "isUnique": true
         }

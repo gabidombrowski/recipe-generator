@@ -3,10 +3,6 @@ import { protectedProcedure, router } from "../init";
 import { TRPCError } from "@trpc/server";
 import {
   addExcluded,
-  addGuideline,
-  listGuidelines,
-  removeGuideline,
-  setGuidelineActive,
   addPantryStaple,
   discardLeftover,
   eatPortion,
@@ -19,14 +15,17 @@ import {
   storePortion,
 } from "~/server/db/queries";
 import { getSettings } from "~/server/db/state";
+import {
+  addConstraint,
+  listConstraints,
+  removeConstraint,
+  setConstraintActive,
+} from "~/server/db/config";
 import { FRIDGE_SAFE_DAYS } from "./plan";
 import { daysBetween, todayInTimezone } from "~/lib/days";
 import { isoDateSchema, storageSchema } from "~/lib/schemas";
-import {
-  isMeaningful,
-  validateGuidelineNote,
-  validateGuidelineTag,
-} from "~/lib/guidelines";
+import { validateGuidelineNote, validateGuidelineTag } from "~/lib/guidelines";
+import { constraintSchema } from "~/lib/constraints";
 
 /**
  * Exclusions, pantry staples, and the leftover tracker.
@@ -50,63 +49,49 @@ export const kitchenRouter = router({
     .mutation(({ input }) => removeExcluded(input.id)),
 
   // -------------------------------------------------------------------------
-  // Dietary guidelines
+  // Dietary constraints
   //
-  // The free-text note reaches an LLM system prompt, so it is validated here
-  // rather than trusted. Rejection reasons are returned so the UI can explain.
+  // Everything the app enforces is a row here. Free-text notes reach an LLM
+  // system prompt, so those are validated rather than trusted; the structured
+  // kinds are validated by their zod schema.
   // -------------------------------------------------------------------------
-  guidelines: protectedProcedure.query(() => listGuidelines()),
+  constraints: protectedProcedure.query(() => listConstraints()),
 
-  addGuideline: protectedProcedure
-    .input(
-      z.object({
-        tag: z.string().max(32).nullable().default(null),
-        maxPerRecipe: z.number().int().min(0).max(20).nullable().default(null),
-        maxCookPerWeek: z.number().int().min(0).max(7).nullable().default(null),
-        note: z.string().max(400).default(""),
-      }),
-    )
+  addConstraint: protectedProcedure
+    .input(constraintSchema)
     .mutation(({ input }) => {
-      const reasons: string[] = [];
+      if (input.kind === "note") {
+        const checked = validateGuidelineNote(input.text);
+        if (!checked.ok) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: checked.reasons.join(" ") });
+        }
+        return addConstraint({ kind: "note", text: checked.value });
+      }
 
-      let tag: string | null = null;
-      if (input.tag !== null && input.tag.trim() !== "") {
+      if (input.kind === "tag_cap") {
         const checked = validateGuidelineTag(input.tag);
-        if (checked.ok) tag = checked.value;
-        else reasons.push(...checked.reasons.map((r) => `Tag ${r}.`));
+        if (!checked.ok) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: checked.reasons.join(" ") });
+        }
+        if (input.maxPerRecipe === null && input.maxPerWeek === null) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "A tag limit needs a per-recipe or per-week cap.",
+          });
+        }
+        return addConstraint({ ...input, tag: checked.value });
       }
 
-      let note = "";
-      if (input.note.trim() !== "") {
-        const checked = validateGuidelineNote(input.note);
-        if (checked.ok) note = checked.value;
-        else reasons.push(...checked.reasons.map((r) => `Note ${r}.`));
-      }
-
-      const candidate = {
-        tag,
-        maxPerRecipe: input.maxPerRecipe,
-        maxCookPerWeek: input.maxCookPerWeek,
-        note,
-      };
-
-      if (!isMeaningful(candidate)) {
-        reasons.push("A guideline needs either a tag with a limit, or a note.");
-      }
-      if (reasons.length > 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: reasons.join(" ") });
-      }
-
-      return addGuideline(candidate);
+      return addConstraint(input);
     }),
 
-  setGuidelineActive: protectedProcedure
+  setConstraintActive: protectedProcedure
     .input(z.object({ id: z.number().int().positive(), active: z.boolean() }))
-    .mutation(({ input }) => setGuidelineActive(input.id, input.active)),
+    .mutation(({ input }) => setConstraintActive(input.id, input.active)),
 
-  removeGuideline: protectedProcedure
+  removeConstraint: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
-    .mutation(({ input }) => removeGuideline(input.id)),
+    .mutation(({ input }) => removeConstraint(input.id)),
 
   // -------------------------------------------------------------------------
   // Pantry

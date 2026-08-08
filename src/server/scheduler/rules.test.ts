@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deriveSlotRoles, verifyWeek, type SlotPlan } from "./rules";
-import { type DietaryGuideline } from "~/lib/guidelines";
+import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints";
 
 import {
   DEFAULT_SETTINGS,
@@ -131,15 +131,14 @@ describe("verifyWeek", () => {
   ];
 
   /** The user rule that replaces what used to be a hardcoded setting. */
-  const oneFermentedCookPerWeek: DietaryGuideline = {
-    id: 1,
-    tag: "fermented",
-    maxPerRecipe: 1,
-    maxCookPerWeek: 1,
-    note: "",
-    active: true,
-    createdAt: "2026-01-01",
-  };
+  const oneFermentedCookPerWeek = resolveConfig([
+    {
+      id: 1,
+      constraint: { kind: "tag_cap", tag: "fermented", maxPerRecipe: 1, maxPerWeek: 1 } as Constraint,
+      active: true,
+      createdAt: "2026-01-01",
+    },
+  ]);
 
   const base = {
     weekStart: WEEK_START,
@@ -148,7 +147,7 @@ describe("verifyWeek", () => {
     recipesById,
     excludedLower: [] as string[],
     recentRecipeIds: new Set<number>(),
-    guidelines: [] as DietaryGuideline[],
+    config: EMPTY_CONFIG,
   };
 
   it("accepts a week that satisfies every rule", () => {
@@ -217,7 +216,7 @@ describe("verifyWeek", () => {
       ...base,
       slots: validWeek,
       recipesById: taggedById,
-      guidelines: [oneFermentedCookPerWeek],
+      config: oneFermentedCookPerWeek,
     });
     expect(result.reasons.join(" ")).toContain('cook recipes contain "fermented"');
   });
@@ -231,19 +230,38 @@ describe("verifyWeek", () => {
       ...base,
       slots: validWeek,
       recipesById: taggedById,
-      guidelines: [],
+      config: EMPTY_CONFIG,
     });
     expect(result.ok).toBe(true);
   });
 
-  it("rejects a meal that fails the macro sanity band", () => {
+  it("rejects a meal below the user's protein floor", () => {
     const thinById = new Map(recipesById);
     thinById.set(1, {
       ...cookA,
       macrosPerServing: { kcal: 120, proteinG: 8, carbsG: 10, fatG: 4 },
     });
-    const result = verifyWeek({ ...base, slots: validWeek, recipesById: thinById });
+    const withBand = resolveConfig([
+      {
+        id: 1,
+        constraint: { kind: "meal_macros", proteinMinG: 25, proteinMaxG: 60 } as Constraint,
+        active: true,
+        createdAt: "2026-01-01",
+      },
+    ]);
+    const result = verifyWeek({ ...base, slots: validWeek, recipesById: thinById, config: withBand });
     expect(result.reasons.join(" ")).toContain("below the 25 g per-meal floor");
+  });
+
+  it("applies no protein floor when the user has configured none", () => {
+    // An unopinionated install should not invent a rule nobody asked for.
+    const thinById = new Map(recipesById);
+    thinById.set(1, {
+      ...cookA,
+      macrosPerServing: { kcal: 400, proteinG: 8, carbsG: 60, fatG: 12 },
+    });
+    const result = verifyWeek({ ...base, slots: validWeek, recipesById: thinById });
+    expect(result.reasons.join(" ")).not.toContain("per-meal floor");
   });
 
   it("reports every violation at once, not just the first", () => {

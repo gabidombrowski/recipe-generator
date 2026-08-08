@@ -7,6 +7,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { type Constraint, type ConstraintKind } from "~/lib/constraints";
 import {
   type DayOfWeek,
   type FeedbackVerdict,
@@ -205,27 +206,49 @@ export const excludedIngredients = sqliteTable(
 );
 
 /**
- * User-entered dietary rules.
+ * The user's dietary rules, stored as a discriminated union.
  *
- * This table is why the committed code names no medical condition: everything
- * the app knows about someone's dietary needs is a row here, in the gitignored
- * database, entered at runtime. Ships empty.
+ * This table is why the committed code names no medical condition and no
+ * personal preference: every rule — tag caps, excluded ingredients, protein
+ * bands, meal shapes, ingredient forms, leftover windows, daily staples — is a
+ * row here, entered at runtime, in the gitignored database. Ships empty.
  *
- * `note` reaches an LLM system prompt, so it is validated by
- * `validateGuidelineNote` before it ever gets here.
+ * The payload is JSON rather than columns because the kinds have genuinely
+ * different shapes; `constraintSchema` validates it on the way in and out, so
+ * the looseness stops at this boundary.
  */
-export const dietaryGuidelines = sqliteTable("dietary_guidelines", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  /** Culinary tag this constrains, e.g. `fermented`. Null for a note-only rule. */
-  tag: text("tag"),
-  /** At most N ingredients carrying `tag` in one recipe. */
-  maxPerRecipe: integer("max_per_recipe"),
-  /** At most N cook recipes containing `tag` across one week. */
-  maxCookPerWeek: integer("max_cook_per_week"),
-  note: text("note").notNull().default(""),
-  active: integer("active", { mode: "boolean" }).notNull().default(true),
-  createdAt: timestamp("created_at"),
-});
+export const constraints = sqliteTable(
+  "constraints",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    kind: text("kind").$type<ConstraintKind>().notNull(),
+    payload: text("payload", { mode: "json" }).$type<Constraint>().notNull(),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    createdAt: timestamp("created_at"),
+  },
+  (t) => [index("constraints_kind_idx").on(t.kind)],
+);
+
+/**
+ * The culinary tag vocabulary, and which ingredient names earn each tag.
+ *
+ * User-defined so someone tracking FODMAPs can add `high-fodmap` with its own
+ * patterns without touching code. Ships empty; the setup flow offers a
+ * suggested vocabulary to pick from.
+ */
+export const ingredientTags = sqliteTable(
+  "ingredient_tags",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    matchPatterns: text("match_patterns", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    createdAt: timestamp("created_at"),
+  },
+  (t) => [uniqueIndex("ingredient_tags_name_unique").on(t.name)],
+);
 
 export const pantryStaples = sqliteTable(
   "pantry_staples",

@@ -1,9 +1,9 @@
 import { and, desc, eq, gte, lt, lte } from "drizzle-orm";
 import { db } from "./index";
 import { toRecipe } from "./recipes";
-import { type DietaryGuideline } from "~/lib/guidelines";
+import { cappedTags } from "~/lib/constraints";
+import { getDietaryConfig } from "./config";
 import {
-  dietaryGuidelines,
   excludedIngredients,
   generationFeedback,
   groceryChecks,
@@ -379,61 +379,7 @@ export function slotsBefore(date: IsoDate, days: number): PlanSlot[] {
     }));
 }
 
-// ---------------------------------------------------------------------------
-// Dietary guidelines
-// ---------------------------------------------------------------------------
-
-/**
- * The user's dietary rules. Ships empty — everything here is entered at runtime
- * and lives only in the gitignored database.
- */
-export function listGuidelines(): DietaryGuideline[] {
-  return db
-    .select()
-    .from(dietaryGuidelines)
-    .orderBy(dietaryGuidelines.id)
-    .all()
-    .map((row) => ({
-      id: row.id,
-      tag: row.tag,
-      maxPerRecipe: row.maxPerRecipe,
-      maxCookPerWeek: row.maxCookPerWeek,
-      note: row.note,
-      active: row.active,
-      createdAt: row.createdAt,
-    }));
-}
-
-/** Tags that some active guideline limits — what the UI badges. */
+/** Tags some active cap applies to — what the UI badges. */
 export function flaggedTags(): string[] {
-  return [
-    ...new Set(
-      listGuidelines()
-        .filter((g) => g.active && g.tag !== null)
-        .map((g) => g.tag!),
-    ),
-  ];
-}
-
-export function addGuideline(input: {
-  tag: string | null;
-  maxPerRecipe: number | null;
-  maxCookPerWeek: number | null;
-  note: string;
-}): DietaryGuideline[] {
-  db.insert(dietaryGuidelines).values({ ...input, active: true }).run();
-  return listGuidelines();
-}
-
-export function setGuidelineActive(id: number, active: boolean): DietaryGuideline[] {
-  db.update(dietaryGuidelines)
-    .set({ active })
-    .where(eq(dietaryGuidelines.id, id))
-    .run();
-  return listGuidelines();
-}
-
-export function removeGuideline(id: number): DietaryGuideline[] {
-  db.delete(dietaryGuidelines).where(eq(dietaryGuidelines.id, id)).run();
-  return listGuidelines();
+  return cappedTags(getDietaryConfig());
 }

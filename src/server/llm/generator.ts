@@ -5,7 +5,7 @@ import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
 import { loggerFor } from "~/server/logger";
 import { recordGeneration, withSpan, type TokenUsage } from "~/server/telemetry";
 import { computeMacroPlan } from "~/lib/macros";
-import { describeGuidelines, type DietaryGuideline } from "~/lib/guidelines";
+import { describeConfig, type DietaryConfig } from "~/lib/constraints";
 import {
   type MealType,
   type Profile,
@@ -72,7 +72,7 @@ export interface GenerationContext {
   trainingDay: boolean;
   excluded: readonly string[];
   /** The user's dietary rules, rendered into the prompt. Empty by default. */
-  guidelines: readonly DietaryGuideline[];
+  config: DietaryConfig;
   /** Favourite recipes to show as few-shot exemplars. */
   exemplars: readonly RecipeBody[];
 }
@@ -162,7 +162,7 @@ export function buildSystemPrompt(
   const system = renderPrompt(prompt, {
     MACRO_TARGETS: describeMacroTargets(context),
     EXCLUDE_LIST: describeExclusions(context.excluded),
-    GUIDELINES: describeGuidelines(context.guidelines),
+    GUIDELINES: describeConfig(context.config),
     REQUEST: describeRequest(request),
     EXEMPLARS: describeExemplars(context.exemplars),
   });

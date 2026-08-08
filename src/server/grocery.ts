@@ -27,16 +27,11 @@ import { type IsoDate } from "~/lib/days";
 // ---------------------------------------------------------------------------
 
 /**
- * Eaten every day regardless of what the plan says, so they are added x7 rather
- * than derived from recipes. Quantities are per day.
+ * Things eaten every day regardless of what the plan says are added x7 rather
+ * than derived from recipes — but *which* things is entirely user config
+ * (`daily_staple` constraints). The app ships none, because a staples list is
+ * one of the most personal things a meal planner holds.
  */
-export const DAILY_STAPLES: ReadonlyArray<Omit<Ingredient, "tags">> = [
-  { name: "pea protein powder", qty: 40, unit: "g" },
-  { name: "oat milk", qty: 1, unit: "cup" },
-  { name: "banana", qty: 1, unit: "each" },
-  { name: "frozen berries", qty: 0.75, unit: "cup" },
-  { name: "casein", qty: 30, unit: "g" },
-];
 
 const DAYS_IN_WEEK = 7;
 
@@ -133,8 +128,10 @@ export interface BuildGroceryListInput {
   /** Lowercased excluded ingredient names. */
   excluded: readonly string[];
   pantryStaples: ReadonlyArray<{ name: string; onHand: boolean }>;
-  /** Culinary tags an active guideline limits; badged on the list. */
+  /** Culinary tags an active cap applies to; badged on the list. */
   flaggedTags: readonly string[];
+  /** Per-day staples from the user's config, added x7. */
+  dailyStaples: ReadonlyArray<{ name: string; qty: number; unit: string }>;
   /** Line keys already ticked for this week. */
   checkedKeys: ReadonlySet<string>;
 }
@@ -162,7 +159,7 @@ function isExcluded(ingredient: Ingredient, excluded: readonly string[]): boolea
 }
 
 export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
-  const { weekStart, settings, meals, excluded, pantryStaples, checkedKeys, flaggedTags } =
+  const { weekStart, settings, meals, excluded, pantryStaples, checkedKeys, flaggedTags, dailyStaples } =
     input;
 
   const flagged = new Set(flaggedTags.map((t) => t.trim().toLowerCase()));
@@ -214,7 +211,7 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
     }
   }
 
-  for (const staple of DAILY_STAPLES) {
+  for (const staple of dailyStaples) {
     add({ ...staple, tags: [] }, DAYS_IN_WEEK, "Daily staples");
   }
 

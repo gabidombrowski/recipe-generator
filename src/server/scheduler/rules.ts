@@ -1,6 +1,7 @@
 import { addDays, dayOfWeekFor, weekDates, type IsoDate } from "~/lib/days";
 import { computeMacroPlan, isTrainingDay } from "~/lib/macros";
-import { tagCount, type DietaryGuideline } from "~/lib/guidelines";
+import { tagCount } from "~/lib/guidelines";
+import { shapeFor, type DietaryConfig } from "~/lib/constraints";
 import {
   type MealSource,
   type Profile,
@@ -114,13 +115,10 @@ export function recipeHasExcluded(
  * The list of tags that matter comes entirely from the user's guidelines —
  * this code knows how to count, not what to worry about.
  */
-export function limitedTagsIn(
-  recipe: Recipe,
-  guidelines: readonly DietaryGuideline[],
-): string[] {
-  return guidelines
-    .filter((g) => g.active && g.tag !== null && g.maxCookPerWeek !== null)
-    .map((g) => g.tag!)
+export function limitedTagsIn(recipe: Recipe, config: DietaryConfig): string[] {
+  return config.tagCaps
+    .filter((cap) => cap.maxPerWeek !== null)
+    .map((cap) => cap.tag.toLowerCase())
     .filter((tag) => tagCount(recipe.tagCounts, tag) > 0);
 }
 
@@ -132,18 +130,21 @@ export function limitedTagsIn(
  * check exists to catch a planner proposing a 90 kcal side dish as dinner, not
  * to enforce a precise macro target.
  */
-export const MEAL_MIN_PROTEIN_G = 25;
 const MEAL_MIN_KCAL_FRACTION = 0.15;
 const MEAL_MAX_KCAL_FRACTION = 0.65;
 
 export function macroSanityFailure(
   recipe: Recipe,
   dayKcalTarget: number,
+  config: DietaryConfig,
 ): string | null {
   const { kcal, proteinG } = recipe.macrosPerServing;
 
-  if (proteinG < MEAL_MIN_PROTEIN_G) {
-    return `${recipe.name} provides ${proteinG} g protein, below the ${MEAL_MIN_PROTEIN_G} g per-meal floor`;
+  // The protein floor is the user's, not the app's. With no rule configured
+  // there is no floor — an unopinionated install should not invent one.
+  const floor = config.mealMacros?.proteinMinG ?? null;
+  if (floor !== null && proteinG < floor) {
+    return `${recipe.name} provides ${proteinG} g protein, below the ${floor} g per-meal floor`;
   }
 
   const low = dayKcalTarget * MEAL_MIN_KCAL_FRACTION;
@@ -169,8 +170,8 @@ export interface VerifyInput {
   excludedLower: readonly string[];
   /** Recipe ids used inside the repeat window, from past plan slots. */
   recentRecipeIds: ReadonlySet<number>;
-  /** User-entered dietary rules. Empty on a fresh install. */
-  guidelines: readonly DietaryGuideline[];
+  /** The user's resolved dietary configuration. Empty on a fresh install. */
+  config: DietaryConfig;
 }
 
 export interface VerifyResult {
@@ -185,7 +186,7 @@ export interface VerifyResult {
  * fed back to the planner with the complete list — one round trip instead of N.
  */
 export function verifyWeek(input: VerifyInput): VerifyResult {
-  const { weekStart, slots, profile, settings, recipesById, excludedLower, recentRecipeIds, guidelines } =
+  const { weekStart, slots, profile, settings, recipesById, excludedLower, recentRecipeIds, config } =
     input;
   const reasons: string[] = [];
 
@@ -251,7 +252,7 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
     const targets = isTrainingDay(profile, dayOfWeekFor(date))
       ? macroPlan.training
       : macroPlan.rest;
-    const macroFailure = macroSanityFailure(recipe, targets.kcal);
+    const macroFailure = macroSanityFailure(recipe, targets.kcal, config);
     if (macroFailure) reasons.push(`${date}: ${macroFailure}`);
   }
 
@@ -262,22 +263,42 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
     reasons.push(`recipe "${recipesById.get(id)?.name ?? id}" appears more than once this week`);
   }
 
-  // 8. Per-week caps on tagged ingredients, from the user's guidelines.
+  // 8. Per-week caps on tagged ingredients, from the user's config.
   //    Which tags matter is a runtime decision; this code only counts.
-  for (const guideline of guidelines) {
-    if (!guideline.active || guideline.tag === null || guideline.maxCookPerWeek === null) {
-      continue;
-    }
+  for (const cap of config.tagCaps) {
+    if (cap.maxPerWeek === null) continue;
 
     const matching = slots.filter((s) => {
       if (s.mealSource !== "cook" || s.recipeId === null) return false;
       const recipe = recipesById.get(s.recipeId);
-      return recipe ? tagCount(recipe.tagCounts, guideline.tag!) > 0 : false;
+      return recipe ? tagCount(recipe.tagCounts, cap.tag) > 0 : false;
     });
 
-    if (matching.length > guideline.maxCookPerWeek) {
+    if (matching.length > cap.maxPerWeek) {
       reasons.push(
-        `${matching.length} cook recipes contain "${guideline.tag}"; at most ${guideline.maxCookPerWeek} allowed per week`,
+        `${matching.length} cook recipes contain "${cap.tag}"; at most ${cap.maxPerWeek} allowed per week`,
+      );
+    }
+  }
+
+  // 9. Meal shapes: servings and cook time the user configured per meal type.
+  for (const { date } of expected) {
+    const slot = byDate.get(date);
+    if (!slot || slot.recipeId === null) continue;
+    const recipe = recipesById.get(slot.recipeId);
+    if (!recipe) continue;
+
+    const shape = shapeFor(config, recipe.mealType);
+    if (!shape) continue;
+
+    if (shape.servings !== null && recipe.servings !== shape.servings) {
+      reasons.push(
+        `"${recipe.name}" on ${date} yields ${recipe.servings} serving(s); a ${recipe.mealType} recipe should yield ${shape.servings}`,
+      );
+    }
+    if (shape.maxMinutes !== null && recipe.cookMinutes > shape.maxMinutes) {
+      reasons.push(
+        `"${recipe.name}" on ${date} takes ${recipe.cookMinutes} min; a ${recipe.mealType} recipe should take at most ${shape.maxMinutes}`,
       );
     }
   }

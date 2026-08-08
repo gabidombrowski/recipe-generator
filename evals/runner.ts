@@ -12,6 +12,7 @@ import { MODELS } from "~/server/llm/client";
 import { buildSystemPrompt, generateRecipe } from "~/server/llm/generator";
 import { loadPrompt, PROMPT_NAMES } from "~/server/llm/prompts";
 import { DEFAULT_PROFILE, type RecipeBody } from "~/lib/schemas";
+import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints";
 
 /**
  * The eval runner.
@@ -47,6 +48,51 @@ export const EVAL_PROFILE = {
   fatPerKg: 0.8,
   trainingDays: ["Monday", "Wednesday", "Friday"] as const,
 } as typeof DEFAULT_PROFILE;
+
+/**
+ * The constraint set a fixture is generated and graded against.
+ *
+ * Synthetic and shared, so the public repo carries a complete worked example
+ * without carrying anyone's actual rules, and CI is hermetic. A fixture may
+ * override any part of it.
+ */
+export const REFERENCE_CONSTRAINTS: Constraint[] = [
+  { kind: "meal_macros", proteinMinG: 35, proteinMaxG: 45 },
+  {
+    kind: "meal_shape",
+    mealType: "cook",
+    minMinutes: 15,
+    maxMinutes: 30,
+    servings: 2,
+    requiredFinalStepPhrases: ["refrigerate", "1 day"],
+  },
+  { kind: "meal_shape", mealType: "quick", minMinutes: 5, maxMinutes: 10, servings: 1, requiredFinalStepPhrases: [] },
+  { kind: "meal_shape", mealType: "assembly", minMinutes: null, maxMinutes: 5, servings: 1, requiredFinalStepPhrases: [] },
+  {
+    kind: "ingredient_form",
+    match: ["tuna", "salmon", "sardine", "anchovy", "crab", "clam", "mackerel", "shrimp", "prawn", "oyster"],
+    forbid: ["canned", "tinned", "jarred", "from a can"],
+    exempt: ["sauce", "paste"],
+  },
+];
+
+export function fixtureConfig(fixture: Fixture) {
+  const extra: Constraint[] = (fixture.tagLimits ?? []).map((limit) => ({
+    kind: "tag_cap" as const,
+    tag: limit.tag,
+    maxPerRecipe: limit.maxPerRecipe,
+    maxPerWeek: null,
+  }));
+
+  return resolveConfig(
+    [...REFERENCE_CONSTRAINTS, ...extra].map((constraint, index) => ({
+      id: index + 1,
+      constraint,
+      active: true,
+      createdAt: "2026-01-01",
+    })),
+  );
+}
 
 export function loadFixtures(): Fixture[] {
   return readdirSync(FIXTURES_DIR)
@@ -109,16 +155,10 @@ async function runOnce(fixture: Fixture, run: number): Promise<RunRecord> {
       profile: EVAL_PROFILE,
       trainingDay: true,
       excluded: fixture.excluded ?? [],
-      // Fixtures declare their own tag caps, mirroring a user's guidelines.
-      guidelines: (fixture.tagLimits ?? []).map((limit, index) => ({
-        id: index + 1,
-        tag: limit.tag,
-        maxPerRecipe: limit.maxPerRecipe,
-        maxCookPerWeek: null,
-        note: "",
-        active: true,
-        createdAt: "2026-01-01",
-      })),
+      // Fixtures carry their own constraint set, which is what makes the
+      // Tier 1 gates test *the fixture's* rules rather than anyone's in
+      // particular. See REFERENCE_CONSTRAINTS for the shared default.
+      config: fixtureConfig(fixture),
       // No exemplars: the evals measure the prompt, not the library.
       exemplars: [],
     });
@@ -210,7 +250,7 @@ export async function runEvals(fixtures: Fixture[] = loadFixtures()): Promise<Ev
   const promptHashes = {
     recipeGenerator: buildSystemPrompt(
       { mealType: "cook" },
-      { profile: EVAL_PROFILE, trainingDay: true, excluded: [], guidelines: [], exemplars: [] },
+      { profile: EVAL_PROFILE, trainingDay: true, excluded: [], config: EMPTY_CONFIG, exemplars: [] },
     ).promptHash,
     judge: loadPrompt(PROMPT_NAMES.judge).hash,
   };

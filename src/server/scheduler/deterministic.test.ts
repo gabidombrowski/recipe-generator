@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planWeekDeterministically } from "./deterministic";
 import { verifyWeek } from "./rules";
-import { type DietaryGuideline } from "~/lib/guidelines";
+import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints";
 
 import { DEFAULT_SETTINGS, type Profile, type Recipe, type Settings } from "~/lib/schemas";
 
@@ -63,7 +63,7 @@ const base = {
   recipes: library,
   excludedLower: [] as string[],
   recentRecipeIds: new Set<number>(),
-  guidelines: [] as DietaryGuideline[],
+  config: EMPTY_CONFIG,
 };
 
 describe("deterministic planner", () => {
@@ -79,7 +79,7 @@ describe("deterministic planner", () => {
       recipesById: new Map(library.map((r) => [r.id, r])),
       excludedLower: [],
       recentRecipeIds: new Set(),
-      guidelines: [],
+      config: EMPTY_CONFIG,
     });
     expect(verdict.reasons).toEqual([]);
   });
@@ -145,11 +145,15 @@ describe("deterministic planner", () => {
       make(3, "cook"),
       ...library.filter((r) => r.mealType !== "cook"),
     ];
-    const guideline: DietaryGuideline = {
-      id: 1, tag: "fermented", maxPerRecipe: 1, maxCookPerWeek: 1,
-      note: "", active: true, createdAt: "2026-01-01",
-    };
-    const plan = planWeekDeterministically({ ...base, recipes: tagged, guidelines: [guideline] });
+    const config = resolveConfig([
+      {
+        id: 1,
+        constraint: { kind: "tag_cap", tag: "fermented", maxPerRecipe: 1, maxPerWeek: 1 } as Constraint,
+        active: true,
+        createdAt: "2026-01-01",
+      },
+    ]);
+    const plan = planWeekDeterministically({ ...base, recipes: tagged, config });
     const byId = new Map(tagged.map((r) => [r.id, r]));
     const taggedCooks = plan.slots.filter(
       (s) =>

@@ -4,7 +4,6 @@ import {
   assignSlot,
   excludedLower,
   flaggedTags,
-  listGuidelines,
   getRecipe,
   getSlot,
   getWeekSlots,
@@ -17,6 +16,7 @@ import {
   writeSlots,
 } from "~/server/db/queries";
 import { getProfile, getSettings } from "~/server/db/state";
+import { getDietaryConfig } from "~/server/db/config";
 import { runWeeklyGeneration } from "~/server/scheduler/run";
 import { planWeekDeterministically } from "~/server/scheduler/deterministic";
 import { deriveSlotRoles, eligibleMealTypes } from "~/server/scheduler/rules";
@@ -232,7 +232,7 @@ export const planRouter = router({
         recipes: listRecipes(),
         excludedLower: excludedLower(),
         recentRecipeIds: used,
-        guidelines: listGuidelines(),
+        config: getDietaryConfig(),
       });
 
       const replacement = plan.slots.find((s) => s.date === input.date);

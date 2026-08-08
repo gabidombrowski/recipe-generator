@@ -11,7 +11,7 @@ import {
   type TokenUsage,
 } from "~/server/telemetry";
 import { deriveSlotRoles, verifyWeek, type SlotPlan, type VerifyInput } from "~/server/scheduler/rules";
-import { type DietaryGuideline } from "~/lib/guidelines";
+import { type DietaryConfig } from "~/lib/constraints";
 import { formatShortDate, type IsoDate } from "~/lib/days";
 import {
   type LeftoverItem,
@@ -116,7 +116,7 @@ export interface PlannerData {
   pantryOnHand: readonly string[];
   leftovers: readonly LeftoverItem[];
   excludedLower: readonly string[];
-  guidelines: readonly DietaryGuideline[];
+  config: DietaryConfig;
 }
 
 function recipeSummary(recipe: Recipe) {
@@ -173,13 +173,17 @@ function describeRules(settings: Settings, data: PlannerData): string {
     "- Do not use the same recipe twice in one week.",
     "- Cook slots take cook recipes; assembly slots take assembly recipes; quick slots take quick or assembly recipes.",
     "- Leftover slots take no recipe at all.",
-    "- Every meal must provide at least 25 g protein per serving and sit in a plausible calorie range for the day.",
+    ...(data.config.mealMacros
+      ? [
+          `- Every meal must provide at least ${data.config.mealMacros.proteinMinG} g protein per serving and sit in a plausible calorie range for the day.`,
+        ]
+      : []),
   ];
 
-  for (const guideline of data.guidelines) {
-    if (!guideline.active || guideline.tag === null || guideline.maxCookPerWeek === null) continue;
+  for (const cap of data.config.tagCaps) {
+    if (cap.maxPerWeek === null) continue;
     rules.push(
-      `- At most ${guideline.maxCookPerWeek} cook recipe(s) containing "${guideline.tag}" ingredients, across the whole week.`,
+      `- At most ${cap.maxPerWeek} cook recipe(s) containing "${cap.tag}" ingredients, across the whole week.`,
     );
   }
   if (data.excludedLower.length > 0) {
@@ -237,7 +241,7 @@ export async function planWeekWithAgent(args: {
       recipesById: recipesByIdMap,
       excludedLower: data.excludedLower,
       recentRecipeIds: data.recentRecipeIds,
-      guidelines: data.guidelines,
+      config: data.config,
     };
 
     const messages: AnthropicNS.MessageParam[] = [

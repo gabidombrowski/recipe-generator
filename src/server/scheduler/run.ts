@@ -4,7 +4,6 @@ import {
   getWeekSlots,
   listLeftovers,
   listPantry,
-  listGuidelines,
   listRecipes,
   recentRecipeIds,
   recordSchedulerRun,
@@ -12,6 +11,7 @@ import {
   writeSlots,
 } from "~/server/db/queries";
 import { getProfile, getSettings } from "~/server/db/state";
+import { getDietaryConfig } from "~/server/db/config";
 import { isLlmConfigured } from "~/server/llm/client";
 import { generateRecipe } from "~/server/llm/generator";
 import { planWeekWithAgent } from "~/server/llm/planner";
@@ -86,7 +86,7 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
     const recipes = listRecipes();
     const excluded = excludedLower();
     const recent = recentRecipeIds(weekStart, settings.repeatWindowWeeks);
-  const guidelines = listGuidelines();
+    const config = getDietaryConfig();
 
     let slots: SlotPlan[];
     let verdicts: PlannerVerdictRecord[] = [];
@@ -112,7 +112,7 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
             pantryOnHand: listPantry().filter((p) => p.onHand).map((p) => p.name),
             leftovers: listLeftovers(),
             excludedLower: excluded,
-            guidelines,
+            config,
           },
         });
         slots = result.slots;
@@ -144,7 +144,7 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
         recipes,
         excludedLower: excluded,
         recentRecipeIds: recent,
-        guidelines,
+        config,
       });
       slots = plan.slots;
       notes.push(...plan.relaxations);
@@ -226,7 +226,7 @@ async function fillWithNovelRecipes(args: {
           profile,
           trainingDay: isTrainingDay(profile, dayOfWeekFor(slot.date)),
           excluded,
-          guidelines: listGuidelines(),
+          config: getDietaryConfig(),
           exemplars: favorites,
         },
       );

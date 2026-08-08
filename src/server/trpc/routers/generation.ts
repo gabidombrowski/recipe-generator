@@ -6,7 +6,6 @@ import { protectedProcedure, router } from "../init";
 import {
   addFeedback,
   excludedLower,
-  listGuidelines,
   getFeedback,
   getRecipe,
   getSlot,
@@ -16,6 +15,7 @@ import {
   writeSlots,
 } from "~/server/db/queries";
 import { getProfile } from "~/server/db/state";
+import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipe } from "~/server/db/recipes";
 import { isLlmConfigured } from "~/server/llm/client";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
@@ -92,7 +92,7 @@ export const generationRouter = router({
           profile,
           trainingDay,
           excluded: excludedLower(),
-          guidelines: listGuidelines(),
+          config: getDietaryConfig(),
           exemplars,
         });
 

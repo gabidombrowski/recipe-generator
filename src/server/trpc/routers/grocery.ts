@@ -10,6 +10,7 @@ import {
   setLineChecked,
 } from "~/server/db/queries";
 import { getSettings } from "~/server/db/state";
+import { getDietaryConfig } from "~/server/db/config";
 import { buildGroceryList, groceryListToText } from "~/server/grocery";
 import { todayInTimezone, weekStartFor } from "~/lib/days";
 import { isoDateSchema } from "~/lib/schemas";
@@ -37,6 +38,7 @@ export const groceryRouter = router({
         excluded: excludedLower(),
         pantryStaples: listPantry(),
         flaggedTags: flaggedTags(),
+        dailyStaples: getDietaryConfig().dailyStaples,
         checkedKeys: checkedLineKeys(weekStart),
       });
     }),
@@ -57,6 +59,7 @@ export const groceryRouter = router({
           excluded: excludedLower(),
           pantryStaples: listPantry(),
           flaggedTags: flaggedTags(),
+          dailyStaples: getDietaryConfig().dailyStaples,
           checkedKeys: checkedLineKeys(weekStart),
         }),
       );
