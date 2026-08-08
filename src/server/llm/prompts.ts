@@ -19,6 +19,7 @@ export const PROMPT_NAMES = {
   recipeGenerator: "recipe-generator.v1.md",
   planner: "planner.v1.md",
   judge: "judge.v1.md",
+  constraintExtractor: "constraint-extractor.v1.md",
 } as const;
 
 export type PromptName = (typeof PROMPT_NAMES)[keyof typeof PROMPT_NAMES];

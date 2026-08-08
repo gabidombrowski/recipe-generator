@@ -23,6 +23,27 @@ export default function KitchenPage() {
   const pantry = useQuery(trpc.kitchen.pantry.queryOptions());
 
   const constraints = useQuery(trpc.kitchen.constraints.queryOptions());
+  const llm = useQuery(trpc.generation.available.queryOptions());
+
+  // The setup interview. Proposals are held in local state until accepted —
+  // nothing the model returns touches the database on its own.
+  const [description, setDescription] = useState("");
+  const [proposals, setProposals] = useState<
+    Array<{ constraint: unknown; because: string }> | null
+  >(null);
+  const [dropped, setDropped] = useState<Array<{ because: string; reasons: string[] }>>([]);
+
+  const propose = useMutation(
+    trpc.kitchen.proposeConstraints.mutationOptions({
+      onSuccess: (result) => {
+        setProposals(result.proposals);
+        setDropped(result.rejected);
+      },
+    }),
+  );
+  const accept = useMutation(
+    trpc.kitchen.acceptProposals.mutationOptions({ onSuccess: invalidate }),
+  );
 
   // One form for several constraint kinds: the fields that apply change with
   // the selected kind rather than showing every field for every rule.
@@ -156,6 +177,103 @@ export default function KitchenPage() {
           <LeftoverList items={leftovers.data ?? []} onChanged={invalidate} />
         )}
       </Card>
+
+      {llm.data?.configured && (
+        <Card title="Describe your needs">
+          <p className="mb-3 text-xs text-ink-muted">
+            Say it in your own words and Claude turns it into structured rules
+            you approve one at a time. It is used as a parser, never an author —
+            nothing it suggests is saved until you add it, and every suggestion
+            goes through the same validation a hand-typed rule does.
+          </p>
+
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              propose.mutate({ description });
+            }}
+          >
+            <Field label="In your own words">
+              <Input
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="I avoid shellfish, fish should be fresh not canned, and no more than one fermented meal a week"
+                className="w-[32rem] max-w-full"
+              />
+            </Field>
+            <Button type="submit" variant="primary" disabled={propose.isPending || description.trim().length < 10}>
+              {propose.isPending ? "Reading..." : "Suggest rules"}
+            </Button>
+          </form>
+
+          {propose.isError && (
+            <p role="alert" className="mt-2 text-xs text-warn">
+              {propose.error.message}
+            </p>
+          )}
+
+          {proposals !== null && (
+            <div className="mt-4 space-y-2">
+              {proposals.length === 0 ? (
+                <Empty>No rules found in that. Try naming specific foods or limits.</Empty>
+              ) : (
+                <>
+                  <ul className="space-y-2">
+                    {proposals.map((p, index) => (
+                      <li
+                        key={index}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                      >
+                        <div className="min-w-0 text-sm">
+                          <Badge tone="accent">
+                            {(p.constraint as { kind: string }).kind.replace(/_/g, " ")}
+                          </Badge>{" "}
+                          {describe(p.constraint as never)}
+                          <span className="block text-xs text-ink-muted">
+                            because you said: {p.because}
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => setProposals((all) => (all ?? []).filter((_, i) => i !== index))}
+                        >
+                          Skip
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    variant="primary"
+                    disabled={accept.isPending}
+                    onClick={() => {
+                      accept.mutate({
+                        constraints: proposals.map((p) => p.constraint) as never,
+                      });
+                      setProposals(null);
+                      setDescription("");
+                    }}
+                  >
+                    Add {proposals.length} rule{proposals.length === 1 ? "" : "s"}
+                  </Button>
+                </>
+              )}
+
+              {dropped.length > 0 && (
+                <div className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn">
+                  <strong>{dropped.length} suggestion(s) were discarded by validation:</strong>
+                  <ul className="mt-1 space-y-0.5">
+                    {dropped.map((d, i) => (
+                      <li key={i}>
+                        &ldquo;{d.because}&rdquo; — {d.reasons.join("; ")}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       <Card title="Dietary rules">
         <p className="mb-3 text-xs text-ink-muted">

@@ -21,7 +21,7 @@ Anthropic API. Deployed behind a Cloudflare Tunnel with no inbound ports.
 - [Architecture](#architecture)
 - [The macro engine](#the-macro-engine)
 - [Planning: cook days, leftover days, and the week](#planning-cook-days-leftover-days-and-the-week)
-- [Dietary guidelines, and why they aren't in the code](#dietary-guidelines-and-why-they-arent-in-the-code)
+- [Dietary rules are configuration, not code](#dietary-rules-are-configuration-not-code)
 - [Untrusted planner, trusted verifier](#untrusted-planner-trusted-verifier)
 - [Structured generation](#structured-generation)
 - [Evals](#evals)
@@ -89,6 +89,7 @@ implementations that drift.
 | `src/server/embeddings/` | Local MiniLM embeddings into sqlite-vec |
 | `src/server/trpc/` | Routers — the only way the client reaches any of the above |
 | `prompts/` | Versioned prompt files, hashed per generation |
+| `src/lib/constraints.ts` | The constraint union, tag vocabulary, and prompt rendering |
 | `evals/` | Fixtures, assertions, judge, runner |
 | `infra/` | Terraform: DNS, tunnel, Access application and policies |
 
@@ -155,25 +156,62 @@ run status. **Exclusions are the one rung that never bends.**
 
 ---
 
-## Dietary guidelines, and why they aren't in the code
+## Dietary rules are configuration, not code
 
 The app knows how to *apply* dietary rules. It does not know what anyone's are.
+The repository ships zero rules, zero tag vocabulary, and zero daily staples.
 
-Ingredient tags are neutral culinary facts — `fermented`, `aged`, `cured`,
-`vinegar`, `dairy`, `nut` — describing what a food *is*. Gochujang is fermented;
-feta is aged. `applyIngredientTags` assigns them on every write, so a recipe from
-the AI generator is tagged identically to one from the seed data.
+The organising split is **enforceable vs. advisory**, and the architecture
+forces it rather than tidiness suggesting it: `verifyWeek()` and the Tier 1 eval
+gates can only check rules a machine can count. "At most one fermented cook meal
+per week" is countable. "I go easy on fermented stuff" is not.
 
-What to *do* about a tag is a **guideline**, entered on the Kitchen page and
-stored in the gitignored database. A guideline can cap how many tagged
-ingredients appear in one recipe, cap how many cook meals per week may contain
-one, and carry a free-text note the generator follows. The repository ships
-none, and names no condition.
+**Enforceable** rules are a zod discriminated union (`src/lib/constraints.ts`),
+stored as rows and resolved once per request by `getDietaryConfig()` — which
+feeds the planner, the verifier, the grocery builder and the prompt renderer, so
+all four cannot disagree about what the rules are:
 
-That separation is deliberate. A meal planner's whole purpose can disclose a
-medical reason for existing, and publishing the engine should not publish that.
-Committed code describes food; the private database holds why a particular
-person cares.
+| Kind | Example |
+|---|---|
+| `tag_cap` | at most 1 `fermented` ingredient per recipe, 1 cook meal per week |
+| `exclude_ingredient` | never use peanut |
+| `meal_macros` | 35–45 g protein per serving |
+| `meal_shape` | cook = 2 servings, 15–30 min, final step mentions "refrigerate" |
+| `ingredient_form` | never canned tuna — `exempt` keeps oyster *sauce* out of a rule about oysters |
+| `leftover_window` | fridge: eat within 1 day |
+| `daily_staple` | 1 cup oat milk every day |
+
+**Advisory** rules are `note` constraints: free text that reaches the prompt and
+gates nothing.
+
+Ingredient tags are neutral culinary facts — `fermented`, `aged`, `cured` — and
+the vocabulary is user-editable, so someone tracking FODMAPs adds `high-fodmap`
+with its own match patterns without touching source. Tags describe what a food
+*is*; constraints decide what to do about it.
+
+With no protein band configured there is **no** protein floor. An unopinionated
+install should not invent a rule nobody asked for, and there is a test asserting
+exactly that.
+
+### The setup interview
+
+Describe your needs in prose and Claude proposes structured rules you approve one
+at a time. The model is used as a **parser, not an author**: it never writes
+prompt text, never writes to the database, and its output is a proposal a person
+confirms.
+
+That distinction is the design, not a UX preference. If setup produced a
+personalised *system prompt* instead, there would be nothing for `verifyWeek` to
+count, nothing for the Tier 1 gates to assert, and `promptHash` would stop
+identifying the prompt CI actually tested. Parsing into structured rules keeps
+all three.
+
+Whatever the model returns is re-checked before it can be accepted: every
+constraint against `constraintSchema`, every `note` through
+`validateGuidelineNote` — the same injection filter a hand-typed note gets — and
+every `tag_cap` against the existing vocabulary, since a cap on a tag that does
+not exist would look configured and silently never match. Discarded suggestions
+are shown with their reasons rather than dropped quietly.
 
 ### Filtering what goes in
 
@@ -198,8 +236,7 @@ constraint** — say what to avoid, limit, prefer or swap. Rejected outright:
 | Not a dietary rule | `the weather is nice today` |
 
 Every rejection returns its reasons, so the UI explains rather than just
-refusing. 56 tests in `src/lib/guidelines.test.ts` cover it — the accept cases
-prove it's usable, the reject cases are the actual attacks.
+refusing.
 
 ---
 

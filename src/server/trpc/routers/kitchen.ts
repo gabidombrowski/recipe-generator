@@ -17,15 +17,22 @@ import {
 import { getSettings } from "~/server/db/state";
 import {
   addConstraint,
+  addConstraints,
+  addIngredientTag,
   listConstraints,
+  listIngredientTags,
   removeConstraint,
+  removeIngredientTag,
   setConstraintActive,
 } from "~/server/db/config";
+import { extractConstraints } from "~/server/llm/extractor";
+import { isLlmConfigured } from "~/server/llm/client";
+import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { FRIDGE_SAFE_DAYS } from "./plan";
 import { daysBetween, todayInTimezone } from "~/lib/days";
 import { isoDateSchema, storageSchema } from "~/lib/schemas";
 import { validateGuidelineNote, validateGuidelineTag } from "~/lib/guidelines";
-import { constraintSchema } from "~/lib/constraints";
+import { constraintSchema, SUGGESTED_TAGS } from "~/lib/constraints";
 
 /**
  * Exclusions, pantry staples, and the leftover tracker.
@@ -92,6 +99,63 @@ export const kitchenRouter = router({
   removeConstraint: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(({ input }) => removeConstraint(input.id)),
+
+  // -------------------------------------------------------------------------
+  // Tag vocabulary
+  // -------------------------------------------------------------------------
+  ingredientTags: protectedProcedure.query(() => ({
+    tags: listIngredientTags(),
+    suggested: SUGGESTED_TAGS,
+  })),
+
+  addIngredientTag: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(2).max(32),
+        matchPatterns: z.array(z.string().min(2).max(60)).min(1),
+      }),
+    )
+    .mutation(({ input }) => addIngredientTag(input.name, input.matchPatterns)),
+
+  removeIngredientTag: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(({ input }) => removeIngredientTag(input.id)),
+
+  // -------------------------------------------------------------------------
+  // Setup interview
+  //
+  // Describe your needs in prose; Claude proposes structured rules you approve
+  // one at a time. The model is a parser here, never an author — nothing it
+  // returns is applied until `acceptProposals` is called with what you picked.
+  // -------------------------------------------------------------------------
+  proposeConstraints: protectedProcedure
+    .input(z.object({ description: z.string().min(10).max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      if (!isLlmConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "ANTHROPIC_API_KEY is not set, so the setup interview is unavailable.",
+        });
+      }
+
+      // Costs money like any other generation, so it shares the cap.
+      const limit = rateLimit(
+        `extract:${ctx.session.user?.email ?? "unknown"}`,
+        RATE_LIMITS.generation,
+      );
+      if (!limit.ok) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Rate limit reached. Try again in ${limit.retryAfterSeconds}s.`,
+        });
+      }
+
+      return extractConstraints(input.description, listIngredientTags());
+    }),
+
+  acceptProposals: protectedProcedure
+    .input(z.object({ constraints: z.array(constraintSchema).min(1).max(20) }))
+    .mutation(({ input }) => addConstraints(input.constraints)),
 
   // -------------------------------------------------------------------------
   // Pantry

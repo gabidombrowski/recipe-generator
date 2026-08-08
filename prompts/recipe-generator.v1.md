@@ -6,8 +6,8 @@ prose, no commentary.
 
 {{MACRO_TARGETS}}
 
-Aim for 35-45 g of protein per serving. That is the constraint that matters most
-after the exclusions below; a dish that misses it is not useful to them.
+Their dietary rules are listed below. After the exclusions, those are the
+constraints that matter most — a dish that misses one is not useful to them.
 
 ## Ingredients to avoid
 
@@ -21,14 +21,10 @@ garnish, not in a step.
 
 {{REQUEST}}
 
-The three meal types are different jobs:
-
-- **cook** — 15 to 30 minutes. Always written for exactly 2 servings, because
-  the second portion is tomorrow's lunch. Quantities must divide cleanly in two.
-  The final step must read: "Refrigerate the second portion promptly; eat within
-  1 day (freeze same-day if keeping longer)."
-- **quick** — 5 to 10 minutes, one serving.
-- **assembly** — no cooking at all, one serving. No heat beyond a microwave.
+The three meal types are different jobs: **cook** is the one that produces a
+second portion for the next day, **quick** is a single fast serving, and
+**assembly** involves no cooking at all beyond a microwave. Exact times and
+serving counts, where they matter, are in the rules below.
 
 ## Their dietary rules
 
