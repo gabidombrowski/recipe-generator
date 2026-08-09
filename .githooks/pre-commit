@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Keeps the supervision estimate in docs/honesty-notes.md current.
+#
+# The estimate is a claim about how much human attention this project took.
+# Left to be edited by hand it would quietly drift into a lie — still describing
+# a smaller project than the one being read. Regenerating it here means it is
+# wrong for at most one commit.
+#
+# Enable with:  git config core.hooksPath .githooks
+#
+# Deliberately fail-soft. This hook exists to keep a documentation figure
+# honest, not to gate commits; a missing node or a syntax error in the script
+# should never stand between someone and their work.
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[supervision] node not found; skipping estimate update" >&2
+  exit 0
+fi
+
+if node scripts/update-supervision.mjs; then
+  git add docs/honesty-notes.md
+else
+  echo "[supervision] update failed; committing without it" >&2
+fi
+
+exit 0

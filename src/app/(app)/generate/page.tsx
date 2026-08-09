@@ -3,19 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { RecipeCard } from "~/components/recipe-card";
-import {
-  Badge,
-  Button,
-  Card,
-  Empty,
-  Field,
-  InfoHint,
-  Input,
-  PageTitle,
-  Select,
-  Spinner,
-} from "~/components/ui";
+import { RecipeCard } from "~/components/organisms/recipe-card";
+import { Badge, Button, Empty, Input, PageTitle, Select, Spinner } from "~/components/atoms";
+import { Card, Field, InfoHint } from "~/components/molecules";
 import { formatLongDate } from "~/lib/days";
 import { mealTypeSchema, type MealType, type Recipe } from "~/lib/schemas";
 
@@ -39,6 +29,18 @@ export default function GeneratePage() {
   const available = useQuery(trpc.generation.available.queryOptions());
   const setup = useQuery(trpc.setup.state.queryOptions());
   const nextSlot = useQuery(trpc.plan.nextOpenSlot.queryOptions());
+
+  // Polls only while a fill is running, so an idle page is not chatty.
+  const coverage = useQuery({
+    ...trpc.generation.libraryCoverage.queryOptions(),
+    refetchInterval: (query) =>
+      query.state.data?.status.running ? 2000 : false,
+  });
+  const fillLibrary = useMutation(
+    trpc.generation.fillLibrary.mutationOptions({
+      onSuccess: () => coverage.refetch(),
+    }),
+  );
   const week = useQuery(trpc.plan.week.queryOptions({}));
 
   const [mealType, setMealType] = useState<MealType>("cook");
@@ -49,9 +51,11 @@ export default function GeneratePage() {
   // The last generation stays on screen so it can be acted on. Generating
   // again replaces it — the previous one is still in the database, and turning
   // on "show unsaved" in the Library is how you find it.
-  const [result, setResult] = useState<{ recipe: Recipe; costUsd: number; attempts: number } | null>(
-    null,
-  );
+  const [result, setResult] = useState<{
+    recipe: Recipe;
+    costUsd: number;
+    attempts: number;
+  } | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries();
@@ -59,7 +63,11 @@ export default function GeneratePage() {
   const generate = useMutation(
     trpc.generation.generate.mutationOptions({
       onSuccess: (data) => {
-        setResult({ recipe: data.recipe, costUsd: data.costUsd, attempts: data.attempts });
+        setResult({
+          recipe: data.recipe,
+          costUsd: data.costUsd,
+          attempts: data.attempts,
+        });
         setDone(null);
         invalidate();
       },
@@ -91,7 +99,7 @@ export default function GeneratePage() {
         <PageTitle>Generate</PageTitle>
         <Empty>
           <code>ANTHROPIC_API_KEY</code> is not set, so recipe generation is
-          unavailable. Everything else in the app works without it.
+          unavailable.
         </Empty>
       </div>
     );
@@ -135,6 +143,88 @@ export default function GeneratePage() {
         </div>
       </header>
 
+      {coverage.data &&
+        (coverage.data.uncovered.length > 0 ||
+          coverage.data.status.running) && (
+          <Card title="Fill out your library">
+            {coverage.data.status.running ? (
+              <>
+                <p className="text-sm">
+                  Generating one recipe per cuisine —{" "}
+                  <strong>
+                    {coverage.data.status.completed} of{" "}
+                    {coverage.data.status.total}
+                  </strong>{" "}
+                  done. This runs in the background; you can leave the page.
+                </p>
+                <div
+                  className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken"
+                  role="progressbar"
+                  aria-valuenow={coverage.data.status.completed}
+                  aria-valuemin={0}
+                  aria-valuemax={coverage.data.status.total}
+                >
+                  <div
+                    className="h-full bg-accent transition-all"
+                    style={{
+                      width: `${Math.round(
+                        (coverage.data.status.completed /
+                          Math.max(1, coverage.data.status.total)) *
+                          100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-ink-muted">
+                  ${coverage.data.status.costUsd.toFixed(4)} so far
+                  {coverage.data.status.failed.length > 0 &&
+                    ` · ${coverage.data.status.failed.length} cuisine(s) failed and were skipped`}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm">
+                  {coverage.data.uncovered.length} cuisine
+                  {coverage.data.uncovered.length === 1 ? "" : "s"} in your list
+                  have no recipe yet:{" "}
+                  <span className="text-ink-muted">
+                    {coverage.data.uncovered.join(", ")}
+                  </span>
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => fillLibrary.mutate()}
+                    disabled={fillLibrary.isPending}
+                  >
+                    Generate one recipe for each
+                  </Button>
+                  <InfoHint>
+                    One model call per cuisine, run in the background — the app
+                    stays usable and you can leave this page. Nothing happens on
+                    first boot: the committed library already covers every
+                    default cuisine, and spending your API budget uninvited
+                    would be rude. Recipes land unsaved, so they appear in the
+                    Library only once you keep them.
+                  </InfoHint>
+                </div>
+                {coverage.data.status.error && (
+                  <p className="mt-2 text-xs text-ink-muted">
+                    {coverage.data.status.error}
+                  </p>
+                )}
+                {coverage.data.status.finishedAt &&
+                  coverage.data.status.created.length > 0 && (
+                    <p className="mt-2 text-xs text-accent">
+                      Last run added {coverage.data.status.created.length}{" "}
+                      recipe(s) for ${coverage.data.status.costUsd.toFixed(4)}.
+                    </p>
+                  )}
+              </>
+            )}
+          </Card>
+        )}
+
       <Card title="What do you want?">
         <form
           className="flex flex-wrap items-start gap-3"
@@ -143,7 +233,8 @@ export default function GeneratePage() {
             generate.mutate({
               mealType,
               cuisine: cuisine.trim() || undefined,
-              maxCookMinutes: maxCookMinutes === "" ? undefined : maxCookMinutes,
+              maxCookMinutes:
+                maxCookMinutes === "" ? undefined : maxCookMinutes,
               note: note.trim() || undefined,
             });
           }}
@@ -162,7 +253,10 @@ export default function GeneratePage() {
           </Field>
 
           <Field label="Cuisine" hint="Blank lets it choose">
-            <Select value={cuisine} onChange={(event) => setCuisine(event.target.value)}>
+            <Select
+              value={cuisine}
+              onChange={(event) => setCuisine(event.target.value)}
+            >
               <option value="">Any</option>
               {cuisines.map((c) => (
                 <option key={c} value={c}>
@@ -180,13 +274,18 @@ export default function GeneratePage() {
               placeholder="any"
               value={maxCookMinutes}
               onChange={(event) =>
-                setMaxCookMinutes(event.target.value === "" ? "" : Number(event.target.value))
+                setMaxCookMinutes(
+                  event.target.value === "" ? "" : Number(event.target.value),
+                )
               }
               className="w-28"
             />
           </Field>
 
-          <Field label="Anything else?" hint="Optional, e.g. “use up the spinach”">
+          <Field
+            label="Anything else?"
+            hint="Optional, e.g. “use up the spinach”"
+          >
             <Input
               value={note}
               onChange={(event) => setNote(event.target.value)}
@@ -196,17 +295,27 @@ export default function GeneratePage() {
           </Field>
 
           <div className="flex flex-col gap-1">
-            <span aria-hidden className="invisible text-sm font-medium select-none">
+            <span
+              aria-hidden
+              className="invisible text-sm font-medium select-none"
+            >
               &nbsp;
             </span>
-            <Button type="submit" variant="primary" disabled={generate.isPending}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={generate.isPending}
+            >
               {generate.isPending ? "Generating..." : "Generate"}
             </Button>
           </div>
         </form>
 
         {generate.isError && (
-          <p role="alert" className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+          <p
+            role="alert"
+            className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+          >
             {generate.error.message}
           </p>
         )}
@@ -223,7 +332,9 @@ export default function GeneratePage() {
               <Button
                 variant="primary"
                 disabled={save.isPending || result.recipe.favorite}
-                onClick={() => save.mutate({ id: result.recipe.id, favorite: true })}
+                onClick={() =>
+                  save.mutate({ id: result.recipe.id, favorite: true })
+                }
               >
                 {result.recipe.favorite ? "In your library" : "Save to library"}
               </Button>
@@ -239,7 +350,8 @@ export default function GeneratePage() {
                     )
                   }
                 >
-                  Use for {nextSlot.data.meal.toLowerCase()} on {nextSlot.data.day}
+                  Use for {nextSlot.data.meal.toLowerCase()} on{" "}
+                  {nextSlot.data.day}
                 </Button>
               ) : (
                 <span className="text-xs text-ink-muted">
@@ -252,7 +364,9 @@ export default function GeneratePage() {
                 value=""
                 disabled={assign.isPending || assignableSlots.length === 0}
                 onChange={(event) => {
-                  const slot = assignableSlots.find((s) => `${s.date}|${s.meal}` === event.target.value);
+                  const slot = assignableSlots.find(
+                    (s) => `${s.date}|${s.meal}` === event.target.value,
+                  );
                   if (slot) {
                     assignTo(
                       slot.date,
@@ -264,7 +378,10 @@ export default function GeneratePage() {
               >
                 <option value="">Assign to a specific meal...</option>
                 {assignableSlots.map((slot) => (
-                  <option key={`${slot.date}|${slot.meal}`} value={`${slot.date}|${slot.meal}`}>
+                  <option
+                    key={`${slot.date}|${slot.meal}`}
+                    value={`${slot.date}|${slot.meal}`}
+                  >
                     {slot.meal} — {slot.day} {formatLongDate(slot.date)}
                     {slot.replaces ? ` (replaces ${slot.replaces})` : ""}
                   </option>

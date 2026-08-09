@@ -8,15 +8,19 @@ import { DAYS_OF_WEEK, type DayOfWeek } from "./schemas";
  * a moment in time, and treating it as one is what avoids the classic
  * off-by-one where a UTC server decides it is still Monday.
  *
- * The configured timezone is used for exactly one thing: deciding which
- * calendar date "now" falls on. All arithmetic after that is plain calendar
- * arithmetic done in UTC, which is safe because the inputs carry no time.
+ * The configured timezone is used only to interpret "now" in the user's local
+ * context — deciding today's calendar date and current wall-clock time. All
+ * arithmetic after that is plain calendar arithmetic done in UTC, which is
+ * safe because the inputs carry no time.
  */
 
 export type IsoDate = string;
 
 /** Today's calendar date in the given IANA timezone. */
-export function todayInTimezone(timezone: string, now: Date = new Date()): IsoDate {
+export function todayInTimezone(
+  timezone: string,
+  now: Date = new Date(),
+): IsoDate {
   try {
     // `en-CA` formats as YYYY-MM-DD, which is exactly our wire format.
     return new Intl.DateTimeFormat("en-CA", {
@@ -32,7 +36,10 @@ export function todayInTimezone(timezone: string, now: Date = new Date()): IsoDa
 }
 
 /** Wall-clock `HH:MM` in the given timezone. */
-export function timeInTimezone(timezone: string, now: Date = new Date()): string {
+export function timeInTimezone(
+  timezone: string,
+  now: Date = new Date(),
+): string {
   try {
     return new Intl.DateTimeFormat("en-GB", {
       timeZone: timezone,
@@ -80,7 +87,8 @@ export function dayIndex(day: DayOfWeek): number {
  * configured generation day rather than by a locale convention.
  */
 export function weekStartFor(date: IsoDate, startDay: DayOfWeek): IsoDate {
-  const offset = (new Date(toUtcMillis(date)).getUTCDay() - dayIndex(startDay) + 7) % 7;
+  const offset =
+    (new Date(toUtcMillis(date)).getUTCDay() - dayIndex(startDay) + 7) % 7;
   return addDays(date, -offset);
 }
 

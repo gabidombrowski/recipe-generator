@@ -6,8 +6,7 @@ import { type Profile } from "./schemas";
  * Turning answers into starting numbers.
  *
  * The wizard used to ask for an activity factor, a calorie deficit and a
- * protein-per-kilo figure directly. Those are three numbers almost nobody knows
- * about themselves, and a wrong guess at any of them silently misprices every
+ * protein-per-kilo figure directly. A wrong guess at any of them silently misprices every
  * target the app produces. This module answers them from questions a person can
  * actually answer, and shows its working so the result is arguable rather than
  * oracular.
@@ -80,7 +79,9 @@ export interface ActivityFactorResult {
   steps: string[];
 }
 
-export function activityFactorFrom(answers: ActivityAnswers): ActivityFactorResult {
+export function activityFactorFrom(
+  answers: ActivityAnswers,
+): ActivityFactorResult {
   const base = OCCUPATION_BASE[answers.occupation];
   const weeklyMinutes = answers.sessionsPerWeek * answers.sessionMinutes;
   const increment = Math.min(
@@ -154,7 +155,10 @@ export interface DeficitResult {
 const ABSOLUTE_KCAL_FLOOR = 1200;
 
 export function recommendDeficit(
-  profile: Pick<Profile, "weightKg" | "heightCm" | "age" | "sex" | "activityFactor">,
+  profile: Pick<
+    Profile,
+    "weightKg" | "heightCm" | "age" | "sex" | "activityFactor"
+  >,
   goal: Goal,
   rateKgPerWeek: number,
 ): DeficitResult {

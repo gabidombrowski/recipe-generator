@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Nav } from "~/components/nav";
+import { Nav } from "~/components/organisms/nav";
 import { getSettings } from "~/server/db/state";
 
 /**

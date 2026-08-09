@@ -95,18 +95,12 @@ function getConnection(): Connection {
 }
 
 /**
- * `db` and `sqlite` stay plain exports so call sites read normally; the proxy
- * defers the open to the first property access. Methods are bound because
- * better-sqlite3's rely on `this`.
+ * Defers opening the database to the first property access, so `db` and
+ * `sqlite` can stay plain exports that call sites use normally.
  */
 function lazy<T extends object>(resolve: () => T): T {
   return new Proxy({} as T, {
-    get(_target, property) {
-      const target = resolve();
-      const value = Reflect.get(target, property) as unknown;
-      return typeof value === "function" ? value.bind(target) : value;
-    },
-    has: (_target, property) => Reflect.has(resolve(), property),
+    get: (_target, property) => Reflect.get(resolve(), property) as unknown,
   });
 }
 

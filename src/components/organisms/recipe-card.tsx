@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Card, MacroRow, cx } from "./ui";
+import { Badge, Button } from "~/components/atoms";
+import { Card, MacroRow } from "~/components/molecules";
+import { cx } from "~/components/cx";
 import { type Recipe } from "~/lib/schemas";
 
 /**

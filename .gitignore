@@ -12,6 +12,9 @@ next-env.d.ts
 build/
 dist/
 
+# Storybook build output
+storybook-static/
+
 # ---------------------------------------------------------------------------
 # Personal data. This repo is public; none of the following may ever be
 # committed. Committed code ships neutral defaults and reads real values from

@@ -3,19 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { LeftoverList } from "~/components/leftover-list";
-import {
-  Badge,
-  Button,
-  Card,
-  Empty,
-  Field,
-  FieldAction,
-  Input,
-  PageTitle,
-  Select,
-  Spinner,
-} from "~/components/ui";
+import { LeftoverList } from "~/components/connected/leftover-list";
+import { Badge, Button, Empty, Input, PageTitle, Select, Spinner } from "~/components/atoms";
+import { Card, Field, FieldAction } from "~/components/molecules";
 
 /**
  * Leftovers, the exclude list, and the pantry.
@@ -39,10 +29,13 @@ export default function KitchenPage() {
   // The setup interview. Proposals are held in local state until accepted —
   // nothing the model returns touches the database on its own.
   const [description, setDescription] = useState("");
-  const [proposals, setProposals] = useState<
-    Array<{ constraint: unknown; because: string }> | null
-  >(null);
-  const [dropped, setDropped] = useState<Array<{ because: string; reasons: string[] }>>([]);
+  const [proposals, setProposals] = useState<Array<{
+    constraint: unknown;
+    because: string;
+  }> | null>(null);
+  const [dropped, setDropped] = useState<
+    Array<{ because: string; reasons: string[] }>
+  >([]);
 
   const propose = useMutation(
     trpc.kitchen.proposeConstraints.mutationOptions({
@@ -56,9 +49,9 @@ export default function KitchenPage() {
     trpc.kitchen.acceptProposals.mutationOptions({ onSuccess: invalidate }),
   );
 
-  // One form for several constraint kinds: the fields that apply change with
-  // the selected kind rather than showing every field for every rule.
-  const [kind, setKind] = useState<"tag_cap" | "note" | "daily_staple">("tag_cap");
+  const [kind, setKind] = useState<"tag_cap" | "note" | "daily_staple">(
+    "tag_cap",
+  );
   const [tag, setTag] = useState("");
   const [maxPerRecipe, setMaxPerRecipe] = useState("");
   const [maxPerWeek, setMaxPerWeek] = useState("");
@@ -138,14 +131,28 @@ export default function KitchenPage() {
   const [newExclusion, setNewExclusion] = useState("");
   const [newStaple, setNewStaple] = useState("");
   const [manualName, setManualName] = useState("");
-  const [manualStorage, setManualStorage] = useState<"fridge" | "freezer">("fridge");
+  const [manualStorage, setManualStorage] = useState<"fridge" | "freezer">(
+    "fridge",
+  );
 
-  const addExcluded = useMutation(trpc.kitchen.addExcluded.mutationOptions({ onSuccess: invalidate }));
-  const removeExcluded = useMutation(trpc.kitchen.removeExcluded.mutationOptions({ onSuccess: invalidate }));
-  const addStaple = useMutation(trpc.kitchen.addPantryStaple.mutationOptions({ onSuccess: invalidate }));
-  const removeStaple = useMutation(trpc.kitchen.removePantryStaple.mutationOptions({ onSuccess: invalidate }));
-  const setOnHand = useMutation(trpc.kitchen.setPantryOnHand.mutationOptions({ onSuccess: invalidate }));
-  const storePortion = useMutation(trpc.kitchen.storePortion.mutationOptions({ onSuccess: invalidate }));
+  const addExcluded = useMutation(
+    trpc.kitchen.addExcluded.mutationOptions({ onSuccess: invalidate }),
+  );
+  const removeExcluded = useMutation(
+    trpc.kitchen.removeExcluded.mutationOptions({ onSuccess: invalidate }),
+  );
+  const addStaple = useMutation(
+    trpc.kitchen.addPantryStaple.mutationOptions({ onSuccess: invalidate }),
+  );
+  const removeStaple = useMutation(
+    trpc.kitchen.removePantryStaple.mutationOptions({ onSuccess: invalidate }),
+  );
+  const setOnHand = useMutation(
+    trpc.kitchen.setPantryOnHand.mutationOptions({ onSuccess: invalidate }),
+  );
+  const storePortion = useMutation(
+    trpc.kitchen.storePortion.mutationOptions({ onSuccess: invalidate }),
+  );
 
   return (
     <div className="space-y-5">
@@ -159,7 +166,10 @@ export default function KitchenPage() {
             onSubmit={(event) => {
               event.preventDefault();
               if (!manualName.trim()) return;
-              storePortion.mutate({ recipeName: manualName.trim(), storage: manualStorage });
+              storePortion.mutate({
+                recipeName: manualName.trim(),
+                storage: manualStorage,
+              });
               setManualName("");
             }}
           >
@@ -173,7 +183,9 @@ export default function KitchenPage() {
             <Select
               aria-label="Storage"
               value={manualStorage}
-              onChange={(event) => setManualStorage(event.target.value as "fridge" | "freezer")}
+              onChange={(event) =>
+                setManualStorage(event.target.value as "fridge" | "freezer")
+              }
             >
               <option value="fridge">fridge</option>
               <option value="freezer">freezer</option>
@@ -193,9 +205,9 @@ export default function KitchenPage() {
         <Card title="Describe your needs">
           <p className="mb-3 text-xs text-ink-muted">
             Say it in your own words and Claude turns it into structured rules
-            you approve one at a time. It is used as a parser, never an author —
-            nothing it suggests is saved until you add it, and every suggestion
-            goes through the same validation a hand-typed rule does.
+            you approve one at a time. It is used as a parser, and nothing it
+            suggests is saved until you add it, and every suggestion goes
+            through the same validation a hand-typed rule does.
           </p>
 
           <form
@@ -210,10 +222,14 @@ export default function KitchenPage() {
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="I avoid shellfish, fish should be fresh not canned, and no more than one fermented meal a week"
-                className="w-[32rem] max-w-full"
+                className="w-lg max-w-full"
               />
             </Field>
-            <Button type="submit" variant="primary" disabled={propose.isPending || description.trim().length < 10}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={propose.isPending || description.trim().length < 10}
+            >
               {propose.isPending ? "Reading..." : "Suggest rules"}
             </Button>
           </form>
@@ -227,7 +243,9 @@ export default function KitchenPage() {
           {proposals !== null && (
             <div className="mt-4 space-y-2">
               {proposals.length === 0 ? (
-                <Empty>No rules found in that. Try naming specific foods or limits.</Empty>
+                <Empty>
+                  No rules found in that. Try naming specific foods or limits.
+                </Empty>
               ) : (
                 <>
                   <ul className="space-y-2">
@@ -238,7 +256,10 @@ export default function KitchenPage() {
                       >
                         <div className="min-w-0 text-sm">
                           <Badge tone="accent">
-                            {(p.constraint as { kind: string }).kind.replace(/_/g, " ")}
+                            {(p.constraint as { kind: string }).kind.replace(
+                              /_/g,
+                              " ",
+                            )}
                           </Badge>{" "}
                           {describe(p.constraint as never)}
                           <span className="block text-xs text-ink-muted">
@@ -246,7 +267,11 @@ export default function KitchenPage() {
                           </span>
                         </div>
                         <Button
-                          onClick={() => setProposals((all) => (all ?? []).filter((_, i) => i !== index))}
+                          onClick={() =>
+                            setProposals((all) =>
+                              (all ?? []).filter((_, i) => i !== index),
+                            )
+                          }
                         >
                           Skip
                         </Button>
@@ -258,20 +283,25 @@ export default function KitchenPage() {
                     disabled={accept.isPending}
                     onClick={() => {
                       accept.mutate({
-                        constraints: proposals.map((p) => p.constraint) as never,
+                        constraints: proposals.map(
+                          (p) => p.constraint,
+                        ) as never,
                       });
                       setProposals(null);
                       setDescription("");
                     }}
                   >
-                    Add {proposals.length} rule{proposals.length === 1 ? "" : "s"}
+                    Add {proposals.length} rule
+                    {proposals.length === 1 ? "" : "s"}
                   </Button>
                 </>
               )}
 
               {dropped.length > 0 && (
                 <div className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn">
-                  <strong>{dropped.length} suggestion(s) were discarded by validation:</strong>
+                  <strong>
+                    {dropped.length} suggestion(s) were discarded by validation:
+                  </strong>
                   <ul className="mt-1 space-y-0.5">
                     {dropped.map((d, i) => (
                       <li key={i}>
@@ -301,7 +331,10 @@ export default function KitchenPage() {
           }}
         >
           <Field label="Rule type">
-            <Select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>
+            <Select
+              value={kind}
+              onChange={(event) => setKind(event.target.value as typeof kind)}
+            >
               <option value="tag_cap">Tag limit</option>
               <option value="note">Note for the generator</option>
               <option value="daily_staple">Daily staple</option>
@@ -311,39 +344,83 @@ export default function KitchenPage() {
           {kind === "tag_cap" && (
             <>
               <Field label="Tag">
-                <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="fermented" className="w-36" />
+                <Input
+                  value={tag}
+                  onChange={(e) => setTag(e.target.value)}
+                  placeholder="fermented"
+                  className="w-36"
+                />
               </Field>
               <Field label="Max per recipe" hint="optional">
-                <Input type="number" min="0" max="20" value={maxPerRecipe} onChange={(e) => setMaxPerRecipe(e.target.value)} className="w-28" />
+                <Input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={maxPerRecipe}
+                  onChange={(e) => setMaxPerRecipe(e.target.value)}
+                  className="w-28"
+                />
               </Field>
               <Field label="Max cook meals/week" hint="optional">
-                <Input type="number" min="0" max="7" value={maxPerWeek} onChange={(e) => setMaxPerWeek(e.target.value)} className="w-28" />
+                <Input
+                  type="number"
+                  min="0"
+                  max="7"
+                  value={maxPerWeek}
+                  onChange={(e) => setMaxPerWeek(e.target.value)}
+                  className="w-28"
+                />
               </Field>
             </>
           )}
 
           {kind === "note" && (
             <Field label="Note" hint="e.g. prefer coconut aminos to soy">
-              <Input value={note} onChange={(e) => setNote(e.target.value)} className="w-80" placeholder="avoid soy sauce" />
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-80"
+                placeholder="avoid soy sauce"
+              />
             </Field>
           )}
 
           {kind === "daily_staple" && (
             <>
               <Field label="Item">
-                <Input value={stapleName} onChange={(e) => setStapleName(e.target.value)} placeholder="oat milk" className="w-40" />
+                <Input
+                  value={stapleName}
+                  onChange={(e) => setStapleName(e.target.value)}
+                  placeholder="oat milk"
+                  className="w-40"
+                />
               </Field>
               <Field label="Qty per day">
-                <Input type="number" step="0.25" min="0" value={stapleQty} onChange={(e) => setStapleQty(e.target.value)} className="w-24" />
+                <Input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  value={stapleQty}
+                  onChange={(e) => setStapleQty(e.target.value)}
+                  className="w-24"
+                />
               </Field>
               <Field label="Unit">
-                <Input value={stapleUnit} onChange={(e) => setStapleUnit(e.target.value)} className="w-20" />
+                <Input
+                  value={stapleUnit}
+                  onChange={(e) => setStapleUnit(e.target.value)}
+                  className="w-20"
+                />
               </Field>
             </>
           )}
 
           <FieldAction>
-            <Button type="submit" variant="primary" disabled={addConstraint.isPending}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={addConstraint.isPending}
+            >
               Add rule
             </Button>
           </FieldAction>
@@ -357,13 +434,20 @@ export default function KitchenPage() {
         {constraints.isPending ? (
           <Spinner />
         ) : (constraints.data ?? []).length === 0 ? (
-          <Empty>No rules yet — the app enforces nothing until you add some.</Empty>
+          <Empty>
+            No rules yet — the app enforces nothing until you add some.
+          </Empty>
         ) : (
           <ul className="space-y-2">
             {constraints.data!.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+              <li
+                key={c.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+              >
                 <div className="flex min-w-0 items-center gap-2 text-sm">
-                  <Badge tone="flagged">{c.constraint.kind.replace(/_/g, " ")}</Badge>
+                  <Badge tone="flagged">
+                    {c.constraint.kind.replace(/_/g, " ")}
+                  </Badge>
                   <span>{describe(c.constraint as never)}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -371,12 +455,20 @@ export default function KitchenPage() {
                     <input
                       type="checkbox"
                       checked={c.active}
-                      onChange={(e) => setConstraintActive.mutate({ id: c.id, active: e.target.checked })}
+                      onChange={(e) =>
+                        setConstraintActive.mutate({
+                          id: c.id,
+                          active: e.target.checked,
+                        })
+                      }
                       className="size-4 accent-[var(--color-accent)]"
                     />
                     active
                   </label>
-                  <Button variant="danger" onClick={() => removeConstraint.mutate({ id: c.id })}>
+                  <Button
+                    variant="danger"
+                    onClick={() => removeConstraint.mutate({ id: c.id })}
+                  >
                     Remove
                   </Button>
                 </div>
@@ -389,8 +481,8 @@ export default function KitchenPage() {
       <Card title="Excluded ingredients">
         <p className="mb-3 text-xs text-ink-muted">
           Matched case-insensitively against ingredient names and tags. Excluded
-          items never appear on the grocery list, are passed to the AI generator,
-          and are enforced by the scheduler and the planner verifier.
+          items never appear on the grocery list, are passed to the AI
+          generator, and are enforced by the scheduler and the planner verifier.
         </p>
 
         <form
@@ -409,7 +501,11 @@ export default function KitchenPage() {
             onChange={(event) => setNewExclusion(event.target.value)}
             className="min-w-0 flex-1"
           />
-          <Button type="submit" variant="primary" disabled={addExcluded.isPending}>
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={addExcluded.isPending}
+          >
             Exclude
           </Button>
         </form>
@@ -475,9 +571,12 @@ export default function KitchenPage() {
                     type="checkbox"
                     checked={staple.onHand}
                     onChange={(event) =>
-                      setOnHand.mutate({ id: staple.id, onHand: event.target.checked })
+                      setOnHand.mutate({
+                        id: staple.id,
+                        onHand: event.target.checked,
+                      })
                     }
-                    className="size-4 accent-[var(--color-accent)]"
+                    className="size-4 accent-accent"
                   />
                   {staple.name}
                 </label>

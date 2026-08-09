@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { RecipeCard } from "~/components/recipe-card";
-import { Badge, Button, Card, Empty, MacroRow, PageTitle, Spinner } from "~/components/ui";
+import { RecipeCard } from "~/components/organisms/recipe-card";
+import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import { Card, MacroRow } from "~/components/molecules";
 import { formatLongDate } from "~/lib/days";
-import { LeftoverList } from "~/components/leftover-list";
+import { LeftoverList } from "~/components/connected/leftover-list";
 
 /**
  * Today.
  *
- * Answers the two questions that actually come up at 6pm: what kind of day is
+ * Answers the two questions that actually come up: what kind of day is
  * this, and what am I eating. Day type (training/rest) and day role (cook,
  * leftover, assembly, quick) are detected from settings and both can be
  * overridden here without editing the profile.
@@ -19,7 +20,9 @@ import { LeftoverList } from "~/components/leftover-list";
 export default function TodayPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [trainingOverride, setTrainingOverride] = useState<boolean | null>(null);
+  const [trainingOverride, setTrainingOverride] = useState<boolean | null>(
+    null,
+  );
 
   const today = useQuery(trpc.plan.today.queryOptions({ trainingOverride }));
   const invalidate = () => queryClient.invalidateQueries();
@@ -95,11 +98,13 @@ export default function TodayPage() {
                 })
               }
             >
-              {(["cook", "quick", "assembly", "leftover"] as const).map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
+              {(["cook", "quick", "assembly", "leftover"] as const).map(
+                (role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ),
+              )}
             </select>
           }
         >
@@ -114,8 +119,8 @@ export default function TodayPage() {
 
           {entry.role === "leftover" && !data.yesterdayWasCookDay && (
             <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
-              This is a leftover day, but yesterday was not a cook day. Check the
-              inventory below before counting on a portion being there.
+              This is a leftover day, but yesterday was not a cook day. Check
+              the inventory below before counting on a portion being there.
             </p>
           )}
 

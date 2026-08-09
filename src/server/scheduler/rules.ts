@@ -20,6 +20,8 @@ import {
  * rules would just be a second thing to get wrong.
  *
  * Nothing here touches the database or the network.
+ *
+ * See `docs/planner-and-verifier.md` for why this shape was chosen.
  */
 
 export interface SlotPlan {

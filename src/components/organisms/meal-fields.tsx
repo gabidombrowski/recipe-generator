@@ -1,25 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Field, InfoHint, Input, Select } from "./ui";
+import { Button, Input, Select } from "~/components/atoms";
+import { Field, InfoHint } from "~/components/molecules";
 import { DEFAULT_MEALS } from "~/lib/schemas";
+import { addMeal, removeMeal, togglePlanned } from "~/lib/meal-config";
 
 /**
  * Which meals make up a day, and which one the app plans.
- *
- * This is the answer to "how does it account for breakfast and lunch?" — until
- * now it did not. The app planned one meal per day and called it dinner, while
- * the calorie and protein targets it showed were whole-day figures, so the plan
- * and the targets were describing different amounts of food.
  *
  * Naming the meals makes the division honest: a day's targets are split across
  * the meals listed here, and `plannedMeals` says which of them the scheduler
  * fills — each gets its own slot per day rather than the app assuming dinner.
  *
- * `mainMeal` is separate because the cook -> leftover cycle can only belong to
- * one meal: a cook day means cooking once and eating the second portion the
- * next day, so two meals following it would mean cooking twice and owing
- * yourself two portions.
  */
 export function MealFields({
   meals,
@@ -30,37 +23,19 @@ export function MealFields({
   meals: string[];
   plannedMeals: string[];
   mainMeal: string;
-  onChange: (next: { meals: string[]; plannedMeals: string[]; mainMeal: string }) => void;
+  onChange: (next: {
+    meals: string[];
+    plannedMeals: string[];
+    mainMeal: string;
+  }) => void;
 }) {
   const [draft, setDraft] = useState("");
 
+  const config = { meals, plannedMeals, mainMeal };
+
   const add = () => {
-    const name = draft.trim();
-    if (!name) return;
-    if (meals.some((m) => m.toLowerCase() === name.toLowerCase())) {
-      setDraft("");
-      return;
-    }
-    onChange({ meals: [...meals, name], plannedMeals, mainMeal });
+    onChange(addMeal(config, draft));
     setDraft("");
-  };
-
-  const remove = (name: string) => {
-    const next = meals.filter((m) => m !== name);
-    // Planned meals and the main meal must stay a subset of the meals. Dropping
-    // a meal without pruning these would leave the scheduler pointing at one
-    // that no longer exists, and nothing downstream would notice.
-    const nextPlanned = plannedMeals.filter((m) => next.includes(m));
-    const nextMain = nextPlanned.includes(mainMeal) ? mainMeal : (nextPlanned[0] ?? next[0] ?? "");
-    onChange({ meals: next, plannedMeals: nextPlanned, mainMeal: nextMain });
-  };
-
-  const togglePlanned = (meal: string) => {
-    const next = plannedMeals.includes(meal)
-      ? plannedMeals.filter((m) => m !== meal)
-      : [...meals.filter((m) => plannedMeals.includes(m) || m === meal)];
-    const nextMain = next.includes(mainMeal) ? mainMeal : (next[0] ?? "");
-    onChange({ meals, plannedMeals: next, mainMeal: nextMain });
   };
 
   return (
@@ -112,7 +87,7 @@ export function MealFields({
                 <button
                   type="button"
                   aria-label={`Remove ${meal}`}
-                  onClick={() => remove(meal)}
+                  onClick={() => onChange(removeMeal(config, meal))}
                   className="rounded-full px-1 text-ink-muted hover:text-warn"
                 >
                   ×
@@ -138,7 +113,7 @@ export function MealFields({
                   key={meal}
                   type="button"
                   aria-pressed={plannedMeals.includes(meal)}
-                  onClick={() => togglePlanned(meal)}
+                  onClick={() => onChange(togglePlanned(config, meal))}
                   className={
                     plannedMeals.includes(meal)
                       ? "rounded-lg border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent"
@@ -157,7 +132,11 @@ export function MealFields({
                 <Select
                   value={mainMeal}
                   onChange={(event) =>
-                    onChange({ meals, plannedMeals, mainMeal: event.target.value })
+                    onChange({
+                      meals,
+                      plannedMeals,
+                      mainMeal: event.target.value,
+                    })
                   }
                 >
                   {plannedMeals.map((meal) => (
@@ -170,11 +149,11 @@ export function MealFields({
               <span className="flex items-center gap-2 pb-1.5 text-xs text-ink-muted">
                 Only one meal can.
                 <InfoHint>
-                  A cook day means cooking once and eating the second portion the
-                  next day. If two meals both followed that cycle you would cook
-                  twice on a cook day and owe yourself two leftover portions, so
-                  the cycle belongs to one meal. The others start as quick meals,
-                  which accept a quick or an assembly recipe.
+                  A cook day means cooking once and eating the second portion
+                  the next day. If two meals both followed that cycle you would
+                  cook twice on a cook day and owe yourself two leftover
+                  portions, so the cycle belongs to one meal. The others start
+                  as quick meals, which accept a quick or an assembly recipe.
                 </InfoHint>
               </span>
             </div>

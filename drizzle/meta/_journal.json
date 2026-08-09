@@ -50,6 +50,13 @@
       "when": 1786309820708,
       "tag": "0006_flat_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1786309820709,
+      "tag": "0007_seed_cuisine_relabel",
+      "breakpoints": true
     }
   ]
 }

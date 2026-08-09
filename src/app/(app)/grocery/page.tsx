@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Card, Empty, InfoHint, PageTitle, Spinner, cx } from "~/components/ui";
+import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import { Card, InfoHint } from "~/components/molecules";
+import { cx } from "~/components/cx";
 import { formatLongDate } from "~/lib/days";
 import { type GroceryLine } from "~/lib/schemas";
 
@@ -23,11 +25,16 @@ export default function GroceryPage() {
   const copyable = useQuery(trpc.grocery.copyText.queryOptions({}));
 
   const invalidate = () => queryClient.invalidateQueries();
-  const setChecked = useMutation(trpc.grocery.setChecked.mutationOptions({ onSuccess: invalidate }));
-  const clearChecks = useMutation(trpc.grocery.clearChecks.mutationOptions({ onSuccess: invalidate }));
+  const setChecked = useMutation(
+    trpc.grocery.setChecked.mutationOptions({ onSuccess: invalidate }),
+  );
+  const clearChecks = useMutation(
+    trpc.grocery.clearChecks.mutationOptions({ onSuccess: invalidate }),
+  );
 
   if (list.isPending) return <Spinner />;
-  if (list.isError) return <Empty>Could not build the list: {list.error.message}</Empty>;
+  if (list.isError)
+    return <Empty>Could not build the list: {list.error.message}</Empty>;
 
   const data = list.data;
 
@@ -44,7 +51,7 @@ export default function GroceryPage() {
             checked: event.target.checked,
           })
         }
-        className="size-4 shrink-0 accent-[var(--color-accent)]"
+        className="size-4 shrink-0 accent-accent"
       />
       <label
         htmlFor={`line-${line.key}`}
@@ -62,7 +69,9 @@ export default function GroceryPage() {
             {tag}
           </Badge>
         ))}
-        <span className="text-xs text-ink-muted">{line.sources.join(", ")}</span>
+        <span className="text-xs text-ink-muted">
+          {line.sources.join(", ")}
+        </span>
       </label>
     </li>
   );
@@ -73,8 +82,8 @@ export default function GroceryPage() {
         <div>
           <PageTitle>Grocery</PageTitle>
           <p className="text-sm text-ink-muted">
-            Shopping day: <strong>{data.shoppingDay}</strong> · week of{" "}
-            {formatLongDate(data.weekStart)} · updates the moment the plan changes.
+            Shopping day: <strong>{data.shoppingDay}</strong>,{" "}
+            {formatLongDate(data.weekStart)}
           </p>
         </div>
         <div className="flex gap-2">
@@ -107,9 +116,7 @@ export default function GroceryPage() {
       </header>
 
       {data.sections.length === 0 && data.buyLater.length === 0 ? (
-        <Empty>
-          Nothing to buy — the week has no recipes assigned yet.
-        </Empty>
+        <Empty>Nothing to buy — the week has no recipes assigned yet.</Empty>
       ) : (
         data.sections.map((group) => (
           <Card key={group.section} title={group.section}>

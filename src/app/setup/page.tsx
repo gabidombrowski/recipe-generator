@@ -4,18 +4,28 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { MacroExplainer } from "~/components/macro-explainer";
-import { ProfileFields, SettingsFields } from "~/components/profile-fields";
-import { CuisineFields } from "~/components/cuisine-fields";
-import { MealFields } from "~/components/meal-fields";
-import { DEFAULT_GOAL_ANSWERS, GoalFields, type GoalAnswers } from "~/components/goal-fields";
+import { MacroExplainer } from "~/components/organisms/macro-explainer";
+import { ProfileFields, SettingsFields } from "~/components/organisms/profile-fields";
+import { CuisineFields } from "~/components/organisms/cuisine-fields";
+import { MealFields } from "~/components/organisms/meal-fields";
+import {
+  DEFAULT_GOAL_ANSWERS,
+  GoalFields,
+  type GoalAnswers,
+} from "~/components/organisms/goal-fields";
 import {
   DEFAULT_MEAL_SHAPES,
   MealShapeFields,
   type MealShapeDraft,
-} from "~/components/meal-shape-fields";
-import { Button, Card, PageTitle, Spinner } from "~/components/ui";
-import { DEFAULT_PROFILE, DEFAULT_SETTINGS, type Profile, type Settings } from "~/lib/schemas";
+} from "~/components/organisms/meal-shape-fields";
+import { Button, PageTitle, Spinner } from "~/components/atoms";
+import { Card } from "~/components/molecules";
+import {
+  DEFAULT_PROFILE,
+  DEFAULT_SETTINGS,
+  type Profile,
+  type Settings,
+} from "~/lib/schemas";
 
 /**
  * First-run wizard.
@@ -25,8 +35,7 @@ import { DEFAULT_PROFILE, DEFAULT_SETTINGS, type Profile, type Settings } from "
  * `seed.local.json`, and never from the repository.
  *
  * Seven steps rather than one long form, and the order is deliberate: facts you
- * know about yourself, then goals — which *derive* the three numbers nobody
- * knows offhand — then the shape of your day and week, then the vocabulary the
+ * know about yourself, then the shape of your day and week, then the vocabulary the
  * planner speaks, and only then the numbers. The numbers come last because
  * their job is to tell you whether the earlier answers were right.
  *
@@ -42,8 +51,6 @@ export default function SetupPage() {
 
   const [step, setStep] = useState(0);
 
-  // `null` until the first edit, then the draft wins. Overlaying rather than
-  // seeding from an effect means a refetch can never discard what is typed.
   const [profileDraft, setProfileDraft] = useState<Profile | null>(null);
   const [settingsDraft, setSettingsDraft] = useState<Settings | null>(null);
   const [shapesDraft, setShapesDraft] = useState<MealShapeDraft[] | null>(null);
@@ -54,14 +61,13 @@ export default function SetupPage() {
   const stored = state.data;
 
   const profile: Profile = profileDraft ?? stored?.profile ?? DEFAULT_PROFILE;
-  const settings: Settings =
-    settingsDraft ??
-    (stored?.settings ?? {
+  const settings: Settings = settingsDraft ??
+    stored?.settings ?? {
       ...DEFAULT_SETTINGS,
-      // Best guess from the browser; still fully editable.
       timezone:
-        Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_SETTINGS.timezone,
-    });
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        DEFAULT_SETTINGS.timezone,
+    };
   const shapes: MealShapeDraft[] =
     shapesDraft ??
     (stored?.mealShapes.length ? stored.mealShapes : DEFAULT_MEAL_SHAPES);
@@ -173,8 +179,8 @@ export default function SetupPage() {
         <Card title="What meals mean">
           <p className="mb-4 text-sm text-ink-muted">
             The planner works in three kinds of meal. Say what each one means to
-            you and the rest of the app follows: recipes are proposed to fit,
-            a verifier rejects a week that breaks these, and the shopping list
+            you and the rest of the app follows: recipes are proposed to fit, a
+            verifier rejects a week that breaks these, and the shopping list
             buys for the servings you set.
           </p>
           <MealShapeFields value={shapes} onChange={setShapesDraft} />
@@ -202,8 +208,8 @@ export default function SetupPage() {
           <>
             <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
               These come straight from the values you entered. If a number looks
-              wrong, step back and fix the input — nothing here is hardcoded, and
-              every line below shows the arithmetic that produced it.
+              wrong, step back and fix the input — nothing here is hardcoded,
+              and every line below shows the arithmetic that produced it.
             </p>
             <MacroExplainer
               plan={preview.data.plan}
@@ -215,7 +221,10 @@ export default function SetupPage() {
         ) : null)}
 
       <div className="flex items-center justify-between gap-2">
-        <Button onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
+        <Button
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0}
+        >
           Back
         </Button>
 
@@ -237,7 +246,10 @@ export default function SetupPage() {
       </div>
 
       {complete.isError && (
-        <p role="alert" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+        <p
+          role="alert"
+          className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+        >
           {complete.error.message}
         </p>
       )}

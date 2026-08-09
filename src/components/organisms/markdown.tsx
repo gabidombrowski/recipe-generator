@@ -5,41 +5,40 @@ import { Fragment, type ReactNode } from "react";
  *
  * It builds React elements directly rather than producing an HTML string, so
  * there is no `dangerouslySetInnerHTML` and therefore no injection surface to
- * sanitise — which is why this exists instead of `marked` + `DOMPurify`. The
- * content is one person's own notes file, but "the author is the only one who
- * can attack themselves" is a weak reason to hand-roll an XSS hole into a
- * public repo.
+ * sanitise — which is why this exists instead of `marked` + `DOMPurify`.
  *
- * Supports what the notes file actually uses: headings, paragraphs, bullet and
- * numbered lists, horizontal rules, and inline bold / italic / code. Anything
- * else renders as literal text, which is the right failure mode for a notes
- * editor — nothing silently disappears.
  */
 
 const INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|_[^_]+_)/g;
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  return text.split(INLINE).filter(Boolean).map((token, index) => {
-    const key = `${keyPrefix}-${index}`;
+  return text
+    .split(INLINE)
+    .filter(Boolean)
+    .map((token, index) => {
+      const key = `${keyPrefix}-${index}`;
 
-    if (token.startsWith("**") && token.endsWith("**")) {
-      return <strong key={key}>{token.slice(2, -2)}</strong>;
-    }
-    if (token.startsWith("`") && token.endsWith("`")) {
-      return (
-        <code key={key} className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-[0.9em]">
-          {token.slice(1, -1)}
-        </code>
-      );
-    }
-    if (
-      (token.startsWith("*") && token.endsWith("*")) ||
-      (token.startsWith("_") && token.endsWith("_"))
-    ) {
-      return <em key={key}>{token.slice(1, -1)}</em>;
-    }
-    return <Fragment key={key}>{token}</Fragment>;
-  });
+      if (token.startsWith("**") && token.endsWith("**")) {
+        return <strong key={key}>{token.slice(2, -2)}</strong>;
+      }
+      if (token.startsWith("`") && token.endsWith("`")) {
+        return (
+          <code
+            key={key}
+            className="rounded bg-surface-sunken px-1 py-0.5 font-mono text-[0.9em]"
+          >
+            {token.slice(1, -1)}
+          </code>
+        );
+      }
+      if (
+        (token.startsWith("*") && token.endsWith("*")) ||
+        (token.startsWith("_") && token.endsWith("_"))
+      ) {
+        return <em key={key}>{token.slice(1, -1)}</em>;
+      }
+      return <Fragment key={key}>{token}</Fragment>;
+    });
 }
 
 const HEADING_CLASS: Record<number, string> = {
@@ -80,7 +79,6 @@ export function Markdown({ source }: { source: string }) {
       continue;
     }
 
-    // Lists: consume consecutive items of the same kind.
     const isBullet = (value: string) => /^\s*[-*+]\s+/.test(value);
     const isOrdered = (value: string) => /^\s*\d+[.)]\s+/.test(value);
 
@@ -101,14 +99,15 @@ export function Markdown({ source }: { source: string }) {
           className={`my-3 ml-5 space-y-1 ${ordered ? "list-decimal" : "list-disc"}`}
         >
           {items.map((item, itemIndex) => (
-            <li key={itemIndex}>{renderInline(item, `li-${index}-${itemIndex}`)}</li>
+            <li key={itemIndex}>
+              {renderInline(item, `li-${index}-${itemIndex}`)}
+            </li>
           ))}
         </ListTag>,
       );
       continue;
     }
 
-    // Paragraph: consume until a blank line or the start of another block.
     const paragraph: string[] = [];
     while (
       index < lines.length &&

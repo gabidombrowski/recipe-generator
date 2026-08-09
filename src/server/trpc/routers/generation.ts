@@ -18,6 +18,11 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipe } from "~/server/db/recipes";
 import { isLlmConfigured } from "~/server/llm/client";
+import {
+  getLibraryFillStatus,
+  startLibraryFill,
+  uncoveredCuisines,
+} from "~/server/llm/library-fill";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
 import { similarFavorites, upsertRecipeEmbedding } from "~/server/embeddings/index";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
@@ -40,6 +45,25 @@ const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
 
 export const generationRouter = router({
   available: protectedProcedure.query(() => ({ configured: isLlmConfigured() })),
+
+  // ---------------------------------------------------------------------------
+  // Filling the library from the cuisine palette
+  // ---------------------------------------------------------------------------
+
+  /** Which configured cuisines have no recipe, plus any run in progress. */
+  libraryCoverage: protectedProcedure.query(() => ({
+    uncovered: uncoveredCuisines(),
+    status: getLibraryFillStatus(),
+  })),
+
+  /**
+   * Starts a background fill and returns immediately.
+   *
+   * Returning the status rather than awaiting the work is the point: the run is
+   * a couple of dozen sequential model calls, and holding an HTTP request open
+   * for it would time out long before it finished.
+   */
+  fillLibrary: protectedProcedure.mutation(() => startLibraryFill()),
 
   generate: protectedProcedure
     .input(

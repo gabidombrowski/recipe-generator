@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Card, Empty, MacroRow, PageTitle, Spinner, cx } from "~/components/ui";
-import { GenerateRecipeButton } from "~/components/generate-recipe";
+import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import { Card, MacroRow } from "~/components/molecules";
+import { cx } from "~/components/cx";
+import { GenerateRecipeButton } from "~/components/connected/generate-recipe";
 import { formatLongDate, formatShortDate } from "~/lib/days";
 
 /**
@@ -19,16 +21,28 @@ export default function WeekPage() {
   const queryClient = useQueryClient();
 
   const week = useQuery(trpc.plan.week.queryOptions({}));
-  const library = useQuery(trpc.recipes.list.queryOptions({ favoritesOnly: false, hideExcluded: false }));
+  const library = useQuery(
+    trpc.recipes.list.queryOptions({
+      favoritesOnly: false,
+      hideExcluded: false,
+    }),
+  );
   const grocery = useQuery(trpc.grocery.list.queryOptions({}));
 
   const invalidate = () => queryClient.invalidateQueries();
-  const assign = useMutation(trpc.plan.assign.mutationOptions({ onSuccess: invalidate }));
-  const regenerate = useMutation(trpc.plan.regenerateSlot.mutationOptions({ onSuccess: invalidate }));
-  const generateWeek = useMutation(trpc.plan.generateWeek.mutationOptions({ onSuccess: invalidate }));
+  const assign = useMutation(
+    trpc.plan.assign.mutationOptions({ onSuccess: invalidate }),
+  );
+  const regenerate = useMutation(
+    trpc.plan.regenerateSlot.mutationOptions({ onSuccess: invalidate }),
+  );
+  const generateWeek = useMutation(
+    trpc.plan.generateWeek.mutationOptions({ onSuccess: invalidate }),
+  );
 
   if (week.isPending) return <Spinner />;
-  if (week.isError) return <Empty>Could not load the week: {week.error.message}</Empty>;
+  if (week.isError)
+    return <Empty>Could not load the week: {week.error.message}</Empty>;
 
   const data = week.data;
   const lastRun = data.lastRuns[0];
@@ -45,8 +59,11 @@ export default function WeekPage() {
           <p className="text-sm text-ink-muted">
             Of {formatLongDate(data.weekStart)} · Planner mode:{" "}
             <strong>{data.plannerMode}</strong>
-            {data.plannerMode === "ai" && !data.llmConfigured && " (no API key — running deterministically)"}
-            {data.aiNovelRecipesPerWeek > 0 && ` · ${data.aiNovelRecipesPerWeek} AI recipe/week`}
+            {data.plannerMode === "ai" &&
+              !data.llmConfigured &&
+              " (no API key — running deterministically)"}
+            {data.aiNovelRecipesPerWeek > 0 &&
+              ` · ${data.aiNovelRecipesPerWeek} AI recipe/week`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -80,25 +97,26 @@ export default function WeekPage() {
         </p>
       )}
 
-      {/* A failed generation must say so — silence here would look like a
-          no-op button rather than an error. */}
       {generateWeek.isError && (
-        <p role="alert" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+        <p
+          role="alert"
+          className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+        >
           Generation failed: {generateWeek.error.message}
         </p>
       )}
       {regenerate.data?.ok === false && (
-        <p role="alert" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+        <p
+          role="alert"
+          className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+        >
           {regenerate.data.message}
         </p>
       )}
 
       <div className="grid gap-3">
         {data.days.map((day) => (
-          <Card
-            key={day.date}
-            className={cx(day.isToday && "border-accent")}
-          >
+          <Card key={day.date} className={cx(day.isToday && "border-accent")}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold">
@@ -114,7 +132,9 @@ export default function WeekPage() {
                   </Badge>
                   {data.flaggedTags
                     .filter((tag) =>
-                      day.meals.some((m) => (m.recipe?.tagCounts[tag] ?? 0) > 0),
+                      day.meals.some(
+                        (m) => (m.recipe?.tagCounts[tag] ?? 0) > 0,
+                      ),
                     )
                     .map((tag) => (
                       <Badge key={tag} tone="flagged">
@@ -130,8 +150,6 @@ export default function WeekPage() {
               <MacroRow {...day.targets} />
             </div>
 
-            {/* One row per planned meal. With a single planned meal this is the
-                same single row the grid always had. */}
             <div className="mt-3 space-y-3">
               {day.meals.map((entry) => (
                 <div
@@ -139,7 +157,9 @@ export default function WeekPage() {
                   className="rounded-lg border border-border p-2.5"
                 >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="plate plate--section text-[10px]">{entry.meal}</span>
+                    <span className="plate plate--section text-[10px]">
+                      {entry.meal}
+                    </span>
                     <Badge tone="accent">{entry.mealSource}</Badge>
                     {entry.mealSource !== entry.derivedMealSource && (
                       <Badge tone="warn">
@@ -178,18 +198,24 @@ export default function WeekPage() {
                       >
                         <option value="">— nothing assigned —</option>
                         {recipes
-                          .filter((r) => entry.eligibleMealTypes.includes(r.mealType))
+                          .filter((r) =>
+                            entry.eligibleMealTypes.includes(r.mealType),
+                          )
                           .map((recipe) => (
                             <option key={recipe.id} value={recipe.id}>
                               {recipe.favorite ? "★ " : ""}
-                              {recipe.name} · {recipe.cuisine} · {recipe.cookMinutes}m
+                              {recipe.name} · {recipe.cuisine} ·{" "}
+                              {recipe.cookMinutes}m
                             </option>
                           ))}
                       </select>
 
                       <Button
                         onClick={() =>
-                          regenerate.mutate({ date: day.date, meal: entry.meal })
+                          regenerate.mutate({
+                            date: day.date,
+                            meal: entry.meal,
+                          })
                         }
                         disabled={regenerate.isPending}
                       >
@@ -245,7 +271,10 @@ export default function WeekPage() {
         ) : (
           <ul className="space-y-2 text-sm">
             {data.lastRuns.map((run) => (
-              <li key={run.id} className="rounded-lg border border-border px-3 py-2">
+              <li
+                key={run.id}
+                className="rounded-lg border border-border px-3 py-2"
+              >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Badge
                     tone={
@@ -270,7 +299,9 @@ export default function WeekPage() {
                     {run.verifierVerdicts.map((verdict) => (
                       <li key={verdict.attempt} className="text-ink-muted">
                         proposal {verdict.attempt}:{" "}
-                        {verdict.ok ? "accepted" : `rejected — ${verdict.reasons.join("; ")}`}
+                        {verdict.ok
+                          ? "accepted"
+                          : `rejected — ${verdict.reasons.join("; ")}`}
                       </li>
                     ))}
                   </ul>
