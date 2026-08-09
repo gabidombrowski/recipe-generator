@@ -88,6 +88,15 @@ jobs:
             set -euo pipefail
             cd "${{ secrets.APP_PATH }}"
 
+            # Load the server's own environment before touching pm2.
+            # `--update-env` below replaces the process environment with this
+            # shell's — so without this the app would come back from every
+            # deploy with no database path, no auth secret and no API key.
+            # The file is chmod 600 on the server and never in the repo.
+            set -a
+            [ -f .env ] && . ./.env
+            set +a
+
             # Back up the SQLite file before the new code touches it. `.backup`
             # is safe against a live connection in a way that `cp` is not.
             if [ -f "${DB_PATH:-data/nutrition.db}" ]; then
