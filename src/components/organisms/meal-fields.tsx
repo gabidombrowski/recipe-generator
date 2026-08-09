@@ -88,7 +88,7 @@ export function MealFields({
                   type="button"
                   aria-label={`Remove ${meal}`}
                   onClick={() => onChange(removeMeal(config, meal))}
-                  className="rounded-full px-1 text-ink-muted hover:text-warn"
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-ink-muted hover:text-warn"
                 >
                   ×
                 </button>

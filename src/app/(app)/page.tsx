@@ -88,7 +88,7 @@ export default function TodayPage() {
           action={
             <select
               aria-label={`Override the day role for ${entry.meal}`}
-              className="rounded-lg border border-border bg-surface px-2 py-1 text-xs"
+              className="min-h-11 rounded-lg border border-border bg-surface px-2 py-1 text-base sm:min-h-0 sm:text-xs"
               value={entry.role}
               onChange={(event) =>
                 setMealSource.mutate({

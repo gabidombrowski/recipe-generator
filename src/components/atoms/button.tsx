@@ -19,7 +19,10 @@ export function Button({
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition",
+        // 44px minimum touch target on phones, relaxed to the tighter desktop
+        // proportions from `sm:` up. See `controls.tsx` for the same reasoning.
+        "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition",
+        "sm:min-h-0",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         "disabled:cursor-not-allowed disabled:opacity-50",
         BUTTON_STYLES[variant],

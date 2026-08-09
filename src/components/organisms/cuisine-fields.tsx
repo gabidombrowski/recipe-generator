@@ -79,7 +79,7 @@ export function CuisineFields({
                   type="button"
                   aria-label={`Remove ${cuisine}`}
                   onClick={() => remove(cuisine)}
-                  className="rounded-full px-1 text-ink-muted hover:text-warn"
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-ink-muted hover:text-warn"
                 >
                   ×
                 </button>

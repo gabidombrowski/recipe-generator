@@ -19,7 +19,7 @@ export default async function SignInPage({
   return (
     <main className="mx-auto flex min-h-dvh max-w-md items-center px-4">
       <Card className="w-full">
-        <PageTitle>Nutrition</PageTitle>
+        <PageTitle>Recipe Generator</PageTitle>
         <p className="mt-2 text-sm text-ink-muted">
           A single-user app. Sign-in is restricted to one GitHub account.
         </p>
