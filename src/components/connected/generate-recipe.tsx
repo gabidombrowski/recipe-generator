@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Button, Input, Select, cx } from "./ui";
+import { Button, Input, Select } from "~/components/atoms";
+import { cx } from "~/components/cx";
 import { type MealType } from "~/lib/schemas";
 
 /**

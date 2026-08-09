@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cx } from "./ui";
+import { cx } from "~/components/cx";
 
 const LINKS = [
   { href: "/", label: "Today" },

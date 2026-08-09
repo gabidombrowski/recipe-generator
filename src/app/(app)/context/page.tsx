@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Markdown } from "~/components/markdown";
-import { Button, Card, PageTitle, Spinner, Textarea } from "~/components/ui";
+import { Markdown } from "~/components/organisms/markdown";
+import { Button, PageTitle, Spinner, Textarea } from "~/components/atoms";
+import { Card } from "~/components/molecules";
 
 /**
  * The context bridge.

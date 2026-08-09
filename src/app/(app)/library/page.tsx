@@ -3,20 +3,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { RecipeCard } from "~/components/recipe-card";
-import { AiFeedbackControls } from "~/components/ai-feedback";
-import {
-  Badge,
-  Button,
-  Card,
-  Empty,
-  Field,
-  InfoHint,
-  Input,
-  PageTitle,
-  Select,
-  Spinner,
-} from "~/components/ui";
+import { RecipeCard } from "~/components/organisms/recipe-card";
+import { AiFeedbackControls } from "~/components/connected/ai-feedback";
+import { Badge, Button, Empty, Input, PageTitle, Select, Spinner } from "~/components/atoms";
+import { Card, Field, InfoHint } from "~/components/molecules";
 import { mealTypeSchema, type MealType } from "~/lib/schemas";
 
 /**
@@ -35,9 +25,6 @@ export default function LibraryPage() {
   const [cuisine, setCuisine] = useState("");
   const [maxCookMinutes, setMaxCookMinutes] = useState<number | "">("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  // The library is what you kept. Generated recipes live in the database from
-  // the moment they are created — the planner assigns by id — so browsing them
-  // is opt-in rather than the default view.
   const [showUnsaved, setShowUnsaved] = useState(false);
   const [hideExcluded, setHideExcluded] = useState(false);
   const [keyword, setKeyword] = useState("");
@@ -79,10 +66,14 @@ export default function LibraryPage() {
   });
 
   const invalidate = () => queryClient.invalidateQueries();
-  const setFavorite = useMutation(trpc.recipes.setFavorite.mutationOptions({ onSuccess: invalidate }));
+  const setFavorite = useMutation(
+    trpc.recipes.setFavorite.mutationOptions({ onSuccess: invalidate }),
+  );
 
   const excludedIds = new Set(library.data?.excludedRecipeIds ?? []);
-  const showing = submittedSemantic ? (semantic.data?.recipes ?? []) : (library.data?.recipes ?? []);
+  const showing = submittedSemantic
+    ? (semantic.data?.recipes ?? [])
+    : (library.data?.recipes ?? []);
 
   return (
     <div className="space-y-5">
@@ -142,7 +133,10 @@ export default function LibraryPage() {
             />
           </Field>
           <Field label="Cuisine">
-            <Select value={cuisine} onChange={(event) => setCuisine(event.target.value)}>
+            <Select
+              value={cuisine}
+              onChange={(event) => setCuisine(event.target.value)}
+            >
               <option value="">Any</option>
               {(library.data?.cuisines ?? []).map((c) => (
                 <option key={c} value={c}>
@@ -170,7 +164,9 @@ export default function LibraryPage() {
             <Select
               value={maxCookMinutes}
               onChange={(event) =>
-                setMaxCookMinutes(event.target.value ? Number(event.target.value) : "")
+                setMaxCookMinutes(
+                  event.target.value ? Number(event.target.value) : "",
+                )
               }
             >
               <option value="">Any</option>
@@ -248,7 +244,8 @@ export default function LibraryPage() {
           </Field>
           {fitsOnly && targets && (
             <p className="text-xs text-ink-muted">
-              Against a training day: {targets.kcal} kcal / {targets.proteinG} g protein.
+              Against a training day: {targets.kcal} kcal / {targets.proteinG} g
+              protein.
             </p>
           )}
         </div>
@@ -270,7 +267,10 @@ export default function LibraryPage() {
               }
               actions={
                 recipe.source === "ai" ? (
-                  <AiFeedbackControls recipeId={recipe.id} onChanged={invalidate} />
+                  <AiFeedbackControls
+                    recipeId={recipe.id}
+                    onChanged={invalidate}
+                  />
                 ) : undefined
               }
             />

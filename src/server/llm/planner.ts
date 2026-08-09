@@ -33,6 +33,8 @@ import {
  * Rejection reasons are fed back once. On continued rejection, or any API
  * failure, the caller falls back to deterministic planning. The cron must
  * always produce a week; a clever plan is a nice-to-have, a plan is not.
+ *
+ * See `docs/planner-and-verifier.md` for the full argument.
  */
 
 const log = loggerFor("planner");

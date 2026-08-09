@@ -19,6 +19,7 @@ const config = [
       "test-results/**",
       "evals/reports/**",
       "tests/e2e/.auth/**",
+      "storybook-static/**",
     ],
   },
   {

@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Input } from "./ui";
+import { Badge, Button, Input } from "~/components/atoms";
 import { DEFAULT_CUISINES } from "~/lib/schemas";
 
 /**
  * The cuisine palette.
- *
- * Cuisines used to come from two hardcoded lists — the ones attached to the
- * seeded recipes, and a separate rotation the AI filler drew from — so the set
- * of food this app would ever suggest was fixed by whoever wrote those arrays.
- * This makes it a list you own: the defaults are a starting point to edit down
- * to what you actually cook, or add to.
  *
  * Order is preserved rather than sorted, so a cuisine you just added stays
  * where you can see it instead of jumping into the middle of the list.
@@ -103,7 +97,10 @@ export function CuisineFields({
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {missingDefaults.map((cuisine) => (
               <li key={cuisine}>
-                <button type="button" onClick={() => onChange([...value, cuisine])}>
+                <button
+                  type="button"
+                  onClick={() => onChange([...value, cuisine])}
+                >
                   <Badge tone="accent">+ {cuisine}</Badge>
                 </button>
               </li>

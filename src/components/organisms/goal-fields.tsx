@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge, Field, Input, Select } from "./ui";
+import { Badge, Input, Select } from "~/components/atoms";
+import { Field } from "~/components/molecules";
 import {
   activityFactorFrom,
   GOAL_LABELS,
@@ -15,16 +16,11 @@ import {
 import { type Profile } from "~/lib/schemas";
 
 /**
- * The questions behind the three numbers nobody knows about themselves.
- *
- * Activity factor, calorie deficit and protein per kilo were previously typed
- * in directly. They are the inputs every target depends on, and a wrong guess
- * at any of them misprices the whole plan while looking perfectly plausible.
+ * The questions behind activity factor, calorie deficit and protein per kilo.
  *
  * Answering questions instead is the point, but the arithmetic stays visible:
  * each recommendation shows the steps that produced it, and writes into the
- * profile fields, which remain editable on the Settings page. A recommendation
- * that cannot be overridden is just a hardcoded number with extra steps.
+ * profile fields, which remain editable on the Settings page.
  */
 
 export interface GoalAnswers {
@@ -47,7 +43,15 @@ export const DEFAULT_GOAL_ANSWERS: GoalAnswers = {
  * render is a new type on every keystroke, so React would unmount and remount
  * these three panels every time an answer changed.
  */
-function Trace({ title, steps, value }: { title: string; steps: string[]; value: string }) {
+function Trace({
+  title,
+  steps,
+  value,
+}: {
+  title: string;
+  steps: string[];
+  value: string;
+}) {
   return (
     <div className="rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -105,7 +109,10 @@ export function GoalFields({
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Most days I am" hint="Everything that is not deliberate exercise">
+        <Field
+          label="Most days I am"
+          hint="Everything that is not deliberate exercise"
+        >
           <Select
             value={answers.activity.occupation}
             onChange={(event) =>
@@ -180,7 +187,10 @@ export function GoalFields({
         </Field>
 
         {answers.goal === "lose" && (
-          <Field label="Rate of loss" hint="kg per week — 0.25 to 0.5 is a common range">
+          <Field
+            label="Rate of loss"
+            hint="kg per week — 0.25 to 0.5 is a common range"
+          >
             <Input
               type="number"
               min="0"
@@ -188,7 +198,10 @@ export function GoalFields({
               step="0.05"
               value={answers.rateKgPerWeek}
               onChange={(event) =>
-                update({ ...answers, rateKgPerWeek: Number(event.target.value) || 0 })
+                update({
+                  ...answers,
+                  rateKgPerWeek: Number(event.target.value) || 0,
+                })
               }
             />
           </Field>
@@ -196,7 +209,10 @@ export function GoalFields({
       </div>
 
       {deficit.warning && (
-        <p role="alert" className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+        <p
+          role="alert"
+          className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+        >
           {deficit.warning}
         </p>
       )}

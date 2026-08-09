@@ -1,5 +1,6 @@
 import { signIn } from "~/server/auth";
-import { Button, Card, PageTitle } from "~/components/ui";
+import { Button, PageTitle } from "~/components/atoms";
+import { Card } from "~/components/molecules";
 
 /**
  * Sign-in.

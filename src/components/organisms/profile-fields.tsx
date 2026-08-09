@@ -1,6 +1,7 @@
 "use client";
 
-import { DayPicker, Field, Input, Select } from "./ui";
+import { Input, Select } from "~/components/atoms";
+import { DayPicker, Field } from "~/components/molecules";
 import {
   cmToFeetInches,
   feetInchesToCm,
@@ -20,20 +21,8 @@ import {
 
 /**
  * The Profile and Settings form fields.
- *
- * Shared between the Settings page and the first-run wizard so the two can
- * never disagree about what is editable — the spec's "every field editable,
- * nothing hardcoded" only holds if there is one definition of the form.
  */
 
-/**
- * A short list of common zones, ordered west to east.
- *
- * Ordering by offset rather than by whichever one the author happened to use
- * keeps the list from quietly disclosing where its author lives — the same
- * reason the committed defaults are neutral. Any IANA zone works at runtime;
- * this is only what the picker offers.
- */
 const IANA_ZONES = [
   "Pacific/Auckland",
   "Australia/Sydney",
@@ -51,14 +40,7 @@ const IANA_ZONES = [
 export function ProfileFields({
   value,
   onChange,
-  /**
-   * Hides activity factor, deficit and protein-per-kg.
-   *
-   * The wizard derives those three from questions on its own step, and showing
-   * a raw input for the same value two steps earlier invites someone to set it
-   * twice and wonder which won. Settings shows them, because that is where you
-   * go to override a recommendation.
-   */
+
   hideDerived = false,
   /** Which system to ask in. Stored values stay metric regardless. */
   units = "metric",
@@ -77,9 +59,10 @@ export function ProfileFields({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* One weight field, in the system the user chose. The other system is
-            the hint, so a number is always checkable without switching. */}
-        <Field label={weightLabel(units)} hint={weightHint(value.weightKg, units)}>
+        <Field
+          label={weightLabel(units)}
+          hint={weightHint(value.weightKg, units)}
+        >
           <Input
             type="number"
             step="0.1"
@@ -94,15 +77,20 @@ export function ProfileFields({
                 event.target.value,
                 units === "imperial" ? kgToLb(value.weightKg) : value.weightKg,
               );
-              // Rounded to two decimal places in kg: entering pounds and reading
-              // them back must not drift by a gram every keystroke.
-              set("weightKg", units === "imperial" ? Number(lbToKg(raw).toFixed(2)) : raw);
+
+              set(
+                "weightKg",
+                units === "imperial" ? Number(lbToKg(raw).toFixed(2)) : raw,
+              );
             }}
           />
         </Field>
 
         {units === "imperial" ? (
-          <Field label="Height (ft / in)" hint={heightHint(value.heightCm, units)}>
+          <Field
+            label="Height (ft / in)"
+            hint={heightHint(value.heightCm, units)}
+          >
             <div className="flex gap-2">
               <Input
                 type="number"
@@ -115,7 +103,10 @@ export function ProfileFields({
                     "heightCm",
                     Number(
                       feetInchesToCm(
-                        num(event.target.value, cmToFeetInches(value.heightCm).feet),
+                        num(
+                          event.target.value,
+                          cmToFeetInches(value.heightCm).feet,
+                        ),
                         cmToFeetInches(value.heightCm).inches,
                       ).toFixed(1),
                     ),
@@ -135,7 +126,10 @@ export function ProfileFields({
                     Number(
                       feetInchesToCm(
                         cmToFeetInches(value.heightCm).feet,
-                        num(event.target.value, cmToFeetInches(value.heightCm).inches),
+                        num(
+                          event.target.value,
+                          cmToFeetInches(value.heightCm).inches,
+                        ),
                       ).toFixed(1),
                     ),
                   )
@@ -151,7 +145,9 @@ export function ProfileFields({
               step="0.1"
               min="1"
               value={value.heightCm}
-              onChange={(event) => set("heightCm", num(event.target.value, value.heightCm))}
+              onChange={(event) =>
+                set("heightCm", num(event.target.value, value.heightCm))
+              }
             />
           </Field>
         )}
@@ -168,7 +164,9 @@ export function ProfileFields({
         <Field label="Sex" hint="Selects the Mifflin-St Jeor constant">
           <Select
             value={value.sex}
-            onChange={(event) => set("sex", event.target.value as Profile["sex"])}
+            onChange={(event) =>
+              set("sex", event.target.value as Profile["sex"])
+            }
           >
             <option value="female">female</option>
             <option value="male">male</option>
@@ -183,7 +181,10 @@ export function ProfileFields({
               max="2.5"
               value={value.activityFactor}
               onChange={(event) =>
-                set("activityFactor", num(event.target.value, value.activityFactor))
+                set(
+                  "activityFactor",
+                  num(event.target.value, value.activityFactor),
+                )
               }
             />
           </Field>
@@ -195,7 +196,9 @@ export function ProfileFields({
               type="number"
               min="0"
               value={value.deficitKcal}
-              onChange={(event) => set("deficitKcal", num(event.target.value, value.deficitKcal))}
+              onChange={(event) =>
+                set("deficitKcal", num(event.target.value, value.deficitKcal))
+              }
             />
           </Field>
         )}
@@ -225,7 +228,9 @@ export function ProfileFields({
             step="0.1"
             min="0"
             value={value.fatPerKg}
-            onChange={(event) => set("fatPerKg", num(event.target.value, value.fatPerKg))}
+            onChange={(event) =>
+              set("fatPerKg", num(event.target.value, value.fatPerKg))
+            }
           />
         </Field>
       </div>
@@ -245,7 +250,10 @@ export function ProfileFields({
             onChange={(next) => set("cookDays", next as DayOfWeek[])}
           />
         </Field>
-        <Field label="Assembly days" hint="No-cook days, alternating with quick">
+        <Field
+          label="Assembly days"
+          hint="No-cook days, alternating with quick"
+        >
           <DayPicker
             days={DAYS_OF_WEEK}
             selected={value.assemblyDays}
@@ -274,7 +282,9 @@ export function SettingsFields({
       <Field label="Shopping day" hint="Shown at the top of the grocery list">
         <Select
           value={value.shoppingDay}
-          onChange={(event) => set("shoppingDay", event.target.value as DayOfWeek)}
+          onChange={(event) =>
+            set("shoppingDay", event.target.value as DayOfWeek)
+          }
         >
           {DAYS_OF_WEEK.map((day) => (
             <option key={day} value={day}>
@@ -283,10 +293,15 @@ export function SettingsFields({
           ))}
         </Select>
       </Field>
-      <Field label="Generation day" hint="Also the first day of the planned week">
+      <Field
+        label="Generation day"
+        hint="Also the first day of the planned week"
+      >
         <Select
           value={value.generationDay}
-          onChange={(event) => set("generationDay", event.target.value as DayOfWeek)}
+          onChange={(event) =>
+            set("generationDay", event.target.value as DayOfWeek)
+          }
         >
           {DAYS_OF_WEEK.map((day) => (
             <option key={day} value={day}>
@@ -318,7 +333,11 @@ export function SettingsFields({
 
       <Field
         label="AI recipes per week"
-        hint={llmConfigured ? "Novel cook recipes generated each week" : "Requires ANTHROPIC_API_KEY"}
+        hint={
+          llmConfigured
+            ? "Novel cook recipes generated each week"
+            : "Requires ANTHROPIC_API_KEY"
+        }
       >
         <Input
           type="number"
@@ -331,13 +350,18 @@ export function SettingsFields({
           }
         />
       </Field>
-      <Field label="Repeat window (weeks)" hint="Don't reuse a recipe within this window">
+      <Field
+        label="Repeat window (weeks)"
+        hint="Don't reuse a recipe within this window"
+      >
         <Input
           type="number"
           min="0"
           max="52"
           value={value.repeatWindowWeeks}
-          onChange={(event) => set("repeatWindowWeeks", Number(event.target.value) || 0)}
+          onChange={(event) =>
+            set("repeatWindowWeeks", Number(event.target.value) || 0)
+          }
         />
       </Field>
 
@@ -364,7 +388,9 @@ export function SettingsFields({
       <Field label="Units" hint="Stored values stay metric either way">
         <Select
           value={value.units}
-          onChange={(event) => set("units", event.target.value as Settings["units"])}
+          onChange={(event) =>
+            set("units", event.target.value as Settings["units"])
+          }
         >
           <option value="metric">metric (kg / cm)</option>
           <option value="imperial">imperial (lb / ft-in)</option>
@@ -378,7 +404,10 @@ export function SettingsFields({
         <Select
           value={value.groceryCopyFormat}
           onChange={(event) =>
-            set("groceryCopyFormat", event.target.value as Settings["groceryCopyFormat"])
+            set(
+              "groceryCopyFormat",
+              event.target.value as Settings["groceryCopyFormat"],
+            )
           }
         >
           <option value="text">plain text</option>

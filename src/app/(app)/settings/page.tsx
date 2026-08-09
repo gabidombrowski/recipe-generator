@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { MacroExplainer } from "~/components/macro-explainer";
-import { ProfileFields, SettingsFields } from "~/components/profile-fields";
-import { CuisineFields } from "~/components/cuisine-fields";
-import { MealFields } from "~/components/meal-fields";
-import { Button, Card, Empty, InfoHint, PageTitle, Spinner } from "~/components/ui";
+import { MacroExplainer } from "~/components/organisms/macro-explainer";
+import { ProfileFields, SettingsFields } from "~/components/organisms/profile-fields";
+import { CuisineFields } from "~/components/organisms/cuisine-fields";
+import { MealFields } from "~/components/organisms/meal-fields";
+import { Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import { Card } from "~/components/molecules";
 import { useRouter } from "next/navigation";
 import { type Profile, type Settings } from "~/lib/schemas";
 
@@ -25,9 +26,6 @@ export default function SettingsPage() {
 
   const state = useQuery(trpc.setup.state.queryOptions());
 
-  // Drafts overlay the server state rather than being seeded from it in an
-  // effect: `draft ?? server` needs no synchronisation, so a background refetch
-  // can never clobber what is being typed, and there is no cascading render.
   const [profileDraft, setProfileDraft] = useState<Profile | null>(null);
   const [settingsDraft, setSettingsDraft] = useState<Settings | null>(null);
 
@@ -39,24 +37,28 @@ export default function SettingsPage() {
     enabled: profile !== null,
   });
 
-  // Clearing the drafts on save is what lets the form fall back to the freshly
-  // persisted values.
   const onSaved = () => {
     setProfileDraft(null);
     setSettingsDraft(null);
     void queryClient.invalidateQueries();
   };
-  const saveProfile = useMutation(trpc.setup.saveProfile.mutationOptions({ onSuccess: onSaved }));
-  const saveSettings = useMutation(trpc.setup.saveSettings.mutationOptions({ onSuccess: onSaved }));
-
-  // Clearing `setupComplete` is what makes the app layout's gate send us to
-  // /setup; the push is so it happens now rather than on the next navigation.
-  const reopenWizard = useMutation(
-    trpc.setup.reopenWizard.mutationOptions({ onSuccess: () => router.push("/setup") }),
+  const saveProfile = useMutation(
+    trpc.setup.saveProfile.mutationOptions({ onSuccess: onSaved }),
+  );
+  const saveSettings = useMutation(
+    trpc.setup.saveSettings.mutationOptions({ onSuccess: onSaved }),
   );
 
-  if (state.isError) return <Empty>Could not load settings: {state.error.message}</Empty>;
-  if (state.isPending || !profile || !settings || !state.data) return <Spinner />;
+  const reopenWizard = useMutation(
+    trpc.setup.reopenWizard.mutationOptions({
+      onSuccess: () => router.push("/setup"),
+    }),
+  );
+
+  if (state.isError)
+    return <Empty>Could not load settings: {state.error.message}</Empty>;
+  if (state.isPending || !profile || !settings || !state.data)
+    return <Spinner />;
 
   const shown = preview.data ?? {
     plan: state.data.plan,
@@ -81,11 +83,6 @@ export default function SettingsPage() {
           >
             Re-run setup
           </Button>
-          <InfoHint>
-            Walks through the whole configuration again — profile, schedule, what
-            each meal type means, and cuisines. Nothing is cleared: every step
-            starts from what you have now.
-          </InfoHint>
           <Button
             variant="primary"
             disabled={!dirty || saveProfile.isPending || saveSettings.isPending}
@@ -101,13 +98,17 @@ export default function SettingsPage() {
 
       {!state.data.llmConfigured && (
         <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
-          <code>ANTHROPIC_API_KEY</code> is not set, so AI generation and agentic
-          planner mode are disabled. Everything else works.
+          <code>ANTHROPIC_API_KEY</code> is not set, so AI generation and
+          agentic planner mode are disabled. Everything else works.
         </p>
       )}
 
       <Card title="Profile">
-        <ProfileFields value={profile} onChange={setProfileDraft} units={settings.units} />
+        <ProfileFields
+          value={profile}
+          onChange={setProfileDraft}
+          units={settings.units}
+        />
       </Card>
 
       <MacroExplainer

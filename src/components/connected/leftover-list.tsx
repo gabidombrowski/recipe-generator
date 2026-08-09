@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Empty } from "./ui";
+import { Badge, Button, Empty } from "~/components/atoms";
 
 export interface LeftoverView {
   id: number;
@@ -15,11 +15,6 @@ export interface LeftoverView {
   dueToday: boolean;
 }
 
-/**
- * The standing note is not decoration — it is the rule the whole leftover
- * feature exists to enforce, and it stays on screen rather than living in a
- * tooltip nobody opens.
- */
 export const FRIDGE_NOTE =
   "Fridge portions: refrigerate promptly after cooking, eat within 1 day. Need longer? Freeze the same day.";
 
@@ -31,7 +26,9 @@ export function LeftoverList({
   onChanged: () => void;
 }) {
   const trpc = useTRPC();
-  const eat = useMutation(trpc.kitchen.eatPortion.mutationOptions({ onSuccess: onChanged }));
+  const eat = useMutation(
+    trpc.kitchen.eatPortion.mutationOptions({ onSuccess: onChanged }),
+  );
   const discard = useMutation(
     trpc.kitchen.discardLeftover.mutationOptions({ onSuccess: onChanged }),
   );
@@ -54,7 +51,8 @@ export function LeftoverList({
               <div className="min-w-0">
                 <p className="text-sm font-medium">{item.recipeName}</p>
                 <p className="text-xs text-ink-muted">
-                  cooked {item.cookedDate} · {item.ageDays === 0 ? "today" : `${item.ageDays}d ago`} ·{" "}
+                  cooked {item.cookedDate} ·{" "}
+                  {item.ageDays === 0 ? "today" : `${item.ageDays}d ago`} ·{" "}
                   {item.portions} portion{item.portions === 1 ? "" : "s"}
                 </p>
               </div>
@@ -66,11 +64,14 @@ export function LeftoverList({
                 {item.dueToday && <Badge tone="training">eat today</Badge>}
                 {item.atRisk && (
                   <Badge tone="warn">
-                    past its safe window: eat today or discard; freeze same-day next
-                    time if you need longer
+                    past its safe window: eat today or discard; freeze same-day
+                    next time if you need longer
                   </Badge>
                 )}
-                <Button onClick={() => eat.mutate({ id: item.id })} disabled={eat.isPending}>
+                <Button
+                  onClick={() => eat.mutate({ id: item.id })}
+                  disabled={eat.isPending}
+                >
                   Ate stored portion
                 </Button>
                 <Button

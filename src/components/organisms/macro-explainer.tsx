@@ -1,6 +1,8 @@
 "use client";
 
-import { Badge, Card, cx } from "./ui";
+import { Badge } from "~/components/atoms";
+import { Card } from "~/components/molecules";
+import { cx } from "~/components/cx";
 import { type FormulaLine, type MacroPlan } from "~/lib/macros";
 
 /**

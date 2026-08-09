@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Input } from "./ui";
+import { Badge, Button, Input } from "~/components/atoms";
 
 /**
  * Accept / reject controls on AI-generated recipes.
