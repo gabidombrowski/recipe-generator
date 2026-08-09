@@ -15,6 +15,23 @@ import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
  * future non-HTTP caller.
  */
 
+/**
+ * The sub-path the app is served under, or "" at the root. Baked in at build
+ * time via `next.config.ts`.
+ *
+ * Middleware sees paths with this prefix still attached and an *empty*
+ * `nextUrl.basePath` — unlike route handlers, which get it stripped. So every
+ * comparison below runs against the stripped path, and every redirect puts the
+ * prefix back.
+ */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** `/app/healthz` → `/healthz`; the identity function at the root. */
+function stripBasePath(pathname: string): string {
+  if (!BASE_PATH || !pathname.startsWith(BASE_PATH)) return pathname;
+  return pathname.slice(BASE_PATH.length) || "/";
+}
+
 /** Reachable without a session. Everything else is not. */
 const PUBLIC_PATHS = new Set([
   "/healthz",
@@ -43,7 +60,8 @@ function clientKey(request: Request): string {
 }
 
 export default auth((request) => {
-  const { pathname } = request.nextUrl;
+  const rawPathname = request.nextUrl.pathname;
+  const pathname = stripBasePath(rawPathname);
 
   // Throttle sign-in before it reaches the OAuth handler, so a credential
   // stuffing loop burns against this counter rather than against GitHub.
@@ -64,8 +82,10 @@ export default auth((request) => {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const signInUrl = new URL("/signin", request.nextUrl.origin);
-    signInUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+    // Both the target and the callback keep the prefix; under a sub-path a
+    // bare `/signin` belongs to whatever else the host serves.
+    const signInUrl = new URL(`${BASE_PATH}/signin`, request.nextUrl.origin);
+    signInUrl.searchParams.set("callbackUrl", rawPathname);
     return NextResponse.redirect(signInUrl);
   }
 

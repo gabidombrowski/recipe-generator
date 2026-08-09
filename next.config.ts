@@ -45,6 +45,24 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   /**
+   * Serve the app under a sub-path — set `NEXT_PUBLIC_BASE_PATH` to something
+   * like `/app` to run it behind another site's reverse proxy. Unset, which is
+   * the default, serves at the root and nothing changes. The value is supplied
+   * by the environment precisely so no deployment's URL is written down here.
+   *
+   * Baked in at build time rather than read at runtime, because Next rewrites
+   * every asset URL and route with it — a build made without it cannot be
+   * moved under a sub-path afterwards.
+   *
+   * `NEXT_PUBLIC_` is load-bearing, not a habit. The middleware needs this
+   * value too, and it receives paths with the prefix still attached; the
+   * ordinary `env` config does not reach the middleware bundle, so the prefix
+   * is what actually gets it inlined there. Found by running a sub-path build
+   * and watching `/healthz` redirect to sign-in.
+   */
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
+
+  /**
    * Pin file tracing to this directory. Without it, Next walks up looking for a
    * workspace root and can pick up unrelated files from a parent directory —
    * which makes the standalone output depend on where the repo happens to be

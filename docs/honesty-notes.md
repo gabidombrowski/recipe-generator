@@ -48,33 +48,7 @@
 
 ---
 
-## How much of this was supervision
-
-<!-- supervision:start -->
-
-**Estimate: roughly 5 to 9 hours of active, engaged time**
-across 2 working sessions —
-writing the specification, making decisions, and reviewing output. Not writing
-implementation code; almost none of that was typed by hand.
-
-The estimate is derived, not measured. It comes from
-[`supervision-log.json`](supervision-log.json), which records the round trips
-per session — 57 so far — against a deliberately wide band of
-4–8 minutes each: reading a long response, checking a diff or a
-screenshot, deciding, replying. Sessions so far:
-
-- **2026-08-07** — 15 exchanges. Original specification and the first build: fourteen features, fixed stack, phased order, target macro numbers.
-- **2026-08-09** — 42 exchanges. Licence, re-skin, multi-meal planning, generator tab, demo mode built and cut, audit, Storybook, atomic restructure.
-
-Treat the range as an order of magnitude. It excludes wall-clock time spent
-waiting on builds, test runs and model calls, which is not engaged time, and it
-almost certainly undercounts the minutes lost to re-reading something confusing.
-
-This block is rewritten by `scripts/update-supervision.mjs` on every commit, so
-the figure describes the repository as it currently stands rather than as it was
-the day someone last remembered to edit it.
-
-<!-- supervision:end -->
+## On the review process
 
 **The review was not passive, and that is the part worth reporting.** Several
 defects listed above were found because the human asked the code to prove a
