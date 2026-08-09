@@ -41,7 +41,13 @@ const preview: Preview = {
         dark: { name: "dark", value: "#191512" },
       },
     },
-    a11y: { test: "todo" },
+    /**
+     * `error`, not `todo`. The addon runs axe against every story, and on
+     * `todo` a violation is a note nobody reads — the check only means
+     * something if a regression stops the run. Accessibility is part of
+     * "done" here rather than a pass someone schedules later.
+     */
+    a11y: { test: "error" },
   },
 
   initialGlobals: { backgrounds: { value: "light" } },

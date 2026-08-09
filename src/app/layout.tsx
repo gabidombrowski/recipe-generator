@@ -18,14 +18,32 @@ const body = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Nutrition",
+  title: "Recipe Generator",
   description: "Personal macro planning, meal scheduling and grocery lists.",
   robots: { index: false, follow: false },
+  // Installed to a home screen this is a standalone app, not a bookmark, so it
+  // gets a short name and the iOS status bar treatment to match.
+  appleWebApp: {
+    capable: true,
+    title: "Recipe Generator",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  /**
+   * Matches `--color-canvas` in each scheme, so the browser chrome and the
+   * status bar continue the page rather than framing it in white. Hardcoded
+   * hex because this header is read before any stylesheet: it cannot reference
+   * the custom properties it is mirroring, which means the two can drift.
+   * `globals.css` is the source of truth if they disagree.
+   */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fdfaf7" },
+    { media: "(prefers-color-scheme: dark)", color: "#191512" },
+  ],
 };
 
 export default function RootLayout({

@@ -451,7 +451,7 @@ export default function KitchenPage() {
                   <span>{describe(c.constraint as never)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 text-xs text-ink-muted">
+                  <label className="flex min-h-11 items-center gap-1.5 text-xs text-ink-muted sm:min-h-0">
                     <input
                       type="checkbox"
                       checked={c.active}
@@ -461,7 +461,7 @@ export default function KitchenPage() {
                           active: e.target.checked,
                         })
                       }
-                      className="size-4 accent-[var(--color-accent)]"
+                      className="size-6 accent-[var(--color-accent)] sm:size-4"
                     />
                     active
                   </label>
@@ -566,7 +566,7 @@ export default function KitchenPage() {
                 key={staple.id}
                 className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1.5"
               >
-                <label className="flex flex-1 items-center gap-2 text-sm">
+                <label className="flex min-h-11 flex-1 items-center gap-2 text-sm sm:min-h-0">
                   <input
                     type="checkbox"
                     checked={staple.onHand}
@@ -576,7 +576,7 @@ export default function KitchenPage() {
                         onHand: event.target.checked,
                       })
                     }
-                    className="size-4 accent-accent"
+                    className="size-6 accent-accent sm:size-4"
                   />
                   {staple.name}
                 </label>
@@ -585,7 +585,7 @@ export default function KitchenPage() {
                   type="button"
                   onClick={() => removeStaple.mutate({ id: staple.id })}
                   aria-label={`Remove ${staple.name}`}
-                  className="text-ink-muted hover:text-warn"
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-ink-muted hover:text-warn"
                 >
                   ×
                 </button>

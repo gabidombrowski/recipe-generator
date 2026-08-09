@@ -184,7 +184,7 @@ export default function WeekPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <select
                         aria-label={`Recipe for ${entry.meal} on ${day.date}`}
-                        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm"
+                        className="min-h-11 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-base sm:min-h-0 sm:text-sm"
                         value={entry.recipe?.id ?? ""}
                         onChange={(event) =>
                           assign.mutate({

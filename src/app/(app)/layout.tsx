@@ -24,7 +24,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      {/* `id` is the skip link's target; `tabIndex={-1}` so focus actually
+          lands here rather than skipping to the first link inside. */}
+      <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-6">
+        {children}
+      </main>
     </>
   );
 }

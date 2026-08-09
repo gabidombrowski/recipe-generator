@@ -38,8 +38,11 @@ export default function GroceryPage() {
 
   const data = list.data;
 
+  // Roomier than the rest of the app on purpose: this is the one screen used
+  // one-handed, walking, in a shop. `py-2` gives the label — which toggles the
+  // box via `htmlFor` — a 44px-tall target on a phone.
   const Line = ({ line }: { line: GroceryLine }) => (
-    <li className="flex items-center gap-2.5 py-1">
+    <li className="flex items-center gap-2.5 py-2 sm:py-1">
       <input
         type="checkbox"
         id={`line-${line.key}`}
@@ -51,7 +54,7 @@ export default function GroceryPage() {
             checked: event.target.checked,
           })
         }
-        className="size-4 shrink-0 accent-accent"
+        className="size-6 shrink-0 accent-accent sm:size-4"
       />
       <label
         htmlFor={`line-${line.key}`}
@@ -102,8 +105,7 @@ export default function GroceryPage() {
           </Button>
           <InfoHint>
             Change the format between plain text and Markdown under Settings →
-            Grocery copy format. Markdown pastes into GitHub, Obsidian or Notion
-            as tickable checkboxes.
+            Grocery copy format.
           </InfoHint>
           <Button
             variant="ghost"

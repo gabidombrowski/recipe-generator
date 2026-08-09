@@ -178,30 +178,30 @@ export default function LibraryPage() {
             </Select>
           </Field>
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0">
             <input
               type="checkbox"
               checked={favoritesOnly}
               onChange={(event) => setFavoritesOnly(event.target.checked)}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-6 accent-[var(--color-accent)] sm:size-4"
             />
             Favourites only
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0">
             <input
               type="checkbox"
               checked={hideExcluded}
               onChange={(event) => setHideExcluded(event.target.checked)}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-6 accent-[var(--color-accent)] sm:size-4"
             />
             Hide excluded
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0">
             <input
               type="checkbox"
               checked={showUnsaved}
               onChange={(event) => setShowUnsaved(event.target.checked)}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-6 accent-[var(--color-accent)] sm:size-4"
             />
             Show unsaved AI recipes
             <InfoHint>
@@ -213,12 +213,12 @@ export default function LibraryPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-3">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2 text-sm sm:min-h-0">
             <input
               type="checkbox"
               checked={fitsOnly}
               onChange={(event) => setFitsOnly(event.target.checked)}
-              className="size-4 accent-[var(--color-accent)]"
+              className="size-6 accent-[var(--color-accent)] sm:size-4"
             />
             Fits remaining macros
           </label>
