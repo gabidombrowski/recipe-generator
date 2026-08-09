@@ -8,7 +8,7 @@ terraform {
       # (`cloudflare_tunnel` -> `cloudflare_zero_trust_tunnel_cloudflared`,
       # `cloudflare_record` -> `cloudflare_dns_record`, and so on). Upgrading is
       # a deliberate migration, not a version bump — pin until it is done.
-      version = "~> 4.40"
+      version = "~> 5.23"
     }
     random = {
       source  = "hashicorp/random"
