@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 # deps — install with the native toolchain available
 # ---------------------------------------------------------------------------
-FROM node:22-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 WORKDIR /app
 
 # better-sqlite3 and sqlite-vec compile native addons.
@@ -39,7 +39,7 @@ RUN AUTH_SECRET=build-time-placeholder npm run build
 # ---------------------------------------------------------------------------
 # runtime — no compilers, no dev dependencies
 # ---------------------------------------------------------------------------
-FROM node:22-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production \
