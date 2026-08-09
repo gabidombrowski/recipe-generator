@@ -57,6 +57,11 @@ jobs:
           # server's environment, which is why pm2 is restarted with
           # --update-env below.
           AUTH_SECRET: build-time-placeholder
+          # Repository variable, so no deployment URL is committed. Set it to
+          # a leading-slash path to serve under a sub-path of another site;
+          # leave it unset for the root. It belongs here rather than on the
+          # server because Next bakes it into every asset URL at build time.
+          NEXT_PUBLIC_BASE_PATH: ${{ vars.BASE_PATH }}
 
       - name: Deploy over rsync
         uses: burnett01/rsync-deployments@7.0.1
@@ -94,9 +99,12 @@ jobs:
             pm2 restart recipe-generator --update-env || pm2 start ecosystem.config.cjs
             pm2 save
 
-            # Fail the deploy if the app does not come back healthy.
+            # Fail the deploy if the app does not come back healthy. The probe
+            # has to carry BASE_PATH too — under a sub-path the app serves
+            # nothing at bare /healthz, and the deploy would fail on a healthy
+            # app.
             for i in $(seq 1 20); do
-              if curl -fsS "http://127.0.0.1:${PORT:-3200}/healthz" > /dev/null; then
+              if curl -fsS "http://127.0.0.1:${PORT:-3200}${{ vars.BASE_PATH }}/healthz" > /dev/null; then
                 echo "healthy after ${i} attempt(s)"
                 exit 0
               fi
