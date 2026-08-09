@@ -61,6 +61,13 @@ playwright-report/
 blob-report/
 .playwright/
 
+# Playwright's signed-in browser state. `tests/e2e/global-setup.ts` mints a real
+# Auth.js session JWT into this file on every run, signed with whatever
+# AUTH_SECRET the run had — on a developer machine that is the genuine one, so a
+# committed copy is a live session token for the real app. Regenerated every
+# run, so there is nothing to keep.
+tests/e2e/.auth/
+
 # misc
 .DS_Store
 *.pem

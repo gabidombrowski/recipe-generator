@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/", label: "Today" },
   { href: "/week", label: "Week" },
   { href: "/grocery", label: "Grocery" },
+  { href: "/generate", label: "Generate" },
   { href: "/library", label: "Library" },
   { href: "/kitchen", label: "Kitchen" },
   { href: "/context", label: "Context" },
@@ -31,10 +32,11 @@ export function Nav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "block rounded-lg px-3 py-1.5 text-sm font-medium whitespace-nowrap transition",
+                  "block rounded-lg px-3 py-1.5 font-display text-sm tracking-wide",
+                  "whitespace-nowrap uppercase transition",
                   active
-                    ? "bg-accent-soft text-accent"
-                    : "text-ink-muted hover:bg-surface-sunken",
+                    ? "bg-accent text-accent-ink"
+                    : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
                 )}
               >
                 {label}

@@ -4,10 +4,11 @@ import {
   type GrocerySection,
   type Ingredient,
   type MealSource,
+  type MealType,
   type Recipe,
   type Settings,
 } from "~/lib/schemas";
-import { type IsoDate } from "~/lib/days";
+import { formatLongDate, type IsoDate } from "~/lib/days";
 
 /**
  * The grocery list.
@@ -109,10 +110,21 @@ export function lineKey(name: string, unit: string): string {
 }
 
 /**
- * How many servings a slot needs. Cook days are doubled deliberately: the whole
- * point of a cook day is that it produces tomorrow's leftover portion too.
+ * How many servings a slot needs.
+ *
+ * Cook days default to two: the whole point of a cook day is that it produces
+ * tomorrow's leftover portion as well. But it is configurable per meal type
+ * (`meal_shape`), and this used to ignore that — the verifier enforced the
+ * configured yield while the shopping list kept buying for the hardcoded one, so
+ * setting a cook day to three servings produced a week that failed verification
+ * *and* under-bought. Same config, same answer, everywhere.
  */
-function servingsFor(mealSource: MealSource): number {
+function servingsFor(
+  mealSource: MealSource,
+  mealShapes: BuildGroceryListInput["mealShapes"],
+): number {
+  const configured = mealShapes.find((s) => s.mealType === mealSource)?.servings;
+  if (configured != null) return configured;
   return mealSource === "cook" ? 2 : 1;
 }
 
@@ -132,6 +144,8 @@ export interface BuildGroceryListInput {
   flaggedTags: readonly string[];
   /** Per-day staples from the user's config, added x7. */
   dailyStaples: ReadonlyArray<{ name: string; qty: number; unit: string }>;
+  /** Configured yield per meal type; falls back to cook=2, everything else 1. */
+  mealShapes: ReadonlyArray<{ mealType: MealType; servings: number | null }>;
   /** Line keys already ticked for this week. */
   checkedKeys: ReadonlySet<string>;
 }
@@ -159,8 +173,10 @@ function isExcluded(ingredient: Ingredient, excluded: readonly string[]): boolea
 }
 
 export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
-  const { weekStart, settings, meals, excluded, pantryStaples, checkedKeys, flaggedTags, dailyStaples } =
-    input;
+  const {
+    weekStart, settings, meals, excluded, pantryStaples, checkedKeys, flaggedTags,
+    dailyStaples, mealShapes,
+  } = input;
 
   const flagged = new Set(flaggedTags.map((t) => t.trim().toLowerCase()));
 
@@ -205,7 +221,7 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
 
     const { recipe } = meal;
     // Scale the recipe's own yield up or down to what this slot needs.
-    const factor = servingsFor(meal.mealSource) / Math.max(1, recipe.servings);
+    const factor = servingsFor(meal.mealSource, mealShapes) / Math.max(1, recipe.servings);
     for (const ingredient of recipe.ingredients) {
       add(ingredient, factor, recipe.name);
     }
@@ -264,7 +280,7 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
   };
 }
 
-/** Plain-text rendering for the "Copy as text" button. */
+/** Plain-text rendering for the "Copy as text" button. See also `groceryListToMarkdown`. */
 export function groceryListToText(list: GroceryList): string {
   const lines: string[] = [`Shopping day: ${list.shoppingDay}`, ""];
 
@@ -289,6 +305,77 @@ export function groceryListToText(list: GroceryList): string {
     lines.push(
       "Check your supply (marked on hand)",
       ...list.checkYourSupply.map((n) => `  - ${n}`),
+    );
+  }
+
+  return lines.join("\n").trimEnd();
+}
+
+/**
+ * Escapes the inline Markdown metacharacters.
+ *
+ * Ingredient names are not a controlled vocabulary — they come from seeded
+ * recipes and from the model, so "5-spice", "ancho *chile*" or "milk [oat]" are
+ * all reachable. Unescaped, the first `_` or `*` silently italicises the rest of
+ * the line and a `[` swallows text into a broken link.
+ *
+ * Only the characters that do something *mid-line* are escaped. Block-level
+ * markers (`#`, leading `-`) cannot trigger here because every name is emitted
+ * after a list bullet and a quantity, never at the start of a line.
+ */
+function escapeMarkdown(value: string): string {
+  return value.replace(/([\\`*_[\]<>])/g, "\\$1");
+}
+
+/**
+ * Markdown rendering for the "Copy as Markdown" button.
+ *
+ * The reason this is not just `groceryListToText` with different punctuation is
+ * the checkboxes: `- [ ]` is a task list, so a list pasted into GitHub, Obsidian
+ * or Notion arrives tickable, carrying the checked state already stored for the
+ * week. The plain-text version stays as it is — it is for pasting somewhere that
+ * would render the syntax as literal noise.
+ */
+export function groceryListToMarkdown(list: GroceryList): string {
+  const lines: string[] = [
+    `# Grocery — week of ${formatLongDate(list.weekStart)}`,
+    "",
+    `Shopping day: **${escapeMarkdown(list.shoppingDay)}**`,
+    "",
+  ];
+
+  const renderLine = (l: GroceryLine) => {
+    const tags =
+      l.flaggedTags.length > 0
+        ? ` ${l.flaggedTags.map((t) => `\`${escapeMarkdown(t)}\``).join(" ")}`
+        : "";
+    return `- [${l.checked ? "x" : " "}] ${l.qty} ${escapeMarkdown(l.unit)} ${escapeMarkdown(l.name)}${tags}`;
+  };
+
+  for (const group of list.sections) {
+    lines.push(`## ${escapeMarkdown(group.section)}`, "", ...group.lines.map(renderLine), "");
+  }
+
+  if (list.buyLater.length > 0) {
+    lines.push(
+      "## Buy later in the week",
+      "",
+      "_Buy day-of or day-before cooking._",
+      "",
+      ...list.buyLater.map(renderLine),
+      "",
+    );
+  }
+
+  if (list.checkYourSupply.length > 0) {
+    lines.push(
+      "## Check your supply",
+      "",
+      "_Marked on hand in the pantry, so not on the list._",
+      "",
+      // Not a task list: these are a glance-before-you-go reminder, not things
+      // to tick off.
+      ...list.checkYourSupply.map((n) => `- ${escapeMarkdown(n)}`),
     );
   }
 

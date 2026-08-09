@@ -100,6 +100,53 @@ describe("deriveSlotRoles", () => {
   });
 });
 
+describe("deriveSlotRoles across several meals", () => {
+  const meals = ["Breakfast", "Lunch", "Dinner"];
+
+  it("produces a slot per meal per day", () => {
+    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    expect(roles).toHaveLength(21);
+    expect(roles.filter((r) => r.date === WEEK_START).map((r) => r.meal)).toEqual(meals);
+  });
+
+  it("gives the cook/leftover cycle to the main meal only", () => {
+    // A cook day means cooking once and eating the second portion tomorrow.
+    // If breakfast were also "cook", the day would produce two portions nobody
+    // planned to eat, and the leftover day would have two to get through.
+    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    const onCookDay = roles.filter((r) => r.date === "2026-02-10"); // Tue, a cook day
+    expect(onCookDay.find((r) => r.meal === "Dinner")?.mealSource).toBe("cook");
+    expect(onCookDay.find((r) => r.meal === "Breakfast")?.mealSource).toBe("quick");
+    expect(onCookDay.find((r) => r.meal === "Lunch")?.mealSource).toBe("quick");
+  });
+
+  it("never marks a non-main meal as leftover", () => {
+    // Leftover slots are eaten from the fridge and hold no recipe; handing one
+    // to breakfast would silently drop breakfast from the plan.
+    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    const nonMain = roles.filter((r) => r.meal !== "Dinner");
+    expect(nonMain.every((r) => r.mealSource !== "leftover")).toBe(true);
+  });
+
+  it("follows the main meal when it is not dinner", () => {
+    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Lunch" });
+    const onCookDay = roles.filter((r) => r.date === "2026-02-10");
+    expect(onCookDay.find((r) => r.meal === "Lunch")?.mealSource).toBe("cook");
+    expect(onCookDay.find((r) => r.meal === "Dinner")?.mealSource).toBe("quick");
+  });
+
+  it("matches the old single-meal behaviour when one meal is planned", () => {
+    // The whole point of the defaults: existing plans do not change shape.
+    const single = deriveSlotRoles(WEEK_START, profile, {
+      meals: ["Dinner"],
+      mainMeal: "Dinner",
+    });
+    const legacy = deriveSlotRoles(WEEK_START, profile);
+    expect(single.map((r) => r.mealSource)).toEqual(legacy.map((r) => r.mealSource));
+    expect(single).toHaveLength(7);
+  });
+});
+
 describe("verifyWeek", () => {
   const cookA = recipe({ id: 1, name: "Cook A" });
   const cookB = recipe({ id: 2, name: "Cook B" });
@@ -121,13 +168,13 @@ describe("verifyWeek", () => {
   const recipesById = new Map([cookA, cookB, quick, assembly].map((r) => [r.id, r]));
 
   const validWeek: SlotPlan[] = [
-    { date: "2026-02-08", mealSource: "assembly", recipeId: 4 },
-    { date: "2026-02-09", mealSource: "quick", recipeId: 3 },
-    { date: "2026-02-10", mealSource: "cook", recipeId: 1 },
-    { date: "2026-02-11", mealSource: "leftover", recipeId: null },
-    { date: "2026-02-12", mealSource: "cook", recipeId: 2 },
-    { date: "2026-02-13", mealSource: "leftover", recipeId: null },
-    { date: "2026-02-14", mealSource: "assembly", recipeId: null },
+    { date: "2026-02-08", meal: "Dinner", mealSource: "assembly", recipeId: 4 },
+    { date: "2026-02-09", meal: "Dinner", mealSource: "quick", recipeId: 3 },
+    { date: "2026-02-10", meal: "Dinner", mealSource: "cook", recipeId: 1 },
+    { date: "2026-02-11", meal: "Dinner", mealSource: "leftover", recipeId: null },
+    { date: "2026-02-12", meal: "Dinner", mealSource: "cook", recipeId: 2 },
+    { date: "2026-02-13", meal: "Dinner", mealSource: "leftover", recipeId: null },
+    { date: "2026-02-14", meal: "Dinner", mealSource: "assembly", recipeId: null },
   ];
 
   /** The user rule that replaces what used to be a hardcoded setting. */

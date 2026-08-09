@@ -100,6 +100,26 @@ export function formatShortDate(date: IsoDate): string {
 }
 
 /**
+ * `August 8, 2026` — the long form used wherever a date is read as prose.
+ *
+ * `timeZone: "UTC"` is not optional here. An `IsoDate` is a calendar day with
+ * no time attached, and parsing one yields UTC midnight — formatted in a
+ * negative-offset zone that renders as the *previous* day, so a shopping list
+ * for the 8th would be labelled the 7th anywhere west of Greenwich.
+ *
+ * Dates stay ISO in the database, on the wire and in URLs, where they sort and
+ * compare correctly. This is presentation only.
+ */
+export function formatLongDate(date: IsoDate): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(toUtcMillis(date)));
+}
+
+/**
  * A node-cron expression for the configured weekly generation moment.
  * node-cron applies the timezone itself via its `timezone` option, so the
  * expression stays in local wall-clock terms.

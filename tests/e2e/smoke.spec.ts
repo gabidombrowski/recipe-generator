@@ -39,9 +39,22 @@ test.describe("signed in", () => {
     await page.goto("/");
 
     if (new URL(page.url()).pathname === "/setup") {
-      await page.getByRole("button", { name: "Next" }).click(); // profile defaults
-      await page.getByRole("button", { name: "Next" }).click(); // schedule defaults
-      // The wizard's third step must show live macro arithmetic, not a stub.
+      // Walk to the last step rather than clicking a fixed number of times, so
+      // adding a wizard step does not silently turn this into a test that
+      // finishes setup from halfway through.
+      // `exact` matters: the default is a substring match, which also catches a
+      // day-picker button on the profile step and trips strict mode.
+      const next = page.getByRole("button", { name: "Next", exact: true });
+
+      // Wait for the wizard to actually render before testing visibility. It
+      // shows a spinner while it loads stored settings, and `isVisible()` does
+      // not wait — so without this the loop evaluated false on the spinner,
+      // walked zero steps, and passed by doing nothing.
+      await next.waitFor({ state: "visible" });
+      while (await next.isVisible()) await next.click();
+
+      // Every step must have been reachable, and the last one must show live
+      // macro arithmetic rather than a stub.
       await expect(page.getByText(/BMR \(Mifflin-St Jeor\)/)).toBeVisible();
       await page.getByRole("button", { name: "Finish setup" }).click();
     }
@@ -49,9 +62,40 @@ test.describe("signed in", () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
+    // ---- Day role override survives a reload --------------------------------
+    //
+    // This runs before any week is generated, so there is no plan_slots row for
+    // today — the precondition under which the override used to be written by a
+    // bare UPDATE, match zero rows, report success, and silently revert.
+    // Matches by prefix: the label now names the meal, and the page shows one
+    // select per planned meal. `.first()` is the main meal.
+    const roleSelect = page.getByLabel(/Override the day role for/).first();
+    const otherRole = (await roleSelect.inputValue()) === "cook" ? "quick" : "cook";
+    await roleSelect.selectOption(otherRole);
+
+    // Wait for the guidance to follow the new role before reloading. The select
+    // is controlled by the query, so this only changes once the mutation has
+    // landed and the refetch has come back — `selectOption` alone returns as
+    // soon as the DOM event is dispatched, and the reload would then race the
+    // in-flight write.
+    await expect(
+      page.getByText(otherRole === "cook" ? /^Cook day:/ : /^Quick day:/),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByLabel(/Override the day role for/).first()).toHaveValue(
+      otherRole,
+    );
+
     // ---- Week generation --------------------------------------------------
     await page.goto("/week");
-    await expect(page.getByRole("heading", { name: /Week of/ })).toBeVisible();
+    // The heading is the page noun; the week it is actually showing moved into
+    // the subtitle. Both are asserted — a hardcoded title alone would still
+    // pass if the date never rendered.
+    await expect(page.getByRole("heading", { name: /^Week$/ })).toBeVisible();
+    // Long form, e.g. "Of August 2, 2026" — dates stay ISO in the database and
+    // on the wire, and are formatted only at the point of display.
+    await expect(page.getByText(/Of [A-Z][a-z]+ \d{1,2}, \d{4}/)).toBeVisible();
 
     await page.getByRole("button", { name: "Generate week now" }).click();
     // `skipped` is a legitimate outcome — it means the week was already planned
@@ -68,7 +112,8 @@ test.describe("signed in", () => {
 
     // ---- Grocery list reacts to a plan change -----------------------------
     await page.goto("/grocery");
-    await expect(page.getByRole("heading", { name: /Shopping day:/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Grocery$/ })).toBeVisible();
+    await expect(page.getByText(/Shopping day:/)).toBeVisible();
     const before = await page.getByRole("checkbox").count();
     expect(before).toBeGreaterThan(0);
 

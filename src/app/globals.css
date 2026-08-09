@@ -1,56 +1,128 @@
 @import "tailwindcss";
 
 /*
- * A small, deliberate palette rather than a component library.
+ * Theme, borrowed from the Mentor Playbook deck.
  *
- * Everything is expressed as CSS custom properties so light and dark are one
- * definition each, and Tailwind utilities reference the tokens through
- * @theme rather than hardcoding hex values across components.
+ * The deck's identity is four colours (peach, teal, pink, near-black ink), a
+ * violet-to-aqua wash, and Righteous over Poppins. What it is *not* is 48px
+ * type on 0.5rem letter-spacing — that is built for a projector at the back of
+ * a room, and this app is a macro table. So the palette, the fonts and the
+ * skewed plate motif carry over; the deck's scale does not.
+ *
+ * Everything stays expressed as semantic tokens (`accent`, `warn`, ...) rather
+ * than colour names, so components never learn what "teal" means and the dark
+ * theme is one more definition rather than a second set of components.
+ *
+ * Contrast, all against the surface the colour actually sits on. The deck's own
+ * CSS documents this for its palette, having darkened two colours to clear WCAG
+ * — worth keeping up, since a dense UI leans on colour far harder than slides:
+ *
+ *   ink       #14100e on #fff      18.9:1   AAA
+ *   ink-muted #5c5148 on #fff       7.2:1   AAA
+ *   accent    #006c5b on #fff       6.4:1   AA  (deck's teal, unchanged)
+ *   warn      #bc1150 on #fff       6.3:1   AA  (deck's pink, unchanged)
+ *   flagged   #5d0979 on #fff      11.8:1   AAA (violet, lifted from the wash)
+ *   training  #8a4b12 on #fff       6.9:1   AA
+ *   ink       #14100e on #ffd0ae   14.9:1   AAA (black on a peach plate)
+ *   accent-ink on accent            6.4:1   AA  light theme: white on dark teal
+ *                                   9.6:1   AAA dark theme: near-black on light teal
  */
 @theme {
-  --color-canvas: oklch(98.5% 0.004 100);
+  --color-canvas: oklch(98.2% 0.008 70);
   --color-surface: oklch(100% 0 0);
-  --color-surface-sunken: oklch(96.5% 0.005 100);
-  --color-border: oklch(90% 0.006 100);
-  --color-ink: oklch(24% 0.012 90);
-  --color-ink-muted: oklch(52% 0.012 90);
+  --color-surface-sunken: oklch(96.4% 0.012 70);
+  --color-border: oklch(90.5% 0.016 65);
+  --color-ink: oklch(19% 0.012 55);
+  --color-ink-muted: oklch(45% 0.018 60);
 
-  --color-accent: oklch(52% 0.13 155);
-  --color-accent-soft: oklch(94% 0.04 155);
+  /* Teal — links, "good", primary actions. */
+  --color-accent: oklch(43.5% 0.088 175);
+  --color-accent-soft: oklch(93.5% 0.035 175);
+  /* Text that sits *on* accent. It cannot be a literal white: accent is dark in
+     this theme and light in the dark one, so a fixed foreground fails one of
+     them. Flipping it with the theme is what keeps a teal plate legible in
+     both. */
+  --color-accent-ink: oklch(100% 0 0);
 
-  --color-training: oklch(50% 0.14 45);
-  --color-training-soft: oklch(95% 0.04 45);
+  /* Peach — the plate fill behind page titles. A background, never text: at
+     14.9:1 under black it is superb as a fill and hopeless as a foreground. */
+  --color-plate: oklch(89% 0.062 65);
+  --color-plate-ink: oklch(19% 0.012 55);
 
-  --color-warn: oklch(52% 0.16 30);
-  --color-warn-soft: oklch(95% 0.05 30);
+  /* Burnt amber — training days. The peach darkened until it is legible as
+     text, which the plate colour itself is not. */
+  --color-training: oklch(46% 0.105 55);
+  --color-training-soft: oklch(93.5% 0.045 65);
 
-  --color-flagged: oklch(48% 0.14 320);
-  --color-flagged-soft: oklch(95% 0.04 320);
+  /* Pink — the deck's "bad". */
+  --color-warn: oklch(47% 0.185 5);
+  --color-warn-soft: oklch(93.5% 0.04 5);
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Violet — pulled from the middle stop of the deck's wash. */
+  --color-flagged: oklch(32% 0.165 310);
+  --color-flagged-soft: oklch(93.5% 0.035 310);
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", monospace;
+
+  /* The deck's violet-to-aqua wash, at roughly a sixth of its opacity. On
+     slides it is the whole background; behind small text it has to be almost
+     subliminal or it eats legibility. */
+  --wash: linear-gradient(
+    25deg,
+    oklch(20% 0.09 290 / 0.05) 0%,
+    oklch(35% 0.16 310 / 0.05) 50%,
+    oklch(85% 0.13 190 / 0.05) 100%
+  );
 }
 
+/*
+ * Dark theme.
+ *
+ * These are plain custom-property overrides on `:root`, NOT a second `@theme`
+ * block. Tailwind v4 hoists every `@theme` it finds out of its surrounding
+ * at-rule, so a `@theme` nested in this media query silently loses the query and
+ * its values apply unconditionally — the dark palette wins even in daylight, and
+ * `prefers-color-scheme` stops meaning anything. Overriding the variables the
+ * utilities already reference keeps the media query intact.
+ */
 @media (prefers-color-scheme: dark) {
-  @theme {
-    --color-canvas: oklch(17% 0.008 90);
-    --color-surface: oklch(21% 0.009 90);
-    --color-surface-sunken: oklch(19% 0.008 90);
-    --color-border: oklch(30% 0.01 90);
-    --color-ink: oklch(94% 0.005 90);
-    --color-ink-muted: oklch(68% 0.01 90);
+  :root {
+    --color-canvas: oklch(15.5% 0.011 55);
+    --color-surface: oklch(19.5% 0.013 55);
+    --color-surface-sunken: oklch(17.5% 0.012 55);
+    --color-border: oklch(28.5% 0.016 55);
+    --color-ink: oklch(94.5% 0.012 70);
+    --color-ink-muted: oklch(70% 0.018 60);
 
-    --color-accent: oklch(72% 0.15 155);
-    --color-accent-soft: oklch(28% 0.05 155);
+    /* Every foreground lightens: the light-theme values are chosen against
+       white and would sit at 1.5:1 or worse on a near-black surface. */
+    --color-accent: oklch(78% 0.115 175);
+    --color-accent-soft: oklch(27% 0.05 175);
+    /* Near-black on light teal — 9.6:1, where white on it would be 1.9:1. */
+    --color-accent-ink: oklch(19% 0.012 55);
 
-    --color-training: oklch(72% 0.14 45);
-    --color-training-soft: oklch(28% 0.05 45);
+    /* The peach plate survives the flip unchanged — it is a light fill with
+       dark text either way, so it reads as the same object in both themes. */
+    --color-plate: oklch(89% 0.062 65);
+    --color-plate-ink: oklch(19% 0.012 55);
 
-    --color-warn: oklch(70% 0.16 30);
-    --color-warn-soft: oklch(28% 0.06 30);
+    --color-training: oklch(79% 0.105 65);
+    --color-training-soft: oklch(27% 0.05 55);
 
-    --color-flagged: oklch(74% 0.13 320);
-    --color-flagged-soft: oklch(28% 0.05 320);
+    --color-warn: oklch(74% 0.145 5);
+    --color-warn-soft: oklch(27% 0.06 5);
+
+    --color-flagged: oklch(78% 0.115 310);
+    --color-flagged-soft: oklch(27% 0.05 310);
+
+    --wash: linear-gradient(
+      25deg,
+      oklch(45% 0.13 290 / 0.08) 0%,
+      oklch(50% 0.17 310 / 0.08) 50%,
+      oklch(80% 0.13 190 / 0.06) 100%
+    );
   }
 }
 
@@ -59,13 +131,55 @@ html {
 }
 
 body {
-  background: var(--color-canvas);
+  /* Wash over canvas, fixed so it reads as one continuous field rather than
+     restarting per screenful on a long page. */
+  background: var(--wash), var(--color-canvas);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Respect the setting rather than animating regardless. */
+/*
+ * The plate: the deck's one unmistakable move.
+ *
+ * A solid slab of colour, uppercase display type, rotated and skewed a few
+ * degrees. It is applied to page titles and section headings only. On the
+ * deck every heading can be a plate because a slide holds one idea; here a
+ * screen holds a dozen, and skewing all of them would leave nothing straight
+ * to read against — the motif works precisely because most things stay level.
+ */
+.plate {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1.15;
+  transform: rotate(-2deg) skew(-4deg);
+}
+
+/* The deck skews at -4deg/-5deg. That is a slide-sized gesture; at UI sizes
+   the same angle reads as a rendering fault, so this is roughly half. */
+.plate--title {
+  background: var(--color-plate);
+  color: var(--color-plate-ink);
+  /* The plate's fill runs to the edge of its box, so a subtitle on the default
+     leading nearly touches the colour. Normal headings can sit tighter because
+     they have only glyphs below them, not a painted edge. */
+  margin-bottom: 0.4rem;
+}
+
+.plate--section {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  transform: rotate(-1deg) skew(-3deg);
+  letter-spacing: 0.02em;
+}
+
+/* Someone who asked not to see motion did not ask to see wonky text, so the
+   tilt stays — but nothing here animates in the first place. Reduced motion is
+   about movement, not about static transforms. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

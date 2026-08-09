@@ -14,10 +14,19 @@ export function MacroExplainer({
   plan,
   formulas,
   perMealProtein,
+  mealSplit,
 }: {
   plan: MacroPlan;
   formulas: readonly FormulaLine[];
   perMealProtein: { meals: number; gramsPerMeal: number; withinGuide: boolean };
+  /** Training-day targets divided across the configured meals. */
+  mealSplit?: ReadonlyArray<{
+    meal: string;
+    kcal: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+  }>;
 }) {
   const rows = [
     { label: "Training day", targets: plan.training, count: plan.trainingDayCount, tone: "training" as const },
@@ -80,6 +89,41 @@ export function MacroExplainer({
           </p>
         </div>
       </Card>
+
+      {mealSplit && mealSplit.length > 0 && (
+        <Card title="A training day, meal by meal">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-md text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-ink-muted uppercase">
+                  <th className="py-2 pr-3 font-medium">Meal</th>
+                  <th className="py-2 pr-3 text-right font-medium">kcal</th>
+                  <th className="py-2 pr-3 text-right font-medium">Protein</th>
+                  <th className="py-2 pr-3 text-right font-medium">Carbs</th>
+                  <th className="py-2 text-right font-medium">Fat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mealSplit.map((row) => (
+                  <tr key={row.meal} className="border-b border-border last:border-0">
+                    <td className="py-2 pr-3">{row.meal}</td>
+                    <td className="py-2 pr-3 text-right font-mono tabular-nums">{row.kcal}</td>
+                    <td className="py-2 pr-3 text-right font-mono tabular-nums">{row.proteinG} g</td>
+                    <td className="py-2 pr-3 text-right font-mono tabular-nums">{row.carbsG} g</td>
+                    <td className="py-2 text-right font-mono tabular-nums">{row.fatG} g</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-ink-muted">
+            An even split across the meals you listed. The app has no idea how
+            you actually distribute intake, so this is a budget to aim at rather
+            than a prescription — and only one of these meals is the one it
+            plans for you.
+          </p>
+        </Card>
+      )}
 
       <Card title="How these numbers are produced">
         <ol className="space-y-3">

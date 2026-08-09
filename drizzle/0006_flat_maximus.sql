@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `units` text DEFAULT 'metric' NOT NULL;

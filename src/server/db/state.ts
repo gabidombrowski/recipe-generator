@@ -69,6 +69,12 @@ export function getSettings(): SettingsWithSetup {
     aiNovelRecipesPerWeek: row.aiNovelRecipesPerWeek,
     repeatWindowWeeks: row.repeatWindowWeeks,
     plannerMode: row.plannerMode,
+    groceryCopyFormat: row.groceryCopyFormat,
+    units: row.units,
+    cuisines: row.cuisines,
+    meals: row.meals,
+    plannedMeals: row.plannedMeals,
+    mainMeal: row.mainMeal,
     setupComplete: row.setupComplete,
   };
 }
@@ -89,10 +95,25 @@ export function updateSettings(next: Settings): SettingsWithSetup {
   return getSettings();
 }
 
-/** Marks first-run setup finished. Irreversible from the UI, by design. */
+/** Marks first-run setup finished. */
 export function completeSetup(): void {
   db.update(settings)
     .set({ setupComplete: true })
+    .where(eq(settings.id, SINGLETON_ID))
+    .run();
+}
+
+/**
+ * Sends the user back to the wizard.
+ *
+ * Only the flag moves. Every stored value survives, and the wizard seeds each
+ * step from what is there — re-running to adjust one meal shape must not cost
+ * you the profile you entered months ago. Clearing data is what the Kitchen and
+ * Settings pages are for, individually and on purpose.
+ */
+export function reopenSetup(): void {
+  db.update(settings)
+    .set({ setupComplete: false })
     .where(eq(settings.id, SINGLETON_ID))
     .run();
 }

@@ -241,15 +241,48 @@ export function formulaTrace(p: Profile, plan: MacroPlan): FormulaLine[] {
 }
 
 /**
- * Suggested per-meal protein across four meals. The spec's guide is 35-45 g;
- * this reports the actual per-meal split so the guide can be checked against
- * the live target rather than asserted.
+ * Suggested per-meal protein across the meals actually eaten.
+ *
+ * The count used to default to four — an assumption nobody had stated and
+ * nothing else in the app shared, while the targets it divided were whole-day
+ * numbers and the planner filled exactly one meal. Taking the count from the
+ * configured meal list is what makes this number mean something.
+ *
+ * The 35-45 g guide is reported against the live split rather than asserted, so
+ * a meal count that puts you outside it says so instead of quietly disagreeing.
  */
 export function perMealProtein(plan: MacroPlan, meals = 4) {
-  const perMeal = plan.training.proteinG / meals;
+  // A zero would produce Infinity and render as "Infinity g". The schema
+  // requires at least one meal, but this function is also called with counts
+  // from older stored settings.
+  const safeMeals = Math.max(1, Math.round(meals));
+  const perMeal = plan.training.proteinG / safeMeals;
   return {
-    meals,
+    meals: safeMeals,
     gramsPerMeal: Math.round(perMeal),
     withinGuide: perMeal >= 35 && perMeal <= 45,
   };
+}
+
+/**
+ * Splits a day's targets evenly across the meals eaten that day.
+ *
+ * Even is a simplification — most people do not eat four identical meals — but
+ * it is an honest one: the app has no information about how someone distributes
+ * intake, and inventing a breakfast-lighter-than-dinner curve would be dressing
+ * a guess up as a calculation. It is a per-meal budget to aim at, not a
+ * prescription for each plate.
+ */
+export function splitAcrossMeals(
+  targets: MacroTargets,
+  mealNames: readonly string[],
+): Array<{ meal: string } & MacroTargets> {
+  const count = Math.max(1, mealNames.length);
+  return mealNames.map((meal) => ({
+    meal,
+    kcal: Math.round(targets.kcal / count),
+    proteinG: Math.round(targets.proteinG / count),
+    carbsG: Math.round(targets.carbsG / count),
+    fatG: Math.round(targets.fatG / count),
+  }));
 }

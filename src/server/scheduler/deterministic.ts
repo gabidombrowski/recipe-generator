@@ -107,9 +107,11 @@ export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult 
   // How many cook recipes this week already carry each guideline-limited tag.
   const tagUsage = new Map<string, number>();
 
-  const slots: SlotPlan[] = deriveSlotRoles(weekStart, profile).map(
-    ({ date, mealSource }) => {
-      if (mealSource === "leftover") return { date, mealSource, recipeId: null };
+  const slots: SlotPlan[] = deriveSlotRoles(weekStart, profile, {
+    meals: settings.plannedMeals,
+    mainMeal: settings.mainMeal,
+  }).map(({ date, meal, mealSource }) => {
+      if (mealSource === "leftover") return { date, meal, mealSource, recipeId: null };
 
       const eligibleTypes = eligibleMealTypes(mealSource);
       const dayTargets = isTrainingDay(profile, dayOfWeekFor(date))
@@ -155,11 +157,11 @@ export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult 
             tagUsage.set(tag, (tagUsage.get(tag) ?? 0) + 1);
           }
         }
-        return { date, mealSource, recipeId: choice.id };
+        return { date, meal, mealSource, recipeId: choice.id };
       }
 
       unfilled.push(date);
-      return { date, mealSource, recipeId: null };
+      return { date, meal, mealSource, recipeId: null };
     },
   );
 

@@ -49,6 +49,11 @@ const proposeWeekSchema = z.object({
     .array(
       z.object({
         date: z.string().describe("YYYY-MM-DD"),
+        meal: z
+          .string()
+          .describe(
+            "Which meal of the day this slot is, copied exactly from the slot you were given.",
+          ),
         mealSource: z.enum(["cook", "quick", "assembly", "leftover"]),
         recipeId: z
           .number()
@@ -57,8 +62,15 @@ const proposeWeekSchema = z.object({
           .describe("Recipe id, or null for leftover days."),
       }),
     )
-    .length(7)
-    .describe("Exactly seven slots, one per day, in date order."),
+    // Not a fixed 7 any more: the count is seven days times however many meals
+    // are planned. The verifier checks the exact number against the derived
+    // slots, which is the check that actually matters — this bound only keeps a
+    // runaway proposal from arriving.
+    .min(1)
+    .max(70)
+    .describe(
+      "One entry for every slot you were given, in date order, each carrying its date and meal.",
+    ),
   reasoning: z
     .string()
     .max(1200)
@@ -161,9 +173,19 @@ function runTool(name: string, data: PlannerData): unknown {
 // Prompt
 // ---------------------------------------------------------------------------
 
-function describeSlotRoles(weekStart: IsoDate, profile: Profile): string {
-  return deriveSlotRoles(weekStart, profile)
-    .map(({ date, mealSource }) => `- ${date} (${formatShortDate(date)}): ${mealSource}`)
+function describeSlotRoles(
+  weekStart: IsoDate,
+  profile: Profile,
+  settings: Settings,
+): string {
+  return deriveSlotRoles(weekStart, profile, {
+    meals: settings.plannedMeals,
+    mainMeal: settings.mainMeal,
+  })
+    .map(
+      ({ date, meal, mealSource }) =>
+        `- ${date} (${formatShortDate(date)}) ${meal}: ${mealSource}`,
+    )
     .join("\n");
 }
 
@@ -229,7 +251,7 @@ export async function planWeekWithAgent(args: {
     const client = getClient();
     const prompt = loadPrompt(PROMPT_NAMES.planner);
     const system = renderPrompt(prompt, {
-      SLOT_ROLES: describeSlotRoles(weekStart, profile),
+      SLOT_ROLES: describeSlotRoles(weekStart, profile, settings),
       RULES: describeRules(settings, data),
     });
 
@@ -330,6 +352,7 @@ export async function planWeekWithAgent(args: {
 
         const slots: SlotPlan[] = parsed.data.slots.map((s) => ({
           date: s.date,
+          meal: s.meal,
           mealSource: s.mealSource,
           recipeId: s.recipeId,
         }));

@@ -4,7 +4,18 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { LeftoverList } from "~/components/leftover-list";
-import { Badge, Button, Card, Empty, Field, Input, Select, Spinner } from "~/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Empty,
+  Field,
+  FieldAction,
+  Input,
+  PageTitle,
+  Select,
+  Spinner,
+} from "~/components/ui";
 
 /**
  * Leftovers, the exclude list, and the pantry.
@@ -138,7 +149,7 @@ export default function KitchenPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Kitchen</h1>
+      <PageTitle>Kitchen</PageTitle>
 
       <Card
         title="Leftovers"
@@ -283,7 +294,7 @@ export default function KitchenPage() {
         </p>
 
         <form
-          className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-border p-3"
+          className="mb-4 flex flex-wrap items-start gap-3 rounded-lg border border-border p-3"
           onSubmit={(event) => {
             event.preventDefault();
             submitConstraint();
@@ -331,9 +342,11 @@ export default function KitchenPage() {
             </>
           )}
 
-          <Button type="submit" variant="primary" disabled={addConstraint.isPending}>
-            Add rule
-          </Button>
+          <FieldAction>
+            <Button type="submit" variant="primary" disabled={addConstraint.isPending}>
+              Add rule
+            </Button>
+          </FieldAction>
           {addConstraint.isError && (
             <p role="alert" className="w-full text-xs text-warn">
               {addConstraint.error.message}

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildGroceryList, groceryListToText, lineKey, type PlannedMeal } from "./grocery";
+import {
+  buildGroceryList,
+  groceryListToMarkdown,
+  groceryListToText,
+  lineKey,
+  type PlannedMeal,
+} from "./grocery";
 import { type Recipe } from "~/lib/schemas";
 
 function recipe(overrides: Partial<Recipe> & { id: number; name: string }): Recipe {
@@ -34,6 +40,7 @@ const base = {
     { name: "frozen berries", qty: 0.75, unit: "cup" },
     { name: "casein", qty: 30, unit: "g" },
   ],
+  mealShapes: [] as Array<{ mealType: "cook" | "quick" | "assembly"; servings: number | null }>,
   checkedKeys: new Set<string>(),
 };
 
@@ -265,5 +272,141 @@ describe("grocery list", () => {
     const text = groceryListToText(buildGroceryList({ ...base, meals: [] }));
     expect(text).toContain("Shopping day: Monday");
     expect(text).toContain("banana");
+  });
+});
+
+describe("configured servings per meal type", () => {
+  const oneServingCook = (name: string): PlannedMeal[] => [
+    {
+      mealSource: "cook",
+      recipe: recipe({
+        id: 1,
+        name,
+        servings: 1,
+        ingredients: [{ name: "chicken breast", qty: 4, unit: "oz", tags: [] }],
+      }),
+    },
+  ];
+
+  it("still doubles a cook day when nothing is configured", () => {
+    const list = buildGroceryList({ ...base, meals: oneServingCook("Default") });
+    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+  });
+
+  it("buys for the configured yield instead of the hardcoded one", () => {
+    // The verifier already enforced `meal_shape.servings`; the shopping list
+    // ignored it, so a cook day set to 3 failed verification *and* under-bought.
+    const list = buildGroceryList({
+      ...base,
+      meals: oneServingCook("Configured"),
+      mealShapes: [{ mealType: "cook", servings: 3 }],
+    });
+    expect(findLine(list, "chicken breast")?.qty).toBe(12);
+  });
+
+  it("falls back to the default when the shape sets no servings", () => {
+    const list = buildGroceryList({
+      ...base,
+      meals: oneServingCook("NoServings"),
+      mealShapes: [{ mealType: "cook", servings: null }],
+    });
+    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+  });
+
+  it("scales a non-cook meal type too", () => {
+    const list = buildGroceryList({
+      ...base,
+      meals: [
+        {
+          mealSource: "quick",
+          recipe: recipe({
+            id: 2,
+            name: "Quick",
+            servings: 1,
+            mealType: "quick",
+            ingredients: [{ name: "chicken breast", qty: 4, unit: "oz", tags: [] }],
+          }),
+        },
+      ],
+      mealShapes: [{ mealType: "quick", servings: 2 }],
+    });
+    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+  });
+});
+
+describe("markdown rendering", () => {
+  it("renders headings, the week and the shopping day", () => {
+    const md = groceryListToMarkdown(buildGroceryList({ ...base, meals: [] }));
+    expect(md).toContain("# Grocery — week of February 8, 2026");
+    expect(md).toContain("Shopping day: **Monday**");
+    expect(md).toMatch(/^## Produce$/m);
+  });
+
+  it("emits task-list checkboxes carrying the persisted check state", () => {
+    // The whole reason this is not the plain-text renderer: a task list pastes
+    // into GitHub or Obsidian already tickable, and already ticked.
+    const md = groceryListToMarkdown(
+      buildGroceryList({
+        ...base,
+        meals: [],
+        checkedKeys: new Set([lineKey("banana", "each")]),
+      }),
+    );
+    // Daily staples are multiplied across the seven days, so 1/day is 7 here.
+    expect(md).toMatch(/^- \[x\] 7 each banana$/m);
+    expect(md).toMatch(/^- \[ \] 7 cup oat milk$/m);
+  });
+
+  it("marks flagged tags as code spans", () => {
+    const meals: PlannedMeal[] = [
+      {
+        mealSource: "cook",
+        recipe: recipe({
+          id: 1,
+          name: "Fermented",
+          servings: 2,
+          ingredients: [{ name: "miso", qty: 2, unit: "tbsp", tags: ["fermented"] }],
+        }),
+      },
+    ];
+    const md = groceryListToMarkdown(buildGroceryList({ ...base, meals }));
+    expect(md).toContain("`fermented`");
+  });
+
+  it("escapes Markdown metacharacters in ingredient names", () => {
+    // Names are not a controlled vocabulary — the model can return "5-spice" or
+    // "ancho *chile*". Unescaped, one asterisk italicises the rest of the line.
+    const meals: PlannedMeal[] = [
+      {
+        mealSource: "cook",
+        recipe: recipe({
+          id: 1,
+          name: "Tricky",
+          servings: 2,
+          ingredients: [{ name: "ancho *chile* [dried]", qty: 1, unit: "each", tags: [] }],
+        }),
+      },
+    ];
+    const md = groceryListToMarkdown(buildGroceryList({ ...base, meals }));
+    expect(md).toContain("ancho \\*chile\\* \\[dried\\]");
+    // The emphasis must not survive into the output in any unescaped form.
+    expect(md).not.toMatch(/[^\\]\*chile/);
+  });
+
+  it("lists check-your-supply items as plain bullets, not checkboxes", () => {
+    // These are a glance-before-you-go reminder, not things to tick off.
+    const md = groceryListToMarkdown(
+      buildGroceryList({
+        ...base,
+        meals: [],
+        // Must be something the list would otherwise contain — an on-hand
+        // staple nothing uses never reaches check-your-supply at all.
+        pantryStaples: [{ name: "oat milk", onHand: true }],
+      }),
+    );
+    expect(md).toContain("## Check your supply");
+    expect(md).toMatch(/^- oat milk$/m);
+    // Plain bullet, not a checkbox.
+    expect(md).not.toMatch(/^- \[[ x]\] oat milk$/m);
   });
 });

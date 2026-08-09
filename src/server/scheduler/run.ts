@@ -7,7 +7,7 @@ import {
   listRecipes,
   recentRecipeIds,
   recordSchedulerRun,
-  weekExists,
+  weekIsPlanned,
   writeSlots,
 } from "~/server/db/queries";
 import { getProfile, getSettings } from "~/server/db/state";
@@ -33,12 +33,6 @@ import { type SlotPlan } from "./rules";
  */
 
 const log = loggerFor("scheduler");
-
-/** Cuisines the AI filler rotates through when adding novel cook recipes. */
-const NOVEL_CUISINES = [
-  "Peruvian", "Georgian", "Sichuan", "Ethiopian", "Lebanese", "Yucatecan",
-  "Vietnamese", "Portuguese", "Filipino", "Turkish", "Malaysian", "Nigerian",
-] as const;
 
 export interface RunOptions {
   /** Defaults to the week containing today, per `settings.generationDay`. */
@@ -71,7 +65,7 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
 
     // Idempotency: an already-planned week is left alone unless forced. This is
     // what makes a cron that fires twice (restart, clock adjustment) harmless.
-    if (weekExists(weekStart) && !options.force) {
+    if (weekIsPlanned(weekStart) && !options.force) {
       return finish({
         mode: settings.plannerMode,
         fellBack: false,
@@ -160,6 +154,7 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
       novelCount: settings.aiNovelRecipesPerWeek,
       excluded,
       notes,
+      cuisines: settings.cuisines,
     });
 
     return finish({
@@ -186,8 +181,10 @@ async function fillWithNovelRecipes(args: {
   novelCount: number;
   excluded: readonly string[];
   notes: string[];
+  /** The user's cuisine palette. */
+  cuisines: readonly string[];
 }): Promise<number> {
-  const { weekStart, novelCount, excluded, notes } = args;
+  const { weekStart, novelCount, excluded, notes, cuisines } = args;
   if (novelCount <= 0) return 0;
 
   if (!isLlmConfigured()) {
@@ -205,7 +202,10 @@ async function fillWithNovelRecipes(args: {
       .filter((r) => r.mealType === "cook")
       .map((r) => r.cuisine.toLowerCase()),
   );
-  const freshCuisines = NOVEL_CUISINES.filter((c) => !usedCuisines.has(c.toLowerCase()));
+  // Prefer cuisines the library has not seen yet, so successive weeks widen
+  // the rotation instead of circling the same few.
+  const unused = cuisines.filter((c) => !usedCuisines.has(c.toLowerCase()));
+  const freshCuisines = unused.length > 0 ? unused : cuisines;
   // Rotate deterministically by week so successive weeks explore new cuisines.
   const offset = Number(weekStart.replaceAll("-", "")) % Math.max(1, freshCuisines.length);
 
@@ -215,9 +215,7 @@ async function fillWithNovelRecipes(args: {
 
   let created = 0;
   for (const [index, slot] of targets.entries()) {
-    const cuisine =
-      freshCuisines[(offset + index) % Math.max(1, freshCuisines.length)] ??
-      NOVEL_CUISINES[index % NOVEL_CUISINES.length]!;
+    const cuisine = freshCuisines[(offset + index) % Math.max(1, freshCuisines.length)];
 
     try {
       const result = await generateRecipe(
@@ -238,7 +236,10 @@ async function fillWithNovelRecipes(args: {
       });
 
       // Auto-assign so the grocery list updates immediately.
-      writeSlots([{ date: slot.date, mealSource: "cook", recipeId: recipe.id }], true);
+      writeSlots(
+        [{ date: slot.date, meal: slot.meal, mealSource: "cook", recipeId: recipe.id }],
+        true,
+      );
       created += 1;
       log.info({ date: slot.date, recipe: recipe.name, cuisine }, "AI recipe assigned");
     } catch (error) {

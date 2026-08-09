@@ -5,7 +5,8 @@ import type { NextConfig } from "next";
 /**
  * Security headers applied to every response. The CSP is deliberately a
  * baseline rather than a lockdown: `unsafe-inline` on styles is required by
- * Tailwind's runtime-injected styles, and `unsafe-eval` is omitted entirely.
+ * Tailwind's runtime-injected styles, and `unsafe-eval` is omitted from every
+ * production response.
  */
 const securityHeaders = [
   {
@@ -26,7 +27,12 @@ const securityHeaders = [
       "img-src 'self' data: blob:",
       "style-src 'self' 'unsafe-inline'",
       // Next's App Router bootstrap uses inline scripts keyed to the build.
-      "script-src 'self' 'unsafe-inline'",
+      // `unsafe-eval` is added in development only: React's dev build uses
+      // eval() for the error overlay and callstack reconstruction, and without
+      // it the dev experience degrades silently. Production never gets it.
+      `script-src 'self' 'unsafe-inline'${
+        process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"
+      }`,
       "connect-src 'self'",
       "font-src 'self' data:",
       "upgrade-insecure-requests",
@@ -64,6 +70,43 @@ const nextConfig: NextConfig = {
       "./node_modules/sqlite-vec/**",
       "./node_modules/sqlite-vec-*/**",
       "./node_modules/onnxruntime-node/**",
+    ],
+  },
+
+  /**
+   * Keep secrets and personal data out of the build artifact.
+   *
+   * `src/server/db/seed.ts` reads `seed.local.json` through a computed path.
+   * Next cannot follow that statically, so it gives up and traces the *whole
+   * project* into `.next/standalone` — the build even warns about it
+   * ("Dynamic filesystem access causes tracing of the whole project"). The
+   * result is that `.env`, `seed.local.json` and any local `data/*.db` get
+   * copied into the output.
+   *
+   * That matters because `deploy.yml` rsyncs `.next/standalone/` to the server.
+   * A CI build never sees these files, so the deployed artifact has been clean —
+   * but a build run on a developer machine carries a real `AUTH_SECRET`, a real
+   * API key and a real profile, and would copy all three to whatever host it is
+   * sent to.
+   *
+   * Measured honestly: these excludes alone did **not** stop `.env` and
+   * `seed.local.json` reaching the output — a rebuild still produced both, and
+   * `scripts/pack-standalone.mjs` is what actually removes them. They are kept
+   * because they cost nothing and narrow what gets traced, but the scrub in the
+   * pack step is the mechanism to rely on. Do not delete it on the strength of
+   * this block.
+   */
+  outputFileTracingExcludes: {
+    "/**": [
+      "./.env*",
+      "./seed.local.json",
+      "./nutrition-context.md",
+      "./data/**",
+      "./**/*.db",
+      "./**/*.db-wal",
+      "./**/*.db-shm",
+      "./.git/**",
+      "./tests/e2e/.auth/**",
     ],
   },
 

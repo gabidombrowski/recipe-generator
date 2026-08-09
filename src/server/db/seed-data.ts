@@ -226,7 +226,9 @@ const RAW_RECIPES: RawRecipe[] = [
   // -------------------------------------------------------------------------
   {
     name: "Rotisserie Chicken Sesame Bowl",
-    cuisine: "Asian-American",
+    // Shop-bought chicken, a rice pouch and bagged slaw belong to no country's
+    // cooking. "Any" is the honest label, same as the shake below.
+    cuisine: "Any",
     cookMinutes: 5,
     servings: 1,
     mealType: "assembly",

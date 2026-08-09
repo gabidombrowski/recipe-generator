@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cpSync, existsSync } from "node:fs";
+import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -36,4 +36,40 @@ for (const [from, to] of copies) {
   if (!existsSync(from)) continue;
   cpSync(from, to, { recursive: true });
   console.log(`packed ${from.replace(`${root}/`, "")}`);
+}
+
+/**
+ * Scrub secrets and personal data from the artifact.
+ *
+ * `deploy.yml` rsyncs this directory to the server, so anything left here is
+ * shipped. Next traces the whole project into the standalone output — it warns
+ * that it is doing so, because `seed.local.json` is read through a computed
+ * path it cannot follow — which sweeps up `.env`, the local seed, and any
+ * database sitting in `data/`.
+ *
+ * A CI build never has those files, so what has actually shipped was clean. A
+ * build on a developer machine is not: it carries a real `AUTH_SECRET`, a real
+ * API key and a real profile. `next.config.ts` also lists them under
+ * `outputFileTracingExcludes`, but that alone did not keep them out — this
+ * runs on the finished artifact, which is the last point where being wrong is
+ * still recoverable.
+ *
+ * Deleting rather than warning is deliberate. A warning in a build log is a
+ * warning nobody reads at 11pm.
+ */
+const scrub = [
+  ".env",
+  ".env.local",
+  ".env.production",
+  "seed.local.json",
+  "nutrition-context.md",
+  "data",
+  "tests/e2e/.auth",
+];
+
+for (const relative of scrub) {
+  const target = join(standalone, relative);
+  if (!existsSync(target)) continue;
+  rmSync(target, { recursive: true, force: true });
+  console.log(`scrubbed ${relative} from the artifact`);
 }

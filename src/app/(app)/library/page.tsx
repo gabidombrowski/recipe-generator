@@ -4,9 +4,19 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RecipeCard } from "~/components/recipe-card";
-import { GenerateRecipeButton } from "~/components/generate-recipe";
 import { AiFeedbackControls } from "~/components/ai-feedback";
-import { Badge, Button, Card, Empty, Field, Input, Select, Spinner } from "~/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Empty,
+  Field,
+  InfoHint,
+  Input,
+  PageTitle,
+  Select,
+  Spinner,
+} from "~/components/ui";
 import { mealTypeSchema, type MealType } from "~/lib/schemas";
 
 /**
@@ -25,6 +35,10 @@ export default function LibraryPage() {
   const [cuisine, setCuisine] = useState("");
   const [maxCookMinutes, setMaxCookMinutes] = useState<number | "">("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  // The library is what you kept. Generated recipes live in the database from
+  // the moment they are created — the planner assigns by id — so browsing them
+  // is opt-in rather than the default view.
+  const [showUnsaved, setShowUnsaved] = useState(false);
   const [hideExcluded, setHideExcluded] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [semanticQuery, setSemanticQuery] = useState("");
@@ -41,6 +55,7 @@ export default function LibraryPage() {
     cuisine: cuisine || undefined,
     maxCookMinutes: maxCookMinutes === "" ? undefined : maxCookMinutes,
     favoritesOnly,
+    savedOnly: !showUnsaved,
     hideExcluded,
     keyword: keyword || undefined,
     eaten:
@@ -56,7 +71,10 @@ export default function LibraryPage() {
 
   const library = useQuery(trpc.recipes.list.queryOptions(filters));
   const semantic = useQuery({
-    ...trpc.recipes.semanticSearch.queryOptions({ query: submittedSemantic }),
+    ...trpc.recipes.semanticSearch.queryOptions({
+      query: submittedSemantic,
+      savedOnly: !showUnsaved,
+    }),
     enabled: submittedSemantic.length > 0,
   });
 
@@ -69,8 +87,7 @@ export default function LibraryPage() {
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Recipe library</h1>
-        <GenerateRecipeButton mealType="cook" onGenerated={invalidate} />
+        <PageTitle>Library</PageTitle>
       </header>
 
       <Card title="Search">
@@ -182,6 +199,20 @@ export default function LibraryPage() {
               className="size-4 accent-[var(--color-accent)]"
             />
             Hide excluded
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showUnsaved}
+              onChange={(event) => setShowUnsaved(event.target.checked)}
+              className="size-4 accent-[var(--color-accent)]"
+            />
+            Show unsaved AI recipes
+            <InfoHint>
+              The library lists recipes you kept. Generated ones are stored as
+              soon as they are created, so they appear here only after you save
+              them with the ☆ — tick this to browse the rest.
+            </InfoHint>
           </label>
         </div>
 

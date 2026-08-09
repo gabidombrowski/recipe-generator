@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Card, Empty, Spinner, cx } from "~/components/ui";
+import { Badge, Button, Card, Empty, InfoHint, PageTitle, Spinner, cx } from "~/components/ui";
+import { formatLongDate } from "~/lib/days";
 import { type GroceryLine } from "~/lib/schemas";
 
 /**
  * The grocery list.
  *
  * Derived live from the week's plan — there is deliberately no "generate"
- * button here, only "clear checks". If a line looks wrong, the plan is wrong.
+ * button here, only "reset list", which drops every tick and leaves the full
+ * list. If a line looks wrong, the plan is wrong.
  */
 export default function GroceryPage() {
   const trpc = useTRPC();
@@ -18,7 +20,7 @@ export default function GroceryPage() {
   const [copied, setCopied] = useState(false);
 
   const list = useQuery(trpc.grocery.list.queryOptions({}));
-  const asText = useQuery(trpc.grocery.asText.queryOptions({}));
+  const copyable = useQuery(trpc.grocery.copyText.queryOptions({}));
 
   const invalidate = () => queryClient.invalidateQueries();
   const setChecked = useMutation(trpc.grocery.setChecked.mutationOptions({ onSuccess: invalidate }));
@@ -69,29 +71,37 @@ export default function GroceryPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Shopping day: {data.shoppingDay}</h1>
+          <PageTitle>Grocery</PageTitle>
           <p className="text-sm text-ink-muted">
-            Week of {data.weekStart} · updates the moment the plan changes.
+            Shopping day: <strong>{data.shoppingDay}</strong> · week of{" "}
+            {formatLongDate(data.weekStart)} · updates the moment the plan changes.
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             onClick={async () => {
-              if (!asText.data) return;
-              await navigator.clipboard.writeText(asText.data);
+              if (!copyable.data) return;
+              await navigator.clipboard.writeText(copyable.data.content);
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            disabled={!asText.data}
+            disabled={!copyable.data}
           >
-            {copied ? "Copied" : "Copy as text"}
+            {copied
+              ? "Copied"
+              : `Copy as ${copyable.data?.format === "markdown" ? "Markdown" : "text"}`}
           </Button>
+          <InfoHint>
+            Change the format between plain text and Markdown under Settings →
+            Grocery copy format. Markdown pastes into GitHub, Obsidian or Notion
+            as tickable checkboxes.
+          </InfoHint>
           <Button
             variant="ghost"
             onClick={() => clearChecks.mutate({ weekStart: data.weekStart })}
             disabled={clearChecks.isPending}
           >
-            Clear checks
+            Reset list
           </Button>
         </div>
       </header>

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RecipeCard } from "~/components/recipe-card";
-import { Badge, Button, Card, Empty, MacroRow, Spinner } from "~/components/ui";
+import { Badge, Button, Card, Empty, MacroRow, PageTitle, Spinner } from "~/components/ui";
+import { formatLongDate } from "~/lib/days";
 import { LeftoverList } from "~/components/leftover-list";
 
 /**
@@ -41,8 +42,8 @@ export default function TodayPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{data.day}</h1>
-          <p className="font-mono text-sm text-ink-muted">{data.date}</p>
+          <PageTitle>{data.day}</PageTitle>
+          <p className="text-sm text-ink-muted">{formatLongDate(data.date)}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={data.training ? "training" : "neutral"}>
@@ -77,72 +78,84 @@ export default function TodayPage() {
         </div>
       </Card>
 
-      <Card
-        title="Day role"
-        action={
-          <select
-            aria-label="Override today's day role"
-            className="rounded-lg border border-border bg-surface px-2 py-1 text-xs"
-            value={data.role}
-            onChange={(event) =>
-              setMealSource.mutate({
-                date: data.date,
-                mealSource: event.target.value as typeof data.role,
-              })
-            }
-          >
-            {(["cook", "quick", "assembly", "leftover"] as const).map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        }
-      >
-        <p className="text-sm">{data.guidance}</p>
-
-        {data.role === "cook" && (
-          <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
-            Cook for two. Get the second portion into the fridge while you eat the
-            first — not after.
-          </p>
-        )}
-
-        {data.role === "leftover" && !data.yesterdayWasCookDay && (
-          <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
-            This is a leftover day, but yesterday was not a cook day. Check the
-            inventory below before counting on a portion being there.
-          </p>
-        )}
-      </Card>
-
-      {data.recipe ? (
-        <RecipeCard
-          recipe={data.recipe}
-          defaultExpanded
-          actions={
-            <Button
-              onClick={() =>
-                storePortion.mutate({
-                  recipeName: data.recipe!.name,
-                  storage: "fridge",
+      {data.meals.map((entry) => (
+        <Card
+          key={entry.meal}
+          title={entry.meal}
+          action={
+            <select
+              aria-label={`Override the day role for ${entry.meal}`}
+              className="rounded-lg border border-border bg-surface px-2 py-1 text-xs"
+              value={entry.role}
+              onChange={(event) =>
+                setMealSource.mutate({
+                  date: data.date,
+                  meal: entry.meal,
+                  mealSource: event.target.value as typeof entry.role,
                 })
               }
-              disabled={storePortion.isPending}
             >
-              Stored 1 portion
-            </Button>
+              {(["cook", "quick", "assembly", "leftover"] as const).map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
           }
-        />
-      ) : (
-        <Empty>
-          Nothing assigned for today. Pick something on the{" "}
-          <a className="underline" href="/week">
-            weekly plan
-          </a>
-          .
-        </Empty>
-      )}
+        >
+          <p className="text-sm">{entry.guidance}</p>
+
+          {entry.role === "cook" && (
+            <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+              Cook for two. Get the second portion into the fridge while you eat
+              the first — not after.
+            </p>
+          )}
+
+          {entry.role === "leftover" && !data.yesterdayWasCookDay && (
+            <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+              This is a leftover day, but yesterday was not a cook day. Check the
+              inventory below before counting on a portion being there.
+            </p>
+          )}
+
+          {entry.recipe ? (
+            <div className="mt-3">
+              <RecipeCard
+                recipe={entry.recipe}
+                defaultExpanded={entry.isMain}
+                actions={
+                  <Button
+                    onClick={() =>
+                      storePortion.mutate({
+                        recipeName: entry.recipe!.name,
+                        storage: "fridge",
+                      })
+                    }
+                    disabled={storePortion.isPending}
+                  >
+                    Stored 1 portion
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            entry.role !== "leftover" && (
+              <p className="mt-3 rounded-lg border border-dashed border-border px-4 py-4 text-center text-sm text-ink-muted">
+                Nothing assigned. Pick something on the{" "}
+                <a className="underline" href="/week">
+                  weekly plan
+                </a>
+                , or{" "}
+                <a className="underline" href="/generate">
+                  generate one
+                </a>
+                .
+              </p>
+            )
+          )}
+        </Card>
+      ))}
 
       <Card title="Leftover inventory">
         <LeftoverList items={data.leftovers} onChanged={invalidate} />

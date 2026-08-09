@@ -26,6 +26,7 @@ Anthropic API. Deployed behind a Cloudflare Tunnel with no inbound ports.
 - [Structured generation](#structured-generation)
 - [Evals](#evals)
 - [Observability](#observability)
+- [Look and feel](#look-and-feel)
 - [Security](#security)
 - [Honesty notes](#honesty-notes)
 - [Running it](#running-it)
@@ -404,6 +405,35 @@ nothing else.
 
 ---
 
+## Look and feel
+
+The palette and type are lifted from my *Mentor Playbook* talk deck — peach
+`#ffd0ae` title plates, teal `#006c5b`, pink `#bc1150`, a violet-to-aqua wash,
+and Righteous over Poppins. The deck's signature move is a solid slab of colour
+behind uppercase display type, rotated a few degrees; that carries over as the
+`.plate` class on page titles and card headings.
+
+What deliberately did **not** carry over is the deck's scale. 48px body copy on
+`0.5rem` letter-spacing is built to be read from the back of a room, and this
+app is mostly a macro table. The tilt is halved too — at slide size `-5deg`
+reads as attitude, at UI size it reads as a rendering fault. The motif works
+because most of the screen stays level.
+
+Two constraints shaped the implementation:
+
+- **Fonts are self-hosted via `next/font`,** not a `<link>` to
+  `fonts.googleapis.com` the way the deck loads them. The CSP is `default-src
+  'self'` with `font-src 'self' data:`, so a CDN stylesheet and its font files
+  would both be blocked. Self-hosting keeps the policy intact instead of adding
+  two allowlisted hosts to accommodate a typeface.
+- **Colours are semantic tokens, and every foreground flips with the theme.**
+  `--color-accent-ink` exists because accent is dark teal in the light theme and
+  light teal in the dark one — a literal `white` on a teal plate is 6.4:1 in one
+  theme and 1.9:1 in the other. `globals.css` records the measured contrast
+  ratio for every pair, the way the deck's own CSS does.
+
+---
+
 ## Security
 
 - **Auth.js v5**, GitHub provider, JWT session in an httpOnly / Secure /
@@ -654,4 +684,24 @@ on `main` requiring the CI and Evals checks to pass.
 
 ## License
 
-MIT.
+Copyright (C) 2026 Gabi Dombrowski
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
+
+SPDX identifier: `GPL-3.0-or-later`. The full text is in [LICENSE](LICENSE).
+
+Note that the GPL's copyleft obligations attach on **distribution**, which
+includes shipping this app as a binary or image to someone else — but running
+your own private instance triggers nothing. If you deploy it as a network
+service for others to use, GPLv3 still does not require you to publish your
+changes; that is the AGPL, and this project is not under it.

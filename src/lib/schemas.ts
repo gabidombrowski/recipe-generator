@@ -267,16 +267,122 @@ export const DEFAULT_PROFILE: Profile = {
 // Settings
 // ---------------------------------------------------------------------------
 
+/**
+ * What the grocery list's copy button produces.
+ *
+ * `markdown` emits a task list, which pastes into GitHub, Obsidian or Notion as
+ * real tickable checkboxes; `text` is for anywhere that would render the syntax
+ * as literal noise. One button reading a setting beats two buttons, which is
+ * why this is configuration rather than a second control on the page.
+ */
+export const groceryCopyFormatSchema = z.enum(["text", "markdown"]);
+export type GroceryCopyFormat = z.infer<typeof groceryCopyFormatSchema>;
+
+/**
+ * The cuisine palette offered as a starting point in the wizard.
+ *
+ * Two hardcoded lists used to exist — the cuisines on the seeded recipes, and a
+ * separate rotation the AI filler drew from — and neither was anybody's choice
+ * but the author's. This is one editable list instead.
+ *
+ * The entries are named cooking traditions rather than fusion labels, and they
+ * are spread across regions rather than clustered in Europe, because the list's
+ * only real job is to be a broad prompt that someone edits down to what they
+ * actually cook. Deliberately not exhaustive: a scrollable wall of every world
+ * cuisine is harder to edit than a short list you add to.
+ */
+export const DEFAULT_CUISINES = [
+  "Brazilian", "Chinese", "Ethiopian", "Filipino", "French", "Georgian",
+  "Greek", "Indian", "Italian", "Japanese", "Korean", "Lebanese", "Malaysian",
+  "Mexican", "Moroccan", "Nigerian", "Peruvian", "Portuguese", "Spanish",
+  "Thai", "Turkish", "Vietnamese",
+] as const;
+
+export const cuisineListSchema = z
+  .array(z.string().trim().min(1).max(40))
+  .max(100)
+  // Case-insensitive de-dupe, first spelling wins: "thai" typed under "Thai"
+  // should not create a second entry the dropdown shows twice.
+  .transform((list) => {
+    const seen = new Set<string>();
+    return list.filter((c) => {
+      const key = c.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+
+/**
+ * The meals in a day, and which one the app plans.
+ *
+ * Until now the app planned exactly one meal per day and called it dinner —
+ * `plan_slots` is unique on date, and the planner prompt opened with "one week
+ * of dinners". Everything else you ate was invisible to it, while the calorie
+ * and protein targets were whole-day numbers, so the targets and the plan were
+ * describing different things. `perMealProtein` even divided by a hardcoded
+ * four meals that nothing else knew about.
+ *
+ * Naming the meals fixes the arithmetic: targets divide by the meals you
+ * actually eat. `plannedMeal` then says which of them the scheduler fills,
+ * making the previously unstated assumption explicit and changeable.
+ */
+export const DEFAULT_MEALS = ["Breakfast", "Lunch", "Dinner"] as const;
+
+export const mealNameListSchema = z
+  .array(z.string().trim().min(1).max(40))
+  .min(1, "at least one meal — the targets are divided across them")
+  .max(10)
+  .transform((list) => {
+    const seen = new Set<string>();
+    return list.filter((m) => {
+      const key = m.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+
+/**
+ * Which units the UI asks for and shows.
+ *
+ * Storage is always metric: Mifflin-St Jeor is defined in kilograms and
+ * centimetres, so converting on the way in and out keeps one canonical number
+ * in the database and one place where rounding can bite. This is a presentation
+ * choice, the same way ISO dates are stored and formatted at the edge.
+ */
+export const unitSystemSchema = z.enum(["metric", "imperial"]);
+export type UnitSystem = z.infer<typeof unitSystemSchema>;
+
 export const settingsSchema = z.object({
   shoppingDay: dayOfWeekSchema,
   generationDay: dayOfWeekSchema,
   generationTime: timeOfDaySchema,
-  /** IANA zone, e.g. `America/Chicago`. Drives the cron and all date math. */
+  /** IANA zone, e.g. `Europe/London`. Drives the cron and all date math. */
   timezone: z.string().min(1).max(64),
   aiNovelRecipesPerWeek: z.number().int().min(0).max(7),
   /** Don't reuse a recipe scheduled within this many weeks. */
   repeatWindowWeeks: z.number().int().min(0).max(52),
   plannerMode: plannerModeSchema,
+  groceryCopyFormat: groceryCopyFormatSchema,
+  /** kg/cm or lb/ft-in. Storage stays metric either way. */
+  units: unitSystemSchema,
+  /** The cuisine palette shown in pickers and used by the AI filler. */
+  cuisines: cuisineListSchema,
+  /** The meals you eat each day; daily targets are divided across them. */
+  meals: mealNameListSchema,
+  /** Which of `meals` the scheduler fills. Each gets its own slot per day. */
+  plannedMeals: mealNameListSchema,
+  /**
+   * The meal that carries the cook -> leftover cycle.
+   *
+   * Only one meal can, because a cook day means cooking once and eating the
+   * second portion tomorrow. Applying that to breakfast as well as dinner would
+   * mean cooking twice on a cook day, which is not what a cook day is. Every
+   * other planned meal defaults to `quick`, which accepts a quick or an
+   * assembly recipe.
+   */
+  mainMeal: z.string().trim().min(1).max(40),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -284,10 +390,20 @@ export const DEFAULT_SETTINGS: Settings = {
   shoppingDay: "Sunday",
   generationDay: "Sunday",
   generationTime: "06:00",
-  timezone: "UTC",
+  // Eastern: the most populous US zone by a wide margin, so it is the least
+  // wrong guess when the browser cannot be asked. The wizard still prefers
+  // `Intl.DateTimeFormat().resolvedOptions().timeZone`; this is the fallback
+  // and the seed value.
+  timezone: "America/New_York",
   aiNovelRecipesPerWeek: 0,
   repeatWindowWeeks: 2,
   plannerMode: "deterministic",
+  groceryCopyFormat: "text",
+  units: "metric",
+  cuisines: [...DEFAULT_CUISINES],
+  meals: [...DEFAULT_MEALS],
+  plannedMeals: ["Dinner"],
+  mainMeal: "Dinner",
 };
 
 /**
@@ -296,11 +412,22 @@ export const DEFAULT_SETTINGS: Settings = {
  * That file is gitignored and holds real personal values. The committed
  * `seed.local.example.json` carries placeholders with the same shape, so the
  * loader is exercised by anyone cloning the repo without exposing anything.
- * `plannerMode` is optional because the deterministic default is the right
- * starting point for a fresh install.
+ * `plannerMode` and `groceryCopyFormat` are optional because their defaults are
+ * the right starting point for a fresh install — and because requiring them
+ * would make every seed file written before they existed fail to parse, which
+ * turns adding a setting into a breaking change for anyone already running the
+ * app.
  */
 export const localSeedSchema = profileSchema.merge(
-  settingsSchema.extend({ plannerMode: plannerModeSchema.default("deterministic") }),
+  settingsSchema.extend({
+    plannerMode: plannerModeSchema.default("deterministic"),
+    groceryCopyFormat: groceryCopyFormatSchema.default("text"),
+    units: unitSystemSchema.default("metric"),
+    cuisines: cuisineListSchema.default([...DEFAULT_CUISINES]),
+    meals: mealNameListSchema.default([...DEFAULT_MEALS]),
+    plannedMeals: mealNameListSchema.default(["Dinner"]),
+    mainMeal: z.string().trim().min(1).max(40).default("Dinner"),
+  }),
 );
 export type LocalSeed = z.infer<typeof localSeedSchema>;
 
@@ -335,6 +462,8 @@ export type PantryStaple = z.infer<typeof pantryStapleSchema>;
 export const planSlotSchema = z.object({
   id: z.number().int().positive(),
   date: isoDateSchema,
+  /** Which meal of the day, e.g. "Dinner". */
+  meal: z.string().min(1).max(40),
   mealSource: mealSourceSchema,
   recipeId: z.number().int().positive().nullable(),
 });

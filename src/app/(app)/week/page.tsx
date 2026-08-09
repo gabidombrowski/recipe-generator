@@ -3,9 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Card, Empty, MacroRow, Spinner, cx } from "~/components/ui";
+import { Badge, Button, Card, Empty, MacroRow, PageTitle, Spinner, cx } from "~/components/ui";
 import { GenerateRecipeButton } from "~/components/generate-recipe";
-import { formatShortDate } from "~/lib/days";
+import { formatLongDate, formatShortDate } from "~/lib/days";
 
 /**
  * The weekly plan.
@@ -41,9 +41,10 @@ export default function WeekPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Week of {data.weekStart}</h1>
+          <PageTitle>Week</PageTitle>
           <p className="text-sm text-ink-muted">
-            Planner mode: <strong>{data.plannerMode}</strong>
+            Of {formatLongDate(data.weekStart)} · Planner mode:{" "}
+            <strong>{data.plannerMode}</strong>
             {data.plannerMode === "ai" && !data.llmConfigured && " (no API key — running deterministically)"}
             {data.aiNovelRecipesPerWeek > 0 && ` · ${data.aiNovelRecipesPerWeek} AI recipe/week`}
           </p>
@@ -111,15 +112,17 @@ export default function WeekPage() {
                   <Badge tone={day.training ? "training" : "neutral"}>
                     {day.training ? "training" : "rest"}
                   </Badge>
-                  <Badge tone="accent">{day.mealSource}</Badge>
-                  {day.mealSource !== day.derivedMealSource && (
-                    <Badge tone="warn">overridden from {day.derivedMealSource}</Badge>
-                  )}
                   {data.flaggedTags
-                    .filter((tag) => (day.recipe?.tagCounts[tag] ?? 0) > 0)
+                    .filter((tag) =>
+                      day.meals.some((m) => (m.recipe?.tagCounts[tag] ?? 0) > 0),
+                    )
                     .map((tag) => (
                       <Badge key={tag} tone="flagged">
-                        {day.recipe!.tagCounts[tag]} {tag}
+                        {day.meals.reduce(
+                          (n, m) => n + (m.recipe?.tagCounts[tag] ?? 0),
+                          0,
+                        )}{" "}
+                        {tag}
                       </Badge>
                     ))}
                 </div>
@@ -127,56 +130,89 @@ export default function WeekPage() {
               <MacroRow {...day.targets} />
             </div>
 
-            {day.mealSource === "leftover" ? (
-              <p className="mt-3 rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
-                Eating yesterday&rsquo;s refrigerated portion — nothing to assign, and
-                nothing added to the grocery list.
-              </p>
-            ) : (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <select
-                  aria-label={`Recipe for ${day.date}`}
-                  className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm"
-                  value={day.recipe?.id ?? ""}
-                  onChange={(event) =>
-                    assign.mutate({
-                      date: day.date,
-                      recipeId: event.target.value ? Number(event.target.value) : null,
-                    })
-                  }
+            {/* One row per planned meal. With a single planned meal this is the
+                same single row the grid always had. */}
+            <div className="mt-3 space-y-3">
+              {day.meals.map((entry) => (
+                <div
+                  key={entry.meal}
+                  className="rounded-lg border border-border p-2.5"
                 >
-                  <option value="">— nothing assigned —</option>
-                  {recipes
-                    .filter((r) => day.eligibleMealTypes.includes(r.mealType))
-                    .map((recipe) => (
-                      <option key={recipe.id} value={recipe.id}>
-                        {recipe.favorite ? "★ " : ""}
-                        {recipe.name} · {recipe.cuisine} · {recipe.cookMinutes}m
-                      </option>
-                    ))}
-                </select>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="plate plate--section text-[10px]">{entry.meal}</span>
+                    <Badge tone="accent">{entry.mealSource}</Badge>
+                    {entry.mealSource !== entry.derivedMealSource && (
+                      <Badge tone="warn">
+                        overridden from {entry.derivedMealSource}
+                      </Badge>
+                    )}
+                    {entry.recipe && (
+                      <span className="text-xs text-ink-muted">
+                        {entry.recipe.macrosPerServing.kcal} kcal ·{" "}
+                        {entry.recipe.macrosPerServing.proteinG} g protein ·{" "}
+                        {entry.recipe.cookMinutes} min
+                      </span>
+                    )}
+                  </div>
 
-                <Button
-                  onClick={() => regenerate.mutate({ date: day.date })}
-                  disabled={regenerate.isPending}
-                >
-                  Regenerate
-                </Button>
+                  {entry.mealSource === "leftover" ? (
+                    <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
+                      Eating yesterday&rsquo;s refrigerated portion — nothing to
+                      assign, and nothing added to the grocery list.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label={`Recipe for ${entry.meal} on ${day.date}`}
+                        className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm"
+                        value={entry.recipe?.id ?? ""}
+                        onChange={(event) =>
+                          assign.mutate({
+                            date: day.date,
+                            meal: entry.meal,
+                            recipeId: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
+                      >
+                        <option value="">— nothing assigned —</option>
+                        {recipes
+                          .filter((r) => entry.eligibleMealTypes.includes(r.mealType))
+                          .map((recipe) => (
+                            <option key={recipe.id} value={recipe.id}>
+                              {recipe.favorite ? "★ " : ""}
+                              {recipe.name} · {recipe.cuisine} · {recipe.cookMinutes}m
+                            </option>
+                          ))}
+                      </select>
 
-                <GenerateRecipeButton
-                  targetDate={day.date}
-                  mealType={day.mealSource === "quick" ? "quick" : day.mealSource === "cook" ? "cook" : "assembly"}
-                  onGenerated={invalidate}
-                />
-              </div>
-            )}
+                      <Button
+                        onClick={() =>
+                          regenerate.mutate({ date: day.date, meal: entry.meal })
+                        }
+                        disabled={regenerate.isPending}
+                      >
+                        Regenerate
+                      </Button>
 
-            {day.recipe && (
-              <p className="mt-2 text-sm text-ink-muted">
-                {day.recipe.macrosPerServing.kcal} kcal ·{" "}
-                {day.recipe.macrosPerServing.proteinG} g protein · {day.recipe.cookMinutes} min
-              </p>
-            )}
+                      <GenerateRecipeButton
+                        targetDate={day.date}
+                        targetMeal={entry.meal}
+                        mealType={
+                          entry.mealSource === "quick"
+                            ? "quick"
+                            : entry.mealSource === "cook"
+                              ? "cook"
+                              : "assembly"
+                        }
+                        onGenerated={invalidate}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </Card>
         ))}
       </div>

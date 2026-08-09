@@ -5,7 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { MacroExplainer } from "~/components/macro-explainer";
 import { ProfileFields, SettingsFields } from "~/components/profile-fields";
-import { Button, Card, Empty, Spinner } from "~/components/ui";
+import { CuisineFields } from "~/components/cuisine-fields";
+import { MealFields } from "~/components/meal-fields";
+import { Button, Card, Empty, InfoHint, PageTitle, Spinner } from "~/components/ui";
+import { useRouter } from "next/navigation";
 import { type Profile, type Settings } from "~/lib/schemas";
 
 /**
@@ -18,6 +21,7 @@ import { type Profile, type Settings } from "~/lib/schemas";
 export default function SettingsPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const state = useQuery(trpc.setup.state.queryOptions());
 
@@ -45,6 +49,12 @@ export default function SettingsPage() {
   const saveProfile = useMutation(trpc.setup.saveProfile.mutationOptions({ onSuccess: onSaved }));
   const saveSettings = useMutation(trpc.setup.saveSettings.mutationOptions({ onSuccess: onSaved }));
 
+  // Clearing `setupComplete` is what makes the app layout's gate send us to
+  // /setup; the push is so it happens now rather than on the next navigation.
+  const reopenWizard = useMutation(
+    trpc.setup.reopenWizard.mutationOptions({ onSuccess: () => router.push("/setup") }),
+  );
+
   if (state.isError) return <Empty>Could not load settings: {state.error.message}</Empty>;
   if (state.isPending || !profile || !settings || !state.data) return <Spinner />;
 
@@ -52,6 +62,7 @@ export default function SettingsPage() {
     plan: state.data.plan,
     formulas: state.data.formulas,
     perMealProtein: state.data.perMealProtein,
+    mealSplit: state.data.mealSplit,
   };
 
   const dirty =
@@ -61,9 +72,20 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <PageTitle>Settings</PageTitle>
         <div className="flex items-center gap-2">
           {dirty && <span className="text-xs text-warn">unsaved changes</span>}
+          <Button
+            onClick={() => reopenWizard.mutate()}
+            disabled={reopenWizard.isPending}
+          >
+            Re-run setup
+          </Button>
+          <InfoHint>
+            Walks through the whole configuration again — profile, schedule, what
+            each meal type means, and cuisines. Nothing is cleared: every step
+            starts from what you have now.
+          </InfoHint>
           <Button
             variant="primary"
             disabled={!dirty || saveProfile.isPending || saveSettings.isPending}
@@ -85,13 +107,14 @@ export default function SettingsPage() {
       )}
 
       <Card title="Profile">
-        <ProfileFields value={profile} onChange={setProfileDraft} />
+        <ProfileFields value={profile} onChange={setProfileDraft} units={settings.units} />
       </Card>
 
       <MacroExplainer
         plan={shown.plan}
         formulas={shown.formulas}
         perMealProtein={shown.perMealProtein}
+        mealSplit={shown.mealSplit}
       />
 
       <Card title="Schedule and planning">
@@ -99,6 +122,34 @@ export default function SettingsPage() {
           value={settings}
           onChange={setSettingsDraft}
           llmConfigured={state.data.llmConfigured}
+        />
+      </Card>
+
+      <Card title="Your day">
+        <p className="mb-3 text-sm text-ink-muted">
+          The meals you eat. Daily targets are divided across them, and the one
+          marked below is what the weekly plan, grocery list and leftover cycle
+          follow.
+        </p>
+        <MealFields
+          meals={settings.meals}
+          plannedMeals={settings.plannedMeals}
+          mainMeal={settings.mainMeal}
+          onChange={({ meals, plannedMeals, mainMeal }) =>
+            setSettingsDraft({ ...settings, meals, plannedMeals, mainMeal })
+          }
+        />
+      </Card>
+
+      <Card title="Cuisines">
+        <p className="mb-3 text-sm text-ink-muted">
+          What the cuisine pickers offer, and what the AI filler rotates through
+          when it adds a novel recipe. Removing one never touches a recipe that
+          already uses it.
+        </p>
+        <CuisineFields
+          value={settings.cuisines}
+          onChange={(cuisines) => setSettingsDraft({ ...settings, cuisines })}
         />
       </Card>
     </div>

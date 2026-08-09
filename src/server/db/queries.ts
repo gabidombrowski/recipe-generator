@@ -167,27 +167,41 @@ export function getWeekSlots(weekStart: IsoDate): PlanSlot[] {
     .map((row) => ({
       id: row.id,
       date: row.date,
+      meal: row.meal,
       mealSource: row.mealSource,
       recipeId: row.recipeId,
     }));
 }
 
-export function weekExists(weekStart: IsoDate): boolean {
-  return getWeekSlots(weekStart).length > 0;
+/**
+ * Whether a week has actually been planned, which gates the scheduler's
+ * idempotency check.
+ *
+ * "Planned" means at least one slot holds a recipe — not merely that a row
+ * exists. Rows are created by things other than the scheduler: overriding one
+ * day's role from Today writes a single slot with no recipe, and under the old
+ * `length > 0` test that lone row made the whole week look planned, so
+ * "Generate week now" skipped and left six empty days. Keying on an assigned
+ * recipe keeps regeneration idempotent while letting a hand-set role through.
+ */
+export function weekIsPlanned(weekStart: IsoDate): boolean {
+  return getWeekSlots(weekStart).some((slot) => slot.recipeId !== null);
 }
 
 /**
  * Writes a planned week.
  *
- * `onConflictDoUpdate` on the unique date index is what makes regeneration
- * idempotent: re-running over an existing week updates in place rather than
- * erroring or duplicating.
+ * `onConflictDoUpdate` on the unique (date, meal) index is what makes
+ * regeneration idempotent: re-running over an existing week updates in place
+ * rather than erroring or duplicating.
  */
 export function writeSlots(slots: readonly SlotPlan[], overwriteAssigned: boolean): number {
   let written = 0;
   for (const slot of slots) {
     const existing = db.query.planSlots
-      .findFirst({ where: eq(planSlots.date, slot.date) })
+      .findFirst({
+        where: and(eq(planSlots.date, slot.date), eq(planSlots.meal, slot.meal)),
+      })
       .sync();
 
     // A slot the user has already filled by hand is left alone unless the
@@ -195,9 +209,14 @@ export function writeSlots(slots: readonly SlotPlan[], overwriteAssigned: boolea
     if (existing && existing.recipeId !== null && !overwriteAssigned) continue;
 
     db.insert(planSlots)
-      .values({ date: slot.date, mealSource: slot.mealSource, recipeId: slot.recipeId })
+      .values({
+        date: slot.date,
+        meal: slot.meal,
+        mealSource: slot.mealSource,
+        recipeId: slot.recipeId,
+      })
       .onConflictDoUpdate({
-        target: planSlots.date,
+        target: [planSlots.date, planSlots.meal],
         set: { mealSource: slot.mealSource, recipeId: slot.recipeId },
       })
       .run();
@@ -206,22 +225,55 @@ export function writeSlots(slots: readonly SlotPlan[], overwriteAssigned: boolea
   return written;
 }
 
-export function assignSlot(date: IsoDate, recipeId: number | null): PlanSlot[] {
-  db.update(planSlots).set({ recipeId }).where(eq(planSlots.date, date)).run();
+export function assignSlot(
+  date: IsoDate,
+  meal: string,
+  recipeId: number | null,
+): PlanSlot[] {
+  db.update(planSlots)
+    .set({ recipeId })
+    .where(and(eq(planSlots.date, date), eq(planSlots.meal, meal)))
+    .run();
   return getWeekSlots(date);
 }
 
-export function setSlotMealSource(date: IsoDate, mealSource: MealSource): void {
-  db.update(planSlots)
-    .set({ mealSource, ...(mealSource === "leftover" ? { recipeId: null } : {}) })
-    .where(eq(planSlots.date, date))
+/**
+ * Sets a day's role, creating the slot if the scheduler has not been here yet.
+ *
+ * This has to be an upsert, not an update. Before a week is generated there is
+ * no `plan_slots` row for the date, so a bare UPDATE matched nothing, the
+ * mutation still reported success, and `plan.today` went back to the role it
+ * derives from the profile — the dropdown snapped back to its old value with no
+ * error anywhere. `assign` already worked around this by writing the slot first;
+ * doing it in one statement means the next caller cannot forget.
+ */
+export function setSlotMealSource(
+  date: IsoDate,
+  meal: string,
+  mealSource: MealSource,
+): void {
+  db.insert(planSlots)
+    .values({ date, meal, mealSource, recipeId: null })
+    .onConflictDoUpdate({
+      target: [planSlots.date, planSlots.meal],
+      // A leftover day eats yesterday's portion, so it never keeps a recipe.
+      set: { mealSource, ...(mealSource === "leftover" ? { recipeId: null } : {}) },
+    })
     .run();
 }
 
-export function getSlot(date: IsoDate): PlanSlot | null {
-  const row = db.query.planSlots.findFirst({ where: eq(planSlots.date, date) }).sync();
+export function getSlot(date: IsoDate, meal: string): PlanSlot | null {
+  const row = db.query.planSlots
+    .findFirst({ where: and(eq(planSlots.date, date), eq(planSlots.meal, meal)) })
+    .sync();
   return row
-    ? { id: row.id, date: row.date, mealSource: row.mealSource, recipeId: row.recipeId }
+    ? {
+        id: row.id,
+        date: row.date,
+        meal: row.meal,
+        mealSource: row.mealSource,
+        recipeId: row.recipeId,
+      }
     : null;
 }
 
@@ -245,12 +297,19 @@ export function recentRecipeIds(weekStart: IsoDate, weeks: number): Set<number> 
 }
 
 /** The week's slots joined to their recipes, in the shape the grocery list wants. */
-export function getWeekMeals(weekStart: IsoDate): PlannedMeal[] {
+export function getWeekMeals(
+  weekStart: IsoDate,
+  /** Restricts to these meals; omit for every slot in the week. */
+  plannedMeals?: readonly string[],
+): PlannedMeal[] {
   const byId = recipesById();
-  return getWeekSlots(weekStart).map((slot) => ({
-    mealSource: slot.mealSource,
-    recipe: slot.recipeId !== null ? (byId.get(slot.recipeId) ?? null) : null,
-  }));
+  const wanted = plannedMeals ? new Set(plannedMeals) : null;
+  return getWeekSlots(weekStart)
+    .filter((slot) => wanted === null || wanted.has(slot.meal))
+    .map((slot) => ({
+      mealSource: slot.mealSource,
+      recipe: slot.recipeId !== null ? (byId.get(slot.recipeId) ?? null) : null,
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -374,6 +433,7 @@ export function slotsBefore(date: IsoDate, days: number): PlanSlot[] {
     .map((row) => ({
       id: row.id,
       date: row.date,
+      meal: row.meal,
       mealSource: row.mealSource,
       recipeId: row.recipeId,
     }));

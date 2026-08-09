@@ -1,12 +1,21 @@
 "use client";
 
 import { DayPicker, Field, Input, Select } from "./ui";
-import { formatHeight, formatWeight, kgToLb, lbToKg } from "~/lib/units";
+import {
+  cmToFeetInches,
+  feetInchesToCm,
+  heightHint,
+  kgToLb,
+  lbToKg,
+  weightHint,
+  weightLabel,
+} from "~/lib/units";
 import {
   DAYS_OF_WEEK,
   type DayOfWeek,
   type Profile,
   type Settings,
+  type UnitSystem,
 } from "~/lib/schemas";
 
 /**
@@ -17,24 +26,47 @@ import {
  * nothing hardcoded" only holds if there is one definition of the form.
  */
 
+/**
+ * A short list of common zones, ordered west to east.
+ *
+ * Ordering by offset rather than by whichever one the author happened to use
+ * keeps the list from quietly disclosing where its author lives — the same
+ * reason the committed defaults are neutral. Any IANA zone works at runtime;
+ * this is only what the picker offers.
+ */
 const IANA_ZONES = [
+  "Pacific/Auckland",
+  "Australia/Sydney",
+  "Asia/Tokyo",
+  "Asia/Kolkata",
+  "Europe/Berlin",
+  "Europe/London",
   "UTC",
-  "America/Chicago",
   "America/New_York",
+  "America/Chicago",
   "America/Denver",
   "America/Los_Angeles",
-  "Europe/London",
-  "Europe/Berlin",
-  "Asia/Tokyo",
-  "Australia/Sydney",
 ] as const;
 
 export function ProfileFields({
   value,
   onChange,
+  /**
+   * Hides activity factor, deficit and protein-per-kg.
+   *
+   * The wizard derives those three from questions on its own step, and showing
+   * a raw input for the same value two steps earlier invites someone to set it
+   * twice and wonder which won. Settings shows them, because that is where you
+   * go to override a recommendation.
+   */
+  hideDerived = false,
+  /** Which system to ask in. Stored values stay metric regardless. */
+  units = "metric",
 }: {
   value: Profile;
   onChange: (next: Profile) => void;
+  hideDerived?: boolean;
+  units?: UnitSystem;
 }) {
   const set = <K extends keyof Profile>(key: K, next: Profile[K]) =>
     onChange({ ...value, [key]: next });
@@ -45,38 +77,85 @@ export function ProfileFields({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* Weight is stored in kg but editable in either unit — the app shows
-            both everywhere, so it would be odd to only accept one. */}
-        <Field label="Weight (kg)" hint={formatWeight(value.weightKg)}>
+        {/* One weight field, in the system the user chose. The other system is
+            the hint, so a number is always checkable without switching. */}
+        <Field label={weightLabel(units)} hint={weightHint(value.weightKg, units)}>
           <Input
             type="number"
             step="0.1"
             min="1"
-            value={value.weightKg}
-            onChange={(event) => set("weightKg", num(event.target.value, value.weightKg))}
-          />
-        </Field>
-        <Field label="Weight (lb)" hint="Same value, other unit">
-          <Input
-            type="number"
-            step="0.1"
-            min="1"
-            value={Number(kgToLb(value.weightKg).toFixed(1))}
-            onChange={(event) =>
-              set("weightKg", Number(lbToKg(num(event.target.value, kgToLb(value.weightKg))).toFixed(2)))
+            value={
+              units === "imperial"
+                ? Number(kgToLb(value.weightKg).toFixed(1))
+                : value.weightKg
             }
+            onChange={(event) => {
+              const raw = num(
+                event.target.value,
+                units === "imperial" ? kgToLb(value.weightKg) : value.weightKg,
+              );
+              // Rounded to two decimal places in kg: entering pounds and reading
+              // them back must not drift by a gram every keystroke.
+              set("weightKg", units === "imperial" ? Number(lbToKg(raw).toFixed(2)) : raw);
+            }}
           />
         </Field>
 
-        <Field label="Height (cm)" hint={formatHeight(value.heightCm)}>
-          <Input
-            type="number"
-            step="0.1"
-            min="1"
-            value={value.heightCm}
-            onChange={(event) => set("heightCm", num(event.target.value, value.heightCm))}
-          />
-        </Field>
+        {units === "imperial" ? (
+          <Field label="Height (ft / in)" hint={heightHint(value.heightCm, units)}>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="1"
+                max="8"
+                aria-label="Height, feet"
+                value={cmToFeetInches(value.heightCm).feet}
+                onChange={(event) =>
+                  set(
+                    "heightCm",
+                    Number(
+                      feetInchesToCm(
+                        num(event.target.value, cmToFeetInches(value.heightCm).feet),
+                        cmToFeetInches(value.heightCm).inches,
+                      ).toFixed(1),
+                    ),
+                  )
+                }
+                className="w-20"
+              />
+              <Input
+                type="number"
+                min="0"
+                max="11"
+                aria-label="Height, inches"
+                value={cmToFeetInches(value.heightCm).inches}
+                onChange={(event) =>
+                  set(
+                    "heightCm",
+                    Number(
+                      feetInchesToCm(
+                        cmToFeetInches(value.heightCm).feet,
+                        num(event.target.value, cmToFeetInches(value.heightCm).inches),
+                      ).toFixed(1),
+                    ),
+                  )
+                }
+                className="w-20"
+              />
+            </div>
+          </Field>
+        ) : (
+          <Field label="Height (cm)" hint={heightHint(value.heightCm, units)}>
+            <Input
+              type="number"
+              step="0.1"
+              min="1"
+              value={value.heightCm}
+              onChange={(event) => set("heightCm", num(event.target.value, value.heightCm))}
+            />
+          </Field>
+        )}
+
         <Field label="Age">
           <Input
             type="number"
@@ -95,41 +174,47 @@ export function ProfileFields({
             <option value="male">male</option>
           </Select>
         </Field>
-        <Field label="Activity factor" hint="1.2 sedentary → 1.9 very active">
-          <Input
-            type="number"
-            step="0.01"
-            min="1"
-            max="2.5"
-            value={value.activityFactor}
-            onChange={(event) =>
-              set("activityFactor", num(event.target.value, value.activityFactor))
-            }
-          />
-        </Field>
+        {!hideDerived && (
+          <Field label="Activity factor" hint="1.2 sedentary → 1.9 very active">
+            <Input
+              type="number"
+              step="0.01"
+              min="1"
+              max="2.5"
+              value={value.activityFactor}
+              onChange={(event) =>
+                set("activityFactor", num(event.target.value, value.activityFactor))
+              }
+            />
+          </Field>
+        )}
 
-        <Field label="Daily deficit (kcal)" hint="Subtracted from TDEE">
-          <Input
-            type="number"
-            min="0"
-            value={value.deficitKcal}
-            onChange={(event) => set("deficitKcal", num(event.target.value, value.deficitKcal))}
-          />
-        </Field>
-        <Field
-          label="Protein per kg"
-          hint={`${Math.round(value.proteinPerKg * value.weightKg)} g/day`}
-        >
-          <Input
-            type="number"
-            step="0.1"
-            min="0"
-            value={value.proteinPerKg}
-            onChange={(event) =>
-              set("proteinPerKg", num(event.target.value, value.proteinPerKg))
-            }
-          />
-        </Field>
+        {!hideDerived && (
+          <Field label="Daily deficit (kcal)" hint="Subtracted from TDEE">
+            <Input
+              type="number"
+              min="0"
+              value={value.deficitKcal}
+              onChange={(event) => set("deficitKcal", num(event.target.value, value.deficitKcal))}
+            />
+          </Field>
+        )}
+        {!hideDerived && (
+          <Field
+            label="Protein per kg"
+            hint={`${Math.round(value.proteinPerKg * value.weightKg)} g/day`}
+          >
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              value={value.proteinPerKg}
+              onChange={(event) =>
+                set("proteinPerKg", num(event.target.value, value.proteinPerKg))
+              }
+            />
+          </Field>
+        )}
 
         <Field
           label="Fat per kg"
@@ -276,6 +361,30 @@ export function SettingsFields({
         </Select>
       </Field>
 
+      <Field label="Units" hint="Stored values stay metric either way">
+        <Select
+          value={value.units}
+          onChange={(event) => set("units", event.target.value as Settings["units"])}
+        >
+          <option value="metric">metric (kg / cm)</option>
+          <option value="imperial">imperial (lb / ft-in)</option>
+        </Select>
+      </Field>
+
+      <Field
+        label="Grocery copy format"
+        hint="Markdown pastes into GitHub, Obsidian or Notion as tickable checkboxes"
+      >
+        <Select
+          value={value.groceryCopyFormat}
+          onChange={(event) =>
+            set("groceryCopyFormat", event.target.value as Settings["groceryCopyFormat"])
+          }
+        >
+          <option value="text">plain text</option>
+          <option value="markdown">markdown</option>
+        </Select>
+      </Field>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { type Constraint, type ConstraintKind } from "~/lib/constraints";
 import {
   type DayOfWeek,
   type FeedbackVerdict,
+  type GroceryCopyFormat,
   type Ingredient,
   type Macros,
   type MealSource,
@@ -20,6 +21,7 @@ import {
   type RecipeSource,
   type Sex,
   type Storage,
+  type UnitSystem,
 } from "~/lib/schemas";
 
 /**
@@ -75,6 +77,30 @@ export const settings = sqliteTable("settings", {
   aiNovelRecipesPerWeek: integer("ai_novel_recipes_per_week").notNull(),
   repeatWindowWeeks: integer("repeat_window_weeks").notNull(),
   plannerMode: text("planner_mode").$type<PlannerMode>().notNull(),
+  /** Which format the grocery list's copy button produces. */
+  groceryCopyFormat: text("grocery_copy_format")
+    .$type<GroceryCopyFormat>()
+    .notNull()
+    .default("text"),
+  /** kg/cm or lb/ft-in in the UI. Stored values are always metric. */
+  units: text("units").$type<UnitSystem>().notNull().default("metric"),
+  /** The user's cuisine palette; drives pickers and the AI filler's rotation. */
+  cuisines: text("cuisines", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  /** The meals eaten each day; daily targets divide across them. */
+  meals: text("meals", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  /** Which of `meals` the scheduler fills; each gets a slot per day. */
+  plannedMeals: text("planned_meals", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
+  /** The one meal carrying the cook -> leftover cycle. */
+  mainMeal: text("main_meal").notNull().default("Dinner"),
   /** Flipped once the first-run wizard completes or a local seed is loaded. */
   setupComplete: integer("setup_complete", { mode: "boolean" })
     .notNull()
@@ -153,6 +179,8 @@ export const planSlots = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     date: text("date").notNull(),
+    /** Which meal of the day this slot is, e.g. "Dinner". */
+    meal: text("meal").notNull().default("Dinner"),
     mealSource: text("meal_source").$type<MealSource>().notNull(),
     recipeId: integer("recipe_id").references(() => recipes.id, {
       onDelete: "set null",
@@ -160,8 +188,11 @@ export const planSlots = sqliteTable(
     createdAt: timestamp("created_at"),
   },
   (t) => [
-    // One slot per calendar date: the plan is one meal per day.
-    uniqueIndex("plan_slots_date_unique").on(t.date),
+    // One slot per meal per calendar date. This used to be unique on `date`
+    // alone, which *was* the "the app plans one meal a day" assumption — the
+    // schema enforced it, so nothing above it could have planned breakfast even
+    // if it wanted to.
+    uniqueIndex("plan_slots_date_meal_unique").on(t.date, t.meal),
     index("plan_slots_recipe_idx").on(t.recipeId),
   ],
 );

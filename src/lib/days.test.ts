@@ -3,6 +3,7 @@ import {
   addDays,
   dayOfWeekFor,
   daysBetween,
+  formatLongDate,
   todayInTimezone,
   weekDates,
   weeklyCronExpression,
@@ -52,7 +53,7 @@ describe("calendar helpers", () => {
   it("resolves today against a timezone, not the server clock", () => {
     // 03:30 UTC on the 9th is still the 8th in Chicago (UTC-6).
     const instant = new Date("2026-02-09T03:30:00Z");
-    expect(todayInTimezone("America/Chicago", instant)).toBe("2026-02-08");
+    expect(todayInTimezone("America/Denver", instant)).toBe("2026-02-08");
     expect(todayInTimezone("UTC", instant)).toBe("2026-02-09");
     expect(todayInTimezone("Asia/Tokyo", instant)).toBe("2026-02-09");
   });
@@ -65,5 +66,28 @@ describe("calendar helpers", () => {
   it("builds a weekly cron expression", () => {
     expect(weeklyCronExpression("Sunday", "06:00")).toBe("0 6 * * 0");
     expect(weeklyCronExpression("Thursday", "18:30")).toBe("30 18 * * 4");
+  });
+});
+
+describe("formatLongDate", () => {
+  it("renders the long prose form", () => {
+    expect(formatLongDate("2026-08-08")).toBe("August 8, 2026");
+  });
+
+  it("does not shift the day in a negative-offset timezone", () => {
+    // An IsoDate is a calendar day, not an instant. Parsed as UTC midnight and
+    // formatted in local time, this would render as August 7 anywhere west of
+    // Greenwich — mislabelling every date in the app by a day.
+    const original = process.env.TZ;
+    process.env.TZ = "America/Los_Angeles";
+    try {
+      expect(formatLongDate("2026-08-08")).toBe("August 8, 2026");
+    } finally {
+      process.env.TZ = original;
+    }
+  });
+
+  it("handles a single-digit day without padding", () => {
+    expect(formatLongDate("2026-01-01")).toBe("January 1, 2026");
   });
 });

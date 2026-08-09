@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { Markdown } from "~/components/markdown";
-import { Button, Card, Spinner, Textarea } from "~/components/ui";
+import { Button, Card, PageTitle, Spinner, Textarea } from "~/components/ui";
 
 /**
  * The context bridge.
@@ -49,7 +49,7 @@ export default function ContextPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Context</h1>
+          <PageTitle>Context</PageTitle>
           <p className="text-sm text-ink-muted">
             <code>nutrition-context.md</code> — gitignored.{" "}
             {context.data?.exists

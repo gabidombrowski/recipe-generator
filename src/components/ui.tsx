@@ -33,9 +33,7 @@ export function Card({
       {(title || action) && (
         <header className="mb-4 flex items-baseline justify-between gap-3">
           {typeof title === "string" ? (
-            <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">
-              {title}
-            </h2>
+            <h2 className="plate plate--section text-xs">{title}</h2>
           ) : (
             title
           )}
@@ -47,10 +45,38 @@ export function Card({
   );
 }
 
+/**
+ * The page heading, as a peach plate.
+ *
+ * Every page had its own `<h1 className="text-2xl font-semibold">`, so the
+ * motif would have been nine copies of the same class string waiting to drift
+ * apart. `subdued` exists for headings that are mostly data — "Week of
+ * 2026-08-10" — where a slab of peach around a date reads as decoration
+ * rather than as a title.
+ */
+export function PageTitle({
+  children,
+  subdued = false,
+  className,
+}: {
+  children: ReactNode;
+  subdued?: boolean;
+  className?: string;
+}) {
+  if (subdued) {
+    return (
+      <h1 className={cx("font-display text-2xl tracking-wide", className)}>{children}</h1>
+    );
+  }
+  return (
+    <h1 className={cx("plate plate--title text-2xl", className)}>{children}</h1>
+  );
+}
+
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-white hover:opacity-90",
+  primary: "bg-accent text-accent-ink hover:opacity-90",
   secondary: "border border-border bg-surface hover:bg-surface-sunken",
   ghost: "text-ink-muted hover:bg-surface-sunken",
   danger: "border border-warn/40 text-warn hover:bg-warn-soft",
@@ -122,6 +148,70 @@ export function Field({
       {children}
       {hint && <span className="text-xs text-ink-muted">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * Aligns an unlabelled control — usually a submit button — with the inputs in a
+ * horizontal row of `Field`s.
+ *
+ * A row of fields cannot be bottom-aligned, because `Field` puts its `hint`
+ * *below* the control: bottom-aligning the boxes sits a hinted field's input a
+ * line higher than an unhinted one, which is what put the tag-limit row's
+ * inputs on two different baselines. The row is top-aligned instead, so every
+ * control clears an identical single-line label. That leaves a bare button
+ * floating at the top, so this reserves the same label-sized box above it.
+ */
+export function FieldAction({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span aria-hidden className="invisible text-sm font-medium select-none">
+        &nbsp;
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A small "i" that reveals an explanation on hover or keyboard focus.
+ *
+ * The text is the button's accessible name and the bubble is `aria-hidden`, so
+ * a screen reader gets it once from the control rather than twice. That also
+ * avoids `useId`, which would make this a client-only component and stop it
+ * being used from a server-rendered page.
+ *
+ * `group-focus-within` matters as much as `group-hover`: a hint reachable only
+ * by mouse is not reachable at all for anyone tabbing through the page.
+ */
+export function InfoHint({ children }: { children: string }) {
+  return (
+    <span className="group relative inline-flex items-center">
+      <button
+        type="button"
+        aria-label={children}
+        className={cx(
+          "flex size-4 items-center justify-center rounded-full border border-border",
+          "font-display text-[10px] leading-none text-ink-muted",
+          "hover:border-accent hover:text-accent",
+          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        )}
+      >
+        i
+      </button>
+      <span
+        aria-hidden
+        role="tooltip"
+        className={cx(
+          "pointer-events-none invisible absolute top-full right-0 z-20 mt-1.5 w-60",
+          "rounded-lg border border-border bg-surface p-2 text-left text-xs font-normal",
+          "text-ink-muted normal-case shadow-md",
+          "group-hover:visible group-focus-within:visible",
+        )}
+      >
+        {children}
+      </span>
+    </span>
   );
 }
 

@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `grocery_copy_format` text DEFAULT 'text' NOT NULL;

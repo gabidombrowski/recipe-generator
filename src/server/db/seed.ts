@@ -89,6 +89,12 @@ export function seedDatabase(cwd = process.cwd()): SeedResult {
         aiNovelRecipesPerWeek: s.aiNovelRecipesPerWeek,
         repeatWindowWeeks: s.repeatWindowWeeks,
         plannerMode: s.plannerMode,
+        groceryCopyFormat: s.groceryCopyFormat,
+        units: s.units,
+        cuisines: s.cuisines,
+        meals: s.meals,
+        plannedMeals: s.plannedMeals,
+        mainMeal: s.mainMeal,
         // A local seed means the owner has already supplied real values, so
         // there is nothing left for the wizard to ask.
         setupComplete: localSeed !== null,

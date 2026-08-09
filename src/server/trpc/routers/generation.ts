@@ -14,7 +14,7 @@ import {
   markPromoted,
   writeSlots,
 } from "~/server/db/queries";
-import { getProfile } from "~/server/db/state";
+import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipe } from "~/server/db/recipes";
 import { isLlmConfigured } from "~/server/llm/client";
@@ -49,6 +49,8 @@ export const generationRouter = router({
         maxCookMinutes: z.number().int().positive().max(180).optional(),
         /** When set, the new recipe is assigned to this slot immediately. */
         targetDate: isoDateSchema.optional(),
+        /** Which meal on that date; defaults to the main meal. */
+        targetMeal: z.string().min(1).max(40).optional(),
         note: z.string().max(500).optional(),
       }),
     )
@@ -106,12 +108,20 @@ export const generationRouter = router({
         await upsertRecipeEmbedding(recipe);
 
         // Auto-assign so the grocery list updates without a second action.
-        if (input.targetDate && getSlot(input.targetDate)) {
+        //
+        // The slot is created when it does not exist yet. Requiring one meant
+        // generating into a week the scheduler had not touched assigned the
+        // recipe nowhere, reported success, and left the grocery list empty —
+        // the same silent no-op that `setMealSource` had.
+        if (input.targetDate) {
+          const meal = input.targetMeal ?? getSettings().mainMeal;
+          const existing = getSlot(input.targetDate, meal);
           writeSlots(
             [
               {
                 date: input.targetDate,
-                mealSource: getSlot(input.targetDate)!.mealSource,
+                meal,
+                mealSource: existing?.mealSource ?? input.mealType,
                 recipeId: recipe.id,
               },
             ],
@@ -127,6 +137,7 @@ export const generationRouter = router({
         return {
           recipe,
           assignedTo: input.targetDate ?? null,
+          assignedMeal: input.targetDate ? (input.targetMeal ?? getSettings().mainMeal) : null,
           costUsd: result.costUsd,
           attempts: result.attempts,
         };

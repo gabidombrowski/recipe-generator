@@ -24,6 +24,8 @@ import {
 
 export interface SlotPlan {
   date: IsoDate;
+  /** Which meal of the day this slot fills. */
+  meal: string;
   mealSource: MealSource;
   recipeId: number | null;
 }
@@ -49,7 +51,16 @@ export interface SlotPlan {
 export function deriveSlotRoles(
   weekStart: IsoDate,
   profile: Pick<Profile, "cookDays" | "assemblyDays">,
-): Array<{ date: IsoDate; mealSource: MealSource }> {
+  /**
+   * The meals to plan, and which one carries the cycle. Defaults reproduce the
+   * old single-meal behaviour exactly, so a caller that has not been updated
+   * still gets one dinner slot per day.
+   */
+  options: { meals?: readonly string[]; mainMeal?: string } = {},
+): Array<{ date: IsoDate; meal: string; mealSource: MealSource }> {
+  const mainMeal = options.mainMeal ?? "Dinner";
+  const meals = options.meals?.length ? options.meals : [mainMeal];
+
   const cookDays = new Set(profile.cookDays);
   const assemblyDays = [...new Set(profile.assemblyDays)];
 
@@ -59,24 +70,35 @@ export function deriveSlotRoles(
     .map(dayOfWeekFor)
     .filter((day) => assemblyDays.includes(day));
 
-  return weekDates(weekStart).map((date) => {
+  /** The cook/leftover/assembly cycle, which belongs to the main meal alone. */
+  const mainRoleFor = (date: IsoDate): MealSource => {
     const day = dayOfWeekFor(date);
 
-    if (cookDays.has(day)) return { date, mealSource: "cook" as const };
+    if (cookDays.has(day)) return "cook";
 
     const yesterday = dayOfWeekFor(addDays(date, -1));
-    if (cookDays.has(yesterday)) return { date, mealSource: "leftover" as const };
+    if (cookDays.has(yesterday)) return "leftover";
 
     const assemblyIndex = assemblyOrder.indexOf(day);
-    if (assemblyIndex >= 0) {
-      return {
-        date,
-        mealSource: assemblyIndex % 2 === 0 ? ("assembly" as const) : ("quick" as const),
-      };
-    }
+    if (assemblyIndex >= 0) return assemblyIndex % 2 === 0 ? "assembly" : "quick";
 
-    return { date, mealSource: "quick" as const };
-  });
+    return "quick";
+  };
+
+  return weekDates(weekStart).flatMap((date) =>
+    meals.map((meal) => ({
+      date,
+      meal,
+      /**
+       * Only the main meal follows the cycle. A cook day means cooking once and
+       * eating the second portion tomorrow; giving breakfast a cook role too
+       * would mean cooking twice that day and producing a leftover nobody
+       * planned to eat. Everything else starts as `quick`, which accepts a
+       * quick *or* an assembly recipe, and is overridable per slot.
+       */
+      mealSource: meal === mainMeal ? mainRoleFor(date) : ("quick" as const),
+    })),
+  );
 }
 
 /** Which recipe meal types may fill a slot of this kind. */
@@ -190,22 +212,29 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
     input;
   const reasons: string[] = [];
 
-  const expected = deriveSlotRoles(weekStart, profile);
+  const expected = deriveSlotRoles(weekStart, profile, {
+    meals: settings.plannedMeals,
+    mainMeal: settings.mainMeal,
+  });
   const macroPlan = computeMacroPlan(profile);
 
-  // 1. Shape: one slot per day of the week, in order.
-  if (slots.length !== 7) {
-    reasons.push(`expected 7 slots, received ${slots.length}`);
+  // 1. Shape: one slot per planned meal per day. Previously a hardcoded 7,
+  // which was the one-meal-a-day assumption expressed as an assertion.
+  if (slots.length !== expected.length) {
+    reasons.push(`expected ${expected.length} slots, received ${slots.length}`);
   }
 
-  const byDate = new Map(slots.map((s) => [s.date, s]));
+  // Keyed on date *and* meal: a `date -> slot` map would collapse a day's meals
+  // onto whichever one came last, and the checks below would silently verify
+  // that single slot while ignoring the rest.
+  const byKey = new Map(slots.map((s) => [`${s.date}|${s.meal}`, s]));
 
-  for (const { date, mealSource } of expected) {
-    const slot = byDate.get(date);
+  for (const { date, meal, mealSource } of expected) {
+    const slot = byKey.get(`${date}|${meal}`);
 
     // 2. Slot roles must match what the settings imply.
     if (!slot) {
-      reasons.push(`missing slot for ${date}`);
+      reasons.push(`missing slot for ${meal} on ${date}`);
       continue;
     }
     if (slot.mealSource !== mealSource) {
@@ -282,8 +311,8 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
   }
 
   // 9. Meal shapes: servings and cook time the user configured per meal type.
-  for (const { date } of expected) {
-    const slot = byDate.get(date);
+  for (const { date, meal } of expected) {
+    const slot = byKey.get(`${date}|${meal}`);
     if (!slot || slot.recipeId === null) continue;
     const recipe = recipesById.get(slot.recipeId);
     if (!recipe) continue;

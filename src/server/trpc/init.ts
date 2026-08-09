@@ -15,6 +15,7 @@ const log = loggerFor("trpc");
 
 export async function createTRPCContext(opts: { headers: Headers }) {
   const session = await auth();
+
   return { session, headers: opts.headers };
 }
 

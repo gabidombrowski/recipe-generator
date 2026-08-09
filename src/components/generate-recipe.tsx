@@ -15,10 +15,13 @@ import { type MealType } from "~/lib/schemas";
  */
 export function GenerateRecipeButton({
   targetDate,
+  targetMeal,
   mealType,
   onGenerated,
 }: {
   targetDate?: string;
+  /** Which meal on that date. Defaults server-side to the main meal. */
+  targetMeal?: string;
   mealType: MealType;
   onGenerated: () => void;
 }) {
@@ -76,6 +79,7 @@ export function GenerateRecipeButton({
             cuisine: cuisine.trim() || undefined,
             maxCookMinutes,
             targetDate,
+            targetMeal,
           })
         }
       >
