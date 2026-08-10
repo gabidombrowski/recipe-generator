@@ -41,10 +41,12 @@ describe("removeMeal", () => {
     expect(next.mainMeal).toBe("Lunch");
   });
 
-  it("leaves the main meal empty only when nothing is left to plan", () => {
+  it("re-plans the first remaining meal when the only planned one is removed", () => {
+    // The old behaviour — meals present but nothing planned — was exactly the
+    // state the schema rejects, and a test used to assert it as intended.
     const next = removeMeal(base, "Dinner");
-    expect(next.plannedMeals).toEqual([]);
-    expect(next.mainMeal).toBe("");
+    expect(next.plannedMeals).toEqual([next.meals[0]]);
+    expect(next.mainMeal).toBe(next.meals[0]);
   });
 });
 

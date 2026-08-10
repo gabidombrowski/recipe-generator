@@ -10,21 +10,23 @@ import {
 } from "~/server/db/state";
 import { refreshScheduler } from "~/server/scheduler/cron";
 import { isLlmConfigured } from "~/server/llm/client";
-import { addConstraints, getDietaryConfig, listConstraints, removeConstraint } from "~/server/db/config";
+import {
+  addConstraints,
+  getDietaryConfig,
+  listConstraints,
+  removeConstraint,
+} from "~/server/db/config";
 import {
   computeMacroPlan,
   formulaTrace,
   perMealProtein,
   splitAcrossMeals,
 } from "~/lib/macros";
-import { mealTypeSchema, profileSchema, settingsSchema } from "~/lib/schemas";
-
-/** What the wizard edits about a meal type — a subset of `meal_shape`. */
-const wizardMealShapeSchema = z.object({
-  mealType: mealTypeSchema,
-  servings: z.number().int().min(1).max(12).nullable(),
-  maxMinutes: z.number().int().min(0).max(240).nullable(),
-});
+import {
+  profileSchema,
+  settingsSchema,
+  wizardMealShapeSchema,
+} from "~/lib/schemas";
 
 /**
  * Replaces the `meal_shape` constraint for each meal type the wizard covers.
@@ -37,10 +39,14 @@ const wizardMealShapeSchema = z.object({
  * Meal types absent from the input are left alone rather than cleared — a
  * partial write should not look like a deletion.
  */
-function writeMealShapes(shapes: z.infer<typeof wizardMealShapeSchema>[]): void {
+function writeMealShapes(
+  shapes: z.infer<typeof wizardMealShapeSchema>[],
+): void {
   if (shapes.length === 0) return;
 
-  const existing = listConstraints().filter((c) => c.constraint.kind === "meal_shape");
+  const existing = listConstraints().filter(
+    (c) => c.constraint.kind === "meal_shape",
+  );
   const touched = new Set(shapes.map((s) => s.mealType));
 
   for (const row of existing) {
@@ -127,12 +133,14 @@ export const setupRouter = router({
     .input(profileSchema)
     .mutation(({ input }) => updateProfile(input)),
 
-  saveSettings: protectedProcedure.input(settingsSchema).mutation(({ input }) => {
-    const saved = updateSettings(input);
-    // The generation day, time, or timezone may have moved.
-    refreshScheduler();
-    return saved;
-  }),
+  saveSettings: protectedProcedure
+    .input(settingsSchema)
+    .mutation(({ input }) => {
+      const saved = updateSettings(input);
+      // The generation day, time, or timezone may have moved.
+      refreshScheduler();
+      return saved;
+    }),
 
   /** Completes the first-run wizard in one write. */
   completeWizard: protectedProcedure
