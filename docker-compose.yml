@@ -20,7 +20,7 @@ services:
       AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:?AUTH_GITHUB_ID is required}
       AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:?AUTH_GITHUB_SECRET is required}
       AUTH_URL: ${AUTH_URL:?AUTH_URL is required}
-      ALLOWED_EMAIL: ${ALLOWED_EMAIL:?ALLOWED_EMAIL is required}
+      ALLOWED_GITHUB_ID: ${ALLOWED_GITHUB_ID:?ALLOWED_GITHUB_ID is required}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # Reachable from Prometheus on the compose network, and nowhere else.
       METRICS_HOST: 0.0.0.0

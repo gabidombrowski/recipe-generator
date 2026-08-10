@@ -27,7 +27,7 @@ variable "hostname" {
 }
 
 variable "allowed_email" {
-  description = "The single email address permitted through Cloudflare Access. Must match the app's ALLOWED_EMAIL."
+  description = "The single email address permitted through Cloudflare Access. Independent of the app's own allowlist, which keys on ALLOWED_GITHUB_ID."
   type        = string
 
   validation {

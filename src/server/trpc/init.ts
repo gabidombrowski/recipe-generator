@@ -64,7 +64,10 @@ export const publicProcedure = t.procedure.use(timing);
  * bypass it.
  */
 export const protectedProcedure = t.procedure.use(timing).use(({ ctx, next }) => {
-  if (!ctx.session?.user?.email) {
+  // Keyed on the account id, not the email. GitHub discloses no address for an
+  // account with a private one, so an email check here would reject a
+  // perfectly valid session — see the allowlist note in `auth.ts`.
+  if (!ctx.session?.user?.id) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign-in required." });
   }
   return next({ ctx: { ...ctx, session: ctx.session } });

@@ -111,9 +111,12 @@ If you read one, make it [untrusted planner, trusted verifier](docs/planner-and-
 ## Security
 
 - **Auth.js v5**, GitHub provider, JWT session in an httpOnly / Secure /
-  SameSite=Lax cookie. The `signIn` callback allowlists exactly one address from
-  `ALLOWED_EMAIL`. **An empty allowlist denies everyone** rather than admitting
-  everyone — a misconfigured deploy should lock its owner out, not open the door.
+  SameSite=Lax cookie. The `signIn` callback allowlists exactly one GitHub
+  account id from `ALLOWED_GITHUB_ID` — not an email, because GitHub withholds
+  the address of an account with a private one, and not a username, because
+  those can be changed and then re-registered by somebody else. **An empty
+  allowlist denies everyone** rather than admitting everyone — a misconfigured
+  deploy should lock its owner out, not open the door.
 - **Middleware denies by default.** Only `/healthz`, `/metrics`, `/signin` and
   Auth.js's own callback routes are public; adding a new page cannot accidentally
   ship unauthenticated. tRPC procedures re-check the session, which matters for
@@ -136,7 +139,7 @@ Requires **Node 22+**.
 
 ```bash
 npm install
-cp .env.example .env          # fill in AUTH_SECRET, AUTH_GITHUB_*, ALLOWED_EMAIL
+cp .env.example .env          # fill in AUTH_SECRET, AUTH_GITHUB_*, ALLOWED_GITHUB_ID
 npm run db:generate           # only after changing the Drizzle schema
 npm run db:migrate
 npm run db:seed
