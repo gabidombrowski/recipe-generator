@@ -123,7 +123,18 @@ jobs:
             exit 1
 
   image:
-    name: Publish container image
+    # Builds on every deploy; pushes only when the PUBLISH_IMAGE repository
+    # variable is "true". The push has failed with permission_denied since the
+    # repository was recreated during the history rewrite — GHCR kept the old
+    # package with an ACL this repository is not on, and no workflow
+    # permission can fix a package-level ACL. Building without pushing keeps
+    # the Dockerfile continuously verified instead of leaving the job red on
+    # every deploy, which was teaching the workflow's red X to mean nothing.
+    #
+    # To publish again: delete the stale package (or grant this repo access)
+    # under github.com → profile → Packages → recipe-generator → settings,
+    # then set the repository variable PUBLISH_IMAGE=true.
+    name: Build container image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -147,7 +158,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ vars.PUBLISH_IMAGE == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

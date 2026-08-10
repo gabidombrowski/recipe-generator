@@ -51,18 +51,36 @@ jobs:
 
       - run: npm ci
 
+      # The suite costs real money and cannot run without a key, so an unarmed
+      # repository skips cleanly instead of failing. A nightly cron that is
+      # red by default teaches everyone to ignore the workflow — which is the
+      # opposite of what a drift check is for. Arming it is one action:
+      # add ANTHROPIC_API_KEY as a repository secret.
+      - name: Check whether the suite is armed
+        id: armed
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "armed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "armed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Evals skipped::ANTHROPIC_API_KEY is not set as a repository secret, so the paid suite did not run. Unit tests still cover everything that runs without a key."
+          fi
+
       - name: Run evals
+        if: steps.armed.outputs.armed == 'true'
         id: evals
         run: npm run evals
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Convert report to Prometheus metrics
-        if: always()
+        if: always() && steps.armed.outputs.armed == 'true'
         run: npm run evals:metrics || true
 
       - name: Upload report
-        if: always()
+        if: always() && steps.armed.outputs.armed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: eval-report-${{ github.run_id }}
@@ -73,7 +91,7 @@ jobs:
 
       # A failing gate should be readable in the PR, not buried in a log.
       - name: Comment the summary on the PR
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.armed.outputs.armed == 'true'
         uses: actions/github-script@v7
         with:
           script: |
