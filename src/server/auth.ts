@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { isSecureOrigin, sessionCookieName } from "./auth-cookie";
+import { resolveRedirect } from "./auth-redirect";
 
 /**
  * Authentication.
@@ -152,6 +153,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.sub) session.user.id = token.sub;
       if (token.email) session.user.email = token.email;
       return session;
+    },
+
+    redirect({ url, baseUrl }) {
+      return resolveRedirect(url, baseUrl, BASE_PATH);
     },
   },
 
