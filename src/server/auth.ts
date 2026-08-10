@@ -26,6 +26,23 @@ function allowlistedEmails(): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Note for anyone deploying this under a sub-path (`NEXT_PUBLIC_BASE_PATH`):
+ * Auth.js builds every URL as `origin + basePath + action`, where `basePath`
+ * must stay `/api/auth` because Next strips the sub-path before the route
+ * handler runs. The library therefore never learns the prefix exists and
+ * advertises a `redirect_uri` of `origin/api/auth/callback/github`.
+ *
+ * There is no configuration that fixes this. `redirectProxyUrl` looks like the
+ * answer and is not: `init.js` sets `isOnRedirectProxy` when that URL's origin
+ * equals the request's, which is always true here, and the override is then
+ * skipped. Verified by reading the source and by measuring the emitted
+ * `redirect_uri`, not assumed.
+ *
+ * The deployment resolves it instead — see `docs/deployment.md`. The OAuth
+ * callback is registered at the un-prefixed path and the reverse proxy
+ * forwards it in. Nothing here needs to change.
+ */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     GitHub({

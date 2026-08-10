@@ -91,3 +91,44 @@ sqlite3 "$DB_PATH" ".backup '/tmp/nutrition-$(date +%F).db'" && rsync -az "/tmp/
 ```
 
 ---
+
+## Serving under a sub-path
+
+Set the `BASE_PATH` repository **variable** (not a secret — it is not sensitive,
+and as a secret GitHub masks it throughout the logs). The workflow passes it as
+`NEXT_PUBLIC_BASE_PATH`, which Next bakes into every asset URL at build time.
+
+Three things bite, all of them found by measuring rather than by reading docs:
+
+1. **Middleware sees the prefix; route handlers do not.** `nextUrl.pathname`
+   still carries it in middleware, and `nextUrl.basePath` is empty there. The
+   middleware therefore strips it before matching the public-path allowlist and
+   puts it back on redirects.
+
+2. **Do not redirect the bare path to the trailing-slash form.** Next strips the
+   trailing slash itself, so a proxy rule adding it back produces an infinite
+   redirect. Use an exact-match `location` that proxies, alongside the prefix one.
+
+3. **Auth.js cannot be told about the sub-path.** It builds every URL as
+   `origin + basePath + action` and `basePath` has to remain `/api/auth`,
+   because that is what the route handler sees. So it always advertises
+   `redirect_uri = origin/api/auth/callback/<provider>`. `redirectProxyUrl` is
+   not a way out: Auth.js sets `isOnRedirectProxy` whenever that URL's origin
+   equals the request's — always true here — and then skips the override.
+
+   Resolve it in the proxy instead. Register the OAuth callback at the
+   **un-prefixed** path and rewrite it into the app:
+
+   ```nginx
+   location /api/auth/ {
+       proxy_pass http://localhost:<port>/<base-path>/api/auth/;
+   }
+   ```
+
+   `AUTH_URL` should then be the bare origin. Giving it a path makes Auth.js
+   treat that path as its `basePath` and every auth route returns
+   "Bad request."
+
+   The cost is one carve-out in the host's root namespace. A sub-domain avoids
+   all three problems and needs no `BASE_PATH` at all; prefer it unless the
+   sub-path is a requirement.
