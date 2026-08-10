@@ -106,14 +106,20 @@
 html {
   color-scheme: light dark;
   /*
-   * 18px root rather than the browser's 16px. Every Tailwind size unit in the
-   * app is rem-based, so this one declaration scales type, padding, gaps and
-   * tap targets together at their existing proportions — the 14px design
-   * becomes 15.75px, body text 18px, the 44px touch floor 49.5px. Set as a
-   * percentage so a user's own browser font-size preference still multiplies
-   * through rather than being overridden.
+   * Fluid root size: 18px up to laptop widths, growing linearly to 22px on a
+   * 2560px display. Every size in the app is rem-based — including the
+   * max-w-* column widths — so this one declaration scales type, spacing, tap
+   * targets *and the layout itself* together: on a large monitor the column
+   * widens and everything in it grows in proportion, instead of an
+   * 864px strip floating in empty canvas.
+   *
+   * The floor and ceiling are percentages so a user's own browser font-size
+   * preference still multiplies through; the vw term in the middle is the
+   * only part that does not, which is the usual trade of fluid type.
+   *
+   *   1440px viewport → 18px    2000px → ~20px    2560px+ → 22px
    */
-  font-size: 112.5%;
+  font-size: clamp(112.5%, calc(80.4% + 0.357vw), 137.5%);
 }
 
 body {
