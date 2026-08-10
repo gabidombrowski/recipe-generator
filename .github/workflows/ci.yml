@@ -34,6 +34,11 @@ jobs:
         run: npm run typecheck
 
       # Hermetic and fast: no network, no API key, no database.
+      - name: Type-check the Python tooling
+        run: |
+          python3 -m pip install --quiet mypy
+          python3 -m mypy --strict tools/
+
       - name: Unit tests
         run: npm test
 
