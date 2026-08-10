@@ -37,7 +37,13 @@ export default async function SignInPage({
           className="mt-6"
           action={async () => {
             "use server";
-            await signIn("github", { redirectTo: callbackUrl ?? "/" });
+            // The fallback needs the sub-path. Auth.js resolves a relative
+            // target against the *origin*, so a bare "/" lands on whatever
+            // else that domain serves rather than on this app's Today page.
+            await signIn("github", {
+              redirectTo:
+                callbackUrl ?? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`,
+            });
           }}
         >
           <Button type="submit" variant="primary" className="w-full py-2">
