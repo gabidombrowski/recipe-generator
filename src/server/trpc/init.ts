@@ -24,13 +24,33 @@ export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
+    const zodError = error.cause instanceof ZodError ? error.cause : null;
+
+    // Input validation is rejected before the procedure body runs, so nothing
+    // downstream ever sees it. Without this a rejected form is invisible on
+    // the server: the wizard failed in production and the logs held no trace
+    // of which field was at fault. Field paths and messages only — never the
+    // values, which are the user's own data.
+    if (zodError) {
+      log.warn(
+        {
+          path: shape.data.path,
+          issues: zodError.issues.map((issue) => ({
+            field: issue.path.join("."),
+            code: issue.code,
+            message: issue.message,
+          })),
+        },
+        "input rejected",
+      );
+    }
+
     return {
       ...shape,
       data: {
         ...shape.data,
         // Surface zod issues in a shape the client can render per-field.
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError: zodError ? zodError.flatten() : null,
       },
     };
   },
@@ -63,12 +83,17 @@ export const publicProcedure = t.procedure.use(timing);
  * so a procedure invoked server-side or from a future non-HTTP caller cannot
  * bypass it.
  */
-export const protectedProcedure = t.procedure.use(timing).use(({ ctx, next }) => {
-  // Keyed on the account id, not the email. GitHub discloses no address for an
-  // account with a private one, so an email check here would reject a
-  // perfectly valid session — see the allowlist note in `auth.ts`.
-  if (!ctx.session?.user?.id) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign-in required." });
-  }
-  return next({ ctx: { ...ctx, session: ctx.session } });
-});
+export const protectedProcedure = t.procedure
+  .use(timing)
+  .use(({ ctx, next }) => {
+    // Keyed on the account id, not the email. GitHub discloses no address for an
+    // account with a private one, so an email check here would reject a
+    // perfectly valid session — see the allowlist note in `auth.ts`.
+    if (!ctx.session?.user?.id) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Sign-in required.",
+      });
+    }
+    return next({ ctx: { ...ctx, session: ctx.session } });
+  });

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addMeal, reconcile, removeMeal, togglePlanned } from "./meal-config";
+import {
+  addMeal,
+  reconcile,
+  removeMeal,
+  togglePlanned,
+  type MealConfig,
+} from "./meal-config";
 
 /**
  * The invariants nothing downstream re-checks.
@@ -17,7 +23,10 @@ const base = {
 
 describe("removeMeal", () => {
   it("prunes the removed meal from the planned list", () => {
-    const next = removeMeal({ ...base, plannedMeals: ["Lunch", "Dinner"] }, "Lunch");
+    const next = removeMeal(
+      { ...base, plannedMeals: ["Lunch", "Dinner"] },
+      "Lunch",
+    );
     expect(next.meals).toEqual(["Breakfast", "Dinner"]);
     expect(next.plannedMeals).toEqual(["Dinner"]);
   });
@@ -25,7 +34,10 @@ describe("removeMeal", () => {
   it("reassigns the main meal when the main meal is removed", () => {
     // Otherwise the cook cycle points at a meal that no longer exists and the
     // week silently loses its cook days.
-    const next = removeMeal({ ...base, plannedMeals: ["Lunch", "Dinner"] }, "Dinner");
+    const next = removeMeal(
+      { ...base, plannedMeals: ["Lunch", "Dinner"] },
+      "Dinner",
+    );
     expect(next.mainMeal).toBe("Lunch");
   });
 
@@ -45,12 +57,18 @@ describe("togglePlanned", () => {
 
   it("keeps planned meals in day order, not tick order", () => {
     // Ticked dinner-then-breakfast, but a day reads breakfast first.
-    const next = togglePlanned(togglePlanned({ ...base, plannedMeals: [] }, "Dinner"), "Breakfast");
+    const next = togglePlanned(
+      togglePlanned({ ...base, plannedMeals: [] }, "Dinner"),
+      "Breakfast",
+    );
     expect(next.plannedMeals).toEqual(["Breakfast", "Dinner"]);
   });
 
   it("moves the main meal when the current one is unplanned", () => {
-    const next = togglePlanned({ ...base, plannedMeals: ["Breakfast", "Dinner"] }, "Dinner");
+    const next = togglePlanned(
+      { ...base, plannedMeals: ["Breakfast", "Dinner"] },
+      "Dinner",
+    );
     expect(next.plannedMeals).toEqual(["Breakfast"]);
     expect(next.mainMeal).toBe("Breakfast");
   });
@@ -86,7 +104,53 @@ describe("reconcile", () => {
   });
 
   it("is idempotent", () => {
-    const once = reconcile({ ...base, plannedMeals: ["Brunch"], mainMeal: "Nope" });
+    const once = reconcile({
+      ...base,
+      plannedMeals: ["Brunch"],
+      mainMeal: "Nope",
+    });
     expect(reconcile(once)).toEqual(once);
+  });
+});
+
+/**
+ * The wizard failed at its final step for someone who had simply left the
+ * meals question alone. These pin the cause: the config helpers were happy to
+ * produce a state the schema refuses, and the refusal surfaced five steps
+ * later as a raw validation message.
+ */
+describe("the last planned meal", () => {
+  it("cannot be unticked", () => {
+    const one: MealConfig = {
+      meals: ["Breakfast", "Lunch"],
+      plannedMeals: ["Lunch"],
+      mainMeal: "Lunch",
+    };
+
+    // Targets are divided across planned meals and the cook cycle hangs off the
+    // main one, so zero planned meals is not a state the app can represent.
+    expect(togglePlanned(one, "Lunch")).toEqual(one);
+  });
+
+  it("cannot be removed as the last meal", () => {
+    const one: MealConfig = {
+      meals: ["Lunch"],
+      plannedMeals: ["Lunch"],
+      mainMeal: "Lunch",
+    };
+
+    expect(removeMeal(one, "Lunch")).toEqual(one);
+  });
+
+  it("still allows unticking down to one", () => {
+    const two: MealConfig = {
+      meals: ["Lunch", "Dinner"],
+      plannedMeals: ["Lunch", "Dinner"],
+      mainMeal: "Dinner",
+    };
+
+    const after = togglePlanned(two, "Lunch");
+    expect(after.plannedMeals).toEqual(["Dinner"]);
+    expect(after.mainMeal).toBe("Dinner");
   });
 });
