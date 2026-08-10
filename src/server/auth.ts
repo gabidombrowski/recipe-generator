@@ -23,20 +23,27 @@ import { isSecureOrigin, sessionCookieName } from "./auth-cookie";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 /**
- * `ab***@example.com` — enough to tell two addresses apart in a log without
- * writing one down. This is a health app; the sign-in address is the one piece
- * of identifying data the server handles, and an operator debugging a failed
- * login does not need it in full.
+ * The allowlist, keyed on GitHub's numeric account id.
+ *
+ * An email is the obvious key and the wrong one. GitHub only discloses an
+ * address if the account has a public one or the `user:email` scope is
+ * actually granted, so a private-email account signs in successfully and then
+ * gets turned away by an allowlist that never saw an address to compare —
+ * which is exactly what happened here. Addresses also change, and an unverified
+ * one is worth nothing as an identity claim.
+ *
+ * The numeric id is always present, never private, immutable for the life of
+ * the account, and not reissued if the account is renamed. It is also not a
+ * secret, so it can go in a log and in an example file without redaction. The
+ * username would satisfy the first three and not the fourth: it can be changed
+ * and then claimed by someone else.
+ *
+ * Find yours with: curl -s https://api.github.com/users/<username> | jq .id
  */
-function maskEmail(email: string): string {
-  const [local = "", domain = ""] = email.split("@");
-  return `${local.slice(0, 2)}***@${domain}`;
-}
-
-function allowlistedEmails(): string[] {
-  return (process.env.ALLOWED_EMAIL ?? "")
+function allowlistedGitHubIds(): string[] {
+  return (process.env.ALLOWED_GITHUB_ID ?? "")
     .split(",")
-    .map((e) => e.trim().toLowerCase())
+    .map((id) => id.trim())
     .filter(Boolean);
 }
 
@@ -96,33 +103,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     /**
-     * The allowlist. An empty `ALLOWED_EMAIL` denies everyone rather than
+     * The allowlist. An empty `ALLOWED_GITHUB_ID` denies everyone rather than
      * admitting everyone — a misconfigured deploy should lock its owner out,
-     * not open the door.
+     * not open the door. Each refusal says which of the three it was, because
+     * a bare "AccessDenied" is indistinguishable from a broken config.
      */
     signIn({ profile, user }) {
-      const allowed = allowlistedEmails();
+      const allowed = allowlistedGitHubIds();
       if (allowed.length === 0) {
-        console.warn("[auth] denied: ALLOWED_EMAIL is unset or empty");
+        console.warn("[auth] denied: ALLOWED_GITHUB_ID is unset or empty");
         return false;
       }
 
-      const email = (profile?.email ?? user?.email ?? "").toLowerCase();
-      if (email === "") {
-        // The provider returned no address at all. For GitHub that means the
-        // `user:email` scope was not granted, since it falls back to
-        // /user/emails when the profile address is private.
-        console.warn("[auth] denied: the provider returned no email address");
+      // `profile` is GitHub's raw payload, where `id` is a number; `user` is
+      // the provider's mapping of it, where the same value is a string.
+      const id = String(profile?.id ?? user?.id ?? "");
+      if (id === "") {
+        console.warn("[auth] denied: the provider returned no account id");
         return false;
       }
 
-      if (!allowed.includes(email)) {
-        // Masked on both sides. Enough to see *that* they differ and roughly
-        // where, without putting either address in a log file. A bare
-        // "AccessDenied" is otherwise indistinguishable from a broken config.
+      if (!allowed.includes(id)) {
+        // Logged unmasked: a GitHub account id is public information, and an
+        // operator cannot fix a mismatch they are not allowed to see.
         console.warn(
-          `[auth] denied: ${maskEmail(email)} is not in the allowlist ` +
-            `(${allowed.map(maskEmail).join(", ")})`,
+          `[auth] denied: GitHub id ${id} is not in the allowlist ` +
+            `(${allowed.join(", ")})`,
         );
         return false;
       }
@@ -130,12 +136,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
 
+    /**
+     * `token.sub` already carries the account id, set by Auth.js from the
+     * provider's user mapping. The email is copied across only when there is
+     * one — it is now decoration rather than identity, and an account with a
+     * private address has none.
+     */
     jwt({ token, profile }) {
+      if (profile?.id) token.sub = String(profile.id);
       if (profile?.email) token.email = profile.email;
       return token;
     },
 
     session({ session, token }) {
+      if (token.sub) session.user.id = token.sub;
       if (token.email) session.user.email = token.email;
       return session;
     },

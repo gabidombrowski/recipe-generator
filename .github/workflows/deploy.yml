@@ -9,7 +9,7 @@
 #   APP_PATH        absolute path of the app directory on the server
 #
 # Plus this app's own runtime secrets, which pm2 reads from the server's .env:
-#   AUTH_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, ALLOWED_EMAIL,
+#   AUTH_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, ALLOWED_GITHUB_ID,
 #   ANTHROPIC_API_KEY, DB_PATH, TZ, AUTH_URL
 #
 # A GHCR image is published alongside it for the container path in

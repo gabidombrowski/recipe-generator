@@ -27,7 +27,8 @@ import type * as State from "~/server/db/state";
  * as they do in production. The point is to test the real thing.
  */
 
-export const TEST_EMAIL = "harness@example.test";
+/** A GitHub account id is numeric, so the fixture looks like one. */
+export const TEST_ACCOUNT_ID = "1000001";
 
 /**
  * Stubs Auth.js, which cannot load in a Node test environment.
@@ -36,9 +37,9 @@ export const TEST_EMAIL = "harness@example.test";
  * late. It stubs the *session*, not the procedures, so `protectedProcedure`'s
  * real guard still runs — a test can still prove an anonymous caller is refused.
  */
-export function mockAuth(email: string = TEST_EMAIL): void {
+export function mockAuth(id: string = TEST_ACCOUNT_ID): void {
   vi.mock("~/server/auth", () => ({
-    auth: async () => ({ user: { email, name: "Harness" }, expires: "" }),
+    auth: async () => ({ user: { id, name: "Harness" }, expires: "" }),
     signIn: async () => undefined,
     signOut: async () => undefined,
     handlers: {},
@@ -73,15 +74,17 @@ export interface Harness {
   cleanup: () => void;
 }
 
-async function buildCaller(email: string) {
+async function buildCaller(id: string) {
   const { createCaller } = await import("~/server/trpc/root");
+  // `id` and not `email`: `protectedProcedure` keys on the account id, because
+  // GitHub discloses no address for an account with a private one.
   return createCaller({
-    session: { user: { email, name: "Harness" }, expires: "" },
+    session: { user: { id, name: "Harness" }, expires: "" },
     headers: new Headers(),
   });
 }
 
-export async function createHarness(options: { email?: string } = {}): Promise<Harness> {
+export async function createHarness(options: { accountId?: string } = {}): Promise<Harness> {
   const dir = mkdtempSync(join(tmpdir(), "recipe-harness-"));
   vi.stubEnv("DB_PATH", join(dir, "test.db"));
   vi.resetModules();
@@ -116,7 +119,7 @@ export async function createHarness(options: { email?: string } = {}): Promise<H
   reset();
 
   return {
-    caller: await buildCaller(options.email ?? TEST_EMAIL),
+    caller: await buildCaller(options.accountId ?? TEST_ACCOUNT_ID),
     db: await import("~/server/db/queries"),
     state: await import("~/server/db/state"),
     config: await import("~/server/db/config"),

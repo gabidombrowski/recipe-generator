@@ -46,7 +46,10 @@ export default defineConfig({
       HOSTNAME: "127.0.0.1",
       DB_PATH: "./data/e2e.db",
       AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-secret-not-used-in-production",
-      ALLOWED_EMAIL: "e2e@example.test",
+      // Never exercised: the suite mints its own session token rather than
+      // completing an OAuth round trip. It only has to be non-empty, since an
+      // empty allowlist is a hard deny.
+      ALLOWED_GITHUB_ID: "999999",
       AUTH_URL: `http://127.0.0.1:${PORT}`,
       // Keep the exporter off a port a parallel job might want.
       METRICS_PORT: "9465",

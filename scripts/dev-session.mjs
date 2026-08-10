@@ -39,9 +39,9 @@ if (!secret) {
   process.exit(1);
 }
 
-const email = env.ALLOWED_EMAIL?.split(",")[0]?.trim();
-if (!email) {
-  console.error("ALLOWED_EMAIL is not set in .env — the allowlist would reject every identity.");
+const accountId = env.ALLOWED_GITHUB_ID?.split(",")[0]?.trim();
+if (!accountId) {
+  console.error("ALLOWED_GITHUB_ID is not set in .env — the allowlist would reject every identity.");
   process.exit(1);
 }
 
@@ -50,7 +50,8 @@ const secure = authUrl.startsWith("https://");
 const cookieName = secure ? "__Secure-authjs.session-token" : "authjs.session-token";
 
 const token = await encode({
-  token: { email, name: "Local dev", sub: "local-dev" },
+  // `sub` is the identity the session is keyed on; see `auth.ts`.
+  token: { name: "Local dev", sub: accountId },
   secret,
   salt: cookieName,
   maxAge: 60 * 60 * 24 * 7,
