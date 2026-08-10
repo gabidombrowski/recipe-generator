@@ -1,9 +1,21 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
-import { getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
+import {
+  getClient,
+  isAborted,
+  isRetryable,
+  MAX_TOKENS,
+  MODELS,
+  TIMEOUTS,
+  withDeadline,
+} from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
 import { loggerFor } from "~/server/logger";
-import { recordGeneration, withSpan, type TokenUsage } from "~/server/telemetry";
+import {
+  recordGeneration,
+  withSpan,
+  type TokenUsage,
+} from "~/server/telemetry";
 import { computeMacroPlan } from "~/lib/macros";
 import { describeConfig, type DietaryConfig } from "~/lib/constraints";
 import {
@@ -75,6 +87,14 @@ export interface GenerationContext {
   config: DietaryConfig;
   /** Favourite recipes to show as few-shot exemplars. */
   exemplars: readonly RecipeBody[];
+}
+
+/** How to run the call, as opposed to what to ask for. */
+export interface GenerationOptions {
+  /** Cancels the call when the caller goes away. */
+  signal?: AbortSignal;
+  /** Per-attempt ceiling. Defaults to the interactive deadline. */
+  timeoutMs?: number;
 }
 
 export interface GenerationResult {
@@ -198,7 +218,10 @@ function extractToolInput(
     try {
       return { ok: true, input: JSON.parse(jsonMatch[0]) };
     } catch {
-      return { ok: false, reason: "no tool_use block and prose JSON did not parse" };
+      return {
+        ok: false,
+        reason: "no tool_use block and prose JSON did not parse",
+      };
     }
   }
 
@@ -211,6 +234,7 @@ function extractToolInput(
 export async function generateRecipe(
   request: GenerationRequest,
   context: GenerationContext,
+  options: GenerationOptions = {},
 ): Promise<GenerationResult> {
   return withSpan("llm.generate_recipe", async () => {
     const client = getClient();
@@ -219,7 +243,10 @@ export async function generateRecipe(
 
     const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
     const messages: AnthropicNS.MessageParam[] = [
-      { role: "user", content: `Write the recipe. ${describeRequest(request)}` },
+      {
+        role: "user",
+        content: `Write the recipe. ${describeRequest(request)}`,
+      },
     ];
 
     let lastIssues: string[] = [];
@@ -227,17 +254,31 @@ export async function generateRecipe(
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       let message: AnthropicNS.Message;
       try {
-        message = await client.messages.create({
-          model: MODELS.generation,
-          max_tokens: MAX_TOKENS,
-          system,
-          tools: [RECIPE_TOOL],
-          // Forcing the tool is what removes prose from the output surface
-          // entirely — the model has no path that returns anything else.
-          tool_choice: { type: "tool", name: RECIPE_TOOL_NAME },
-          messages,
-        });
+        message = await client.messages.create(
+          {
+            model: MODELS.generation,
+            max_tokens: MAX_TOKENS,
+            system,
+            tools: [RECIPE_TOOL],
+            // Forcing the tool is what removes prose from the output surface
+            // entirely — the model has no path that returns anything else.
+            tool_choice: { type: "tool", name: RECIPE_TOOL_NAME },
+            messages,
+          },
+          // A fresh deadline per attempt: a retry after a slow first try
+          // should get a full budget, not the remainder of one.
+          {
+            signal: withDeadline(
+              options.timeoutMs ?? TIMEOUTS.interactive,
+              options.signal,
+            ),
+          },
+        );
       } catch (error) {
+        // A cancellation is not a transient failure: retrying it would ignore
+        // the caller who just walked away, or restart the clock on a deadline
+        // that has already expired.
+        if (isAborted(error)) throw error;
         if (isRetryable(error) && attempt < MAX_ATTEMPTS) {
           log.warn({ err: error, attempt }, "retryable API error");
           continue;
@@ -256,14 +297,18 @@ export async function generateRecipe(
       usage.inputTokens += message.usage.input_tokens;
       usage.outputTokens += message.usage.output_tokens;
       usage.cacheReadInputTokens =
-        (usage.cacheReadInputTokens ?? 0) + (message.usage.cache_read_input_tokens ?? 0);
+        (usage.cacheReadInputTokens ?? 0) +
+        (message.usage.cache_read_input_tokens ?? 0);
 
       const extracted = extractToolInput(message);
       if (!extracted.ok) {
         lastIssues = [extracted.reason];
         messages.push(
           { role: "assistant", content: message.content },
-          { role: "user", content: `${extracted.reason}. Call ${RECIPE_TOOL_NAME} with the recipe.` },
+          {
+            role: "user",
+            content: `${extracted.reason}. Call ${RECIPE_TOOL_NAME} with the recipe.`,
+          },
         );
         continue;
       }
@@ -295,7 +340,10 @@ export async function generateRecipe(
       lastIssues = parsed.error.issues.map(
         (issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`,
       );
-      log.warn({ attempt, issues: lastIssues }, "generated recipe failed schema validation");
+      log.warn(
+        { attempt, issues: lastIssues },
+        "generated recipe failed schema validation",
+      );
 
       messages.push(
         { role: "assistant", content: message.content },

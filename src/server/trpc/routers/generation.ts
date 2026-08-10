@@ -24,12 +24,19 @@ import {
   uncoveredCuisines,
 } from "~/server/llm/library-fill";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
-import { similarFavorites, upsertRecipeEmbedding } from "~/server/embeddings/index";
+import {
+  similarFavorites,
+  upsertRecipeEmbedding,
+} from "~/server/embeddings/index";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { loggerFor } from "~/server/logger";
 import { dayOfWeekFor } from "~/lib/days";
 import { isTrainingDay } from "~/lib/macros";
-import { feedbackVerdictSchema, isoDateSchema, mealTypeSchema } from "~/lib/schemas";
+import {
+  feedbackVerdictSchema,
+  isoDateSchema,
+  mealTypeSchema,
+} from "~/lib/schemas";
 
 /**
  * AI generation and the feedback loop that feeds the eval suite.
@@ -44,7 +51,9 @@ const log = loggerFor("generation");
 const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
 
 export const generationRouter = router({
-  available: protectedProcedure.query(() => ({ configured: isLlmConfigured() })),
+  available: protectedProcedure.query(() => ({
+    configured: isLlmConfigured(),
+  })),
 
   // ---------------------------------------------------------------------------
   // Filling the library from the cuisine palette
@@ -78,11 +87,12 @@ export const generationRouter = router({
         note: z.string().max(500).optional(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input, signal }) => {
       if (!isLlmConfigured()) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "ANTHROPIC_API_KEY is not set, so AI generation is unavailable.",
+          message:
+            "ANTHROPIC_API_KEY is not set, so AI generation is unavailable.",
         });
       }
 
@@ -114,13 +124,20 @@ export const generationRouter = router({
       );
 
       try {
-        const result = await generateRecipe(input, {
-          profile,
-          trainingDay,
-          excluded: excludedLower(),
-          config: getDietaryConfig(),
-          exemplars,
-        });
+        const result = await generateRecipe(
+          input,
+          {
+            profile,
+            trainingDay,
+            excluded: excludedLower(),
+            config: getDietaryConfig(),
+            exemplars,
+          },
+          // tRPC surfaces the request's own signal, so closing the tab or
+          // navigating away stops the generation instead of leaving it to run
+          // to completion and bill for a recipe nobody will see.
+          { signal },
+        );
 
         const recipe = insertRecipe(result.recipe, {
           source: "ai",
@@ -154,14 +171,20 @@ export const generationRouter = router({
         }
 
         log.info(
-          { recipe: recipe.name, costUsd: result.costUsd, attempts: result.attempts },
+          {
+            recipe: recipe.name,
+            costUsd: result.costUsd,
+            attempts: result.attempts,
+          },
           "recipe generated",
         );
 
         return {
           recipe,
           assignedTo: input.targetDate ?? null,
-          assignedMeal: input.targetDate ? (input.targetMeal ?? getSettings().mainMeal) : null,
+          assignedMeal: input.targetDate
+            ? (input.targetMeal ?? getSettings().mainMeal)
+            : null,
           costUsd: result.costUsd,
           attempts: result.attempts,
         };
@@ -181,7 +204,11 @@ export const generationRouter = router({
   // -------------------------------------------------------------------------
 
   feedback: protectedProcedure
-    .input(z.object({ recipeId: z.number().int().positive().optional() }).default({}))
+    .input(
+      z
+        .object({ recipeId: z.number().int().positive().optional() })
+        .default({}),
+    )
     .query(({ input }) => listFeedback(input.recipeId)),
 
   submitFeedback: protectedProcedure
@@ -192,7 +219,9 @@ export const generationRouter = router({
         reason: z.string().max(2000).default(""),
       }),
     )
-    .mutation(({ input }) => addFeedback(input.recipeId, input.verdict, input.reason)),
+    .mutation(({ input }) =>
+      addFeedback(input.recipeId, input.verdict, input.reason),
+    ),
 
   /**
    * Turns a rejection into an eval fixture.
@@ -206,12 +235,18 @@ export const generationRouter = router({
     .mutation(({ input }) => {
       const feedback = getFeedback(input.feedbackId);
       if (!feedback) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No such feedback entry." });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No such feedback entry.",
+        });
       }
 
       const recipe = getRecipe(feedback.recipeId);
       if (!recipe) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "The recipe no longer exists." });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "The recipe no longer exists.",
+        });
       }
 
       const fixture = {

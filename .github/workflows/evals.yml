@@ -36,6 +36,9 @@ jobs:
   evals:
     name: Generation evals
     runs-on: ubuntu-latest
+    # Was sized for a fully sequential suite: 90 generations plus 90 judge
+    # calls, one at a time. The runner now caps five in flight, so this is
+    # headroom rather than a target.
     timeout-minutes: 45
 
     steps:
