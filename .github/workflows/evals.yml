@@ -1,8 +1,10 @@
 name: Evals
 
 # Costs money on every run, so it is scoped deliberately: only changes that can
-# actually affect generation quality, plus a nightly run to catch drift in the
-# model rather than in the code.
+# actually affect generation quality, plus a weekly run to catch drift in the
+# model rather than in the code. Weekly, not nightly: at roughly $2-3 a run
+# the nightly cadence bought thirty data points a month about a drift that
+# does not move that fast.
 on:
   pull_request:
     paths:
@@ -19,8 +21,8 @@ on:
       - "src/server/llm/**"
       - "src/lib/schemas.ts"
   schedule:
-    # 07:00 UTC nightly.
-    - cron: "0 7 * * *"
+    # 07:00 UTC every Monday.
+    - cron: "0 7 * * 1"
   workflow_dispatch:
 
 concurrency:
