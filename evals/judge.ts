@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
-import { getClient, MODELS } from "~/server/llm/client";
+import { getClient, MODELS, TIMEOUTS, withDeadline } from "~/server/llm/client";
 import { loadPrompt, PROMPT_NAMES } from "~/server/llm/prompts";
 import { type RecipeBody } from "~/lib/schemas";
 
@@ -19,9 +19,19 @@ import { type RecipeBody } from "~/lib/schemas";
  */
 
 const gradeSchema = z.object({
-  stepCoherence: z.number().int().min(1).max(5).describe("1-5; can a cook follow these steps?"),
+  stepCoherence: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .describe("1-5; can a cook follow these steps?"),
   stepCoherenceNote: z.string().max(300),
-  seasoningBoldness: z.number().int().min(1).max(5).describe("1-5; does the dish have a point of view?"),
+  seasoningBoldness: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .describe("1-5; does the dish have a point of view?"),
   seasoningBoldnessNote: z.string().max(300),
 });
 
@@ -51,22 +61,35 @@ export async function judgeRecipe(recipe: RecipeBody): Promise<JudgeResult> {
   const prompt = loadPrompt(PROMPT_NAMES.judge);
 
   try {
-    const message = await getClient().messages.create({
-      model: MODELS.judge,
-      max_tokens: 1024,
-      system: prompt.text,
-      tools: [GRADE_TOOL],
-      tool_choice: { type: "tool", name: "grade_recipe" },
-      messages: [
-        { role: "user", content: `Grade this recipe:\n\n${JSON.stringify(recipe, null, 2)}` },
-      ],
-    });
+    const message = await getClient().messages.create(
+      {
+        model: MODELS.judge,
+        max_tokens: 1024,
+        system: prompt.text,
+        tools: [GRADE_TOOL],
+        tool_choice: { type: "tool", name: "grade_recipe" },
+        messages: [
+          {
+            role: "user",
+            content: `Grade this recipe:\n\n${JSON.stringify(recipe, null, 2)}`,
+          },
+        ],
+      },
+      // Grading is report-only, so a hung judge must never hold a concurrency
+      // slot that a generation could be using.
+      { signal: withDeadline(TIMEOUTS.evals) },
+    );
 
     const toolUse = message.content.find(
       (block): block is AnthropicNS.ToolUseBlock => block.type === "tool_use",
     );
     if (!toolUse) {
-      return { grade: null, model: MODELS.judge, promptHash: prompt.hash, error: "no tool_use block" };
+      return {
+        grade: null,
+        model: MODELS.judge,
+        promptHash: prompt.hash,
+        error: "no tool_use block",
+      };
     }
 
     const parsed = gradeSchema.safeParse(toolUse.input);

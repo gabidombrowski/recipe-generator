@@ -3,7 +3,8 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipeIfAbsent } from "~/server/db/recipes";
 import { upsertRecipeEmbedding } from "~/server/embeddings/index";
-import { isLlmConfigured } from "./client";
+import { isLlmConfigured, TIMEOUTS } from "./client";
+import { mapWithConcurrency } from "~/lib/concurrency";
 import { generateRecipe } from "./generator";
 import { loggerFor } from "~/server/logger";
 import { type MealType } from "~/lib/schemas";
@@ -57,7 +58,11 @@ const IDLE: LibraryFillStatus = {
 let status: LibraryFillStatus = { ...IDLE };
 
 export function getLibraryFillStatus(): LibraryFillStatus {
-  return { ...status, created: [...status.created], failed: [...status.failed] };
+  return {
+    ...status,
+    created: [...status.created],
+    failed: [...status.failed],
+  };
 }
 
 /** Cuisines in the configured palette with no recipe behind them. */
@@ -92,13 +97,19 @@ export function startLibraryFill(): LibraryFillStatus {
   if (status.running) return getLibraryFillStatus();
 
   if (!isLlmConfigured()) {
-    status = { ...IDLE, error: "ANTHROPIC_API_KEY is not set, so nothing can be generated." };
+    status = {
+      ...IDLE,
+      error: "ANTHROPIC_API_KEY is not set, so nothing can be generated.",
+    };
     return getLibraryFillStatus();
   }
 
   const targets = uncoveredCuisines();
   if (targets.length === 0) {
-    status = { ...IDLE, error: "Every cuisine in your list already has a recipe." };
+    status = {
+      ...IDLE,
+      error: "Every cuisine in your list already has a recipe.",
+    };
     return getLibraryFillStatus();
   }
 
@@ -125,60 +136,91 @@ export function startLibraryFill(): LibraryFillStatus {
   return getLibraryFillStatus();
 }
 
+/** Background work yields to the interactive path; see the note in `runFill`. */
+const FILL_CONCURRENCY = 2;
+
 async function runFill(targets: readonly string[]): Promise<void> {
   const profile = getProfile();
   const config = getDietaryConfig();
   const excluded = excludedLower();
 
-  for (const [index, cuisine] of targets.entries()) {
-    const mealType = TYPE_ROTATION[index % TYPE_ROTATION.length]!;
+  /**
+   * Two at a time, not five.
+   *
+   * Nobody is waiting on this, so latency is not the point — staying out of
+   * the way of an interactive generation is. Each slot also drives a local
+   * embedding computation, which is CPU-bound in this process rather than
+   * network-bound, so a wider cap would start competing with the request the
+   * user is actually watching.
+   *
+   * The `status` updates below are safe under concurrency because each is a
+   * synchronous read-modify-write with no `await` inside it; JavaScript will
+   * not interleave another runner partway through one.
+   */
+  await mapWithConcurrency(
+    targets,
+    FILL_CONCURRENCY,
+    async (cuisine, index) => {
+      const mealType = TYPE_ROTATION[index % TYPE_ROTATION.length]!;
 
-    try {
-      const result = await generateRecipe(
-        { mealType, cuisine, maxCookMinutes: MINUTES_FOR[mealType] },
-        {
-          profile,
-          // Generated for the library rather than for a particular day, so the
-          // more demanding training-day targets are the safer assumption.
-          trainingDay: true,
-          excluded,
-          config,
-          exemplars: [],
-        },
-      );
+      try {
+        const result = await generateRecipe(
+          { mealType, cuisine, maxCookMinutes: MINUTES_FOR[mealType] },
+          {
+            profile,
+            // Generated for the library rather than for a particular day, so the
+            // more demanding training-day targets are the safer assumption.
+            trainingDay: true,
+            excluded,
+            config,
+            exemplars: [],
+          },
+          // Generous: this is background work, and a slow call here costs
+          // nobody anything. It exists so a hung one cannot hold its slot
+          // forever.
+          { timeoutMs: TIMEOUTS.background },
+        );
 
-      // `IfAbsent` because a name collision must not abort the run — the
-      // library gains nothing from a duplicate, and losing the remaining
-      // twenty cuisines to one clash would be a poor trade.
-      const { recipe, created } = insertRecipeIfAbsent(result.recipe, {
-        source: "ai",
-        promptHash: result.promptHash,
-        modelString: result.modelString,
-      });
+        // `IfAbsent` because a name collision must not abort the run — the
+        // library gains nothing from a duplicate, and losing the remaining
+        // twenty cuisines to one clash would be a poor trade.
+        const { recipe, created } = insertRecipeIfAbsent(result.recipe, {
+          source: "ai",
+          promptHash: result.promptHash,
+          modelString: result.modelString,
+        });
 
-      if (created) await upsertRecipeEmbedding(recipe);
+        if (created) await upsertRecipeEmbedding(recipe);
 
-      status = {
-        ...status,
-        completed: status.completed + 1,
-        created: created ? [...status.created, recipe.name] : status.created,
-        costUsd: status.costUsd + result.costUsd,
-      };
-      log.info({ cuisine, recipe: recipe.name, created }, "library fill: recipe added");
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      status = {
-        ...status,
-        completed: status.completed + 1,
-        failed: [...status.failed, { cuisine, reason }],
-      };
-      log.warn({ err: error, cuisine }, "library fill: cuisine failed");
-    }
-  }
+        status = {
+          ...status,
+          completed: status.completed + 1,
+          created: created ? [...status.created, recipe.name] : status.created,
+          costUsd: status.costUsd + result.costUsd,
+        };
+        log.info(
+          { cuisine, recipe: recipe.name, created },
+          "library fill: recipe added",
+        );
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        status = {
+          ...status,
+          completed: status.completed + 1,
+          failed: [...status.failed, { cuisine, reason }],
+        };
+        log.warn({ err: error, cuisine }, "library fill: cuisine failed");
+      }
+    },
+  );
 
   status = { ...status, running: false, finishedAt: new Date().toISOString() };
   log.info(
-    { created: status.created.length, failed: status.failed.length, costUsd: status.costUsd },
+    {
+      created: status.created.length,
+      failed: status.failed.length,
+      costUsd: status.costUsd,
+    },
     "library fill finished",
   );
 }

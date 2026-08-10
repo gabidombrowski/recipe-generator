@@ -8,11 +8,16 @@ import {
   type Fixture,
 } from "./assertions";
 import { judgeRecipe, type Grade } from "./judge";
-import { MODELS } from "~/server/llm/client";
+import { MODELS, TIMEOUTS } from "~/server/llm/client";
+import { mapWithConcurrency } from "~/lib/concurrency";
 import { buildSystemPrompt, generateRecipe } from "~/server/llm/generator";
 import { loadPrompt, PROMPT_NAMES } from "~/server/llm/prompts";
 import { DEFAULT_PROFILE, type RecipeBody } from "~/lib/schemas";
-import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints";
+import {
+  EMPTY_CONFIG,
+  resolveConfig,
+  type Constraint,
+} from "~/lib/constraints";
 
 /**
  * The eval runner.
@@ -28,6 +33,21 @@ import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints"
  */
 
 export const RUNS_PER_FIXTURE = 3;
+
+/**
+ * How many generations may be in flight at once.
+ *
+ * Thirty fixtures times three runs is ninety generations, each followed by a
+ * judge call. Sequentially that is roughly half an hour of wall clock against
+ * a CI job capped at 45 minutes — the suite was sized to hit its own ceiling.
+ * Five is chosen to stay well inside Anthropic's per-minute limits rather than
+ * to go as fast as possible; `isRetryable` absorbs the occasional 429, but a
+ * cap that provokes them constantly would make the suite flaky for a reason
+ * that has nothing to do with the prompts it is measuring.
+ *
+ * Overridable so a tighter rate limit can be accommodated without a code change.
+ */
+export const EVAL_CONCURRENCY = Number(process.env.EVAL_CONCURRENCY ?? 5);
 
 const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
 const REPORTS_DIR = join(process.cwd(), "evals", "reports");
@@ -66,11 +86,36 @@ export const REFERENCE_CONSTRAINTS: Constraint[] = [
     servings: 2,
     requiredFinalStepPhrases: ["refrigerate", "1 day"],
   },
-  { kind: "meal_shape", mealType: "quick", minMinutes: 5, maxMinutes: 10, servings: 1, requiredFinalStepPhrases: [] },
-  { kind: "meal_shape", mealType: "assembly", minMinutes: null, maxMinutes: 5, servings: 1, requiredFinalStepPhrases: [] },
+  {
+    kind: "meal_shape",
+    mealType: "quick",
+    minMinutes: 5,
+    maxMinutes: 10,
+    servings: 1,
+    requiredFinalStepPhrases: [],
+  },
+  {
+    kind: "meal_shape",
+    mealType: "assembly",
+    minMinutes: null,
+    maxMinutes: 5,
+    servings: 1,
+    requiredFinalStepPhrases: [],
+  },
   {
     kind: "ingredient_form",
-    match: ["tuna", "salmon", "sardine", "anchovy", "crab", "clam", "mackerel", "shrimp", "prawn", "oyster"],
+    match: [
+      "tuna",
+      "salmon",
+      "sardine",
+      "anchovy",
+      "crab",
+      "clam",
+      "mackerel",
+      "shrimp",
+      "prawn",
+      "oyster",
+    ],
     forbid: ["canned", "tinned", "jarred", "from a can"],
     exempt: ["sauce", "paste"],
   },
@@ -98,7 +143,10 @@ export function loadFixtures(): Fixture[] {
   return readdirSync(FIXTURES_DIR)
     .filter((f) => f.endsWith(".json"))
     .sort()
-    .map((file) => JSON.parse(readFileSync(join(FIXTURES_DIR, file), "utf8")) as Fixture);
+    .map(
+      (file) =>
+        JSON.parse(readFileSync(join(FIXTURES_DIR, file), "utf8")) as Fixture,
+    );
 }
 
 export interface RunRecord {
@@ -151,17 +199,22 @@ export interface EvalReport {
 
 async function runOnce(fixture: Fixture, run: number): Promise<RunRecord> {
   try {
-    const result = await generateRecipe(fixture.request, {
-      profile: EVAL_PROFILE,
-      trainingDay: true,
-      excluded: fixture.excluded ?? [],
-      // Fixtures carry their own constraint set, which is what makes the
-      // Tier 1 gates test *the fixture's* rules rather than anyone's in
-      // particular. See REFERENCE_CONSTRAINTS for the shared default.
-      config: fixtureConfig(fixture),
-      // No exemplars: the evals measure the prompt, not the library.
-      exemplars: [],
-    });
+    const result = await generateRecipe(
+      fixture.request,
+      {
+        profile: EVAL_PROFILE,
+        trainingDay: true,
+        excluded: fixture.excluded ?? [],
+        // Fixtures carry their own constraint set, which is what makes the
+        // Tier 1 gates test *the fixture's* rules rather than anyone's in
+        // particular. See REFERENCE_CONSTRAINTS for the shared default.
+        config: fixtureConfig(fixture),
+        // No exemplars: the evals measure the prompt, not the library.
+        exemplars: [],
+      },
+      // A hung call would otherwise hold a concurrency slot for the whole run.
+      { timeoutMs: TIMEOUTS.evals },
+    );
 
     const { recipe, results } = runTier1(result.recipe, fixture);
     const judged = recipe ? await judgeRecipe(recipe as RecipeBody) : null;
@@ -202,15 +255,61 @@ async function runOnce(fixture: Fixture, run: number): Promise<RunRecord> {
   }
 }
 
-export async function runEvals(fixtures: Fixture[] = loadFixtures()): Promise<EvalReport> {
+export async function runEvals(
+  fixtures: Fixture[] = loadFixtures(),
+): Promise<EvalReport> {
   const startedAt = new Date().toISOString();
   const runs: RunRecord[] = [];
 
-  for (const fixture of fixtures) {
-    for (let run = 1; run <= RUNS_PER_FIXTURE; run += 1) {
-      runs.push(await runOnce(fixture, run));
-    }
+  /**
+   * Flattened first, so the cap applies across the whole matrix rather than
+   * per fixture. Nesting the loops would serialise the three runs of each
+   * fixture behind one another for no reason — they are independent samples.
+   */
+  const jobs = fixtures.flatMap((fixture) =>
+    Array.from({ length: RUNS_PER_FIXTURE }, (_, i) => ({
+      fixture,
+      run: i + 1,
+    })),
+  );
+
+  const settled = await mapWithConcurrency(jobs, EVAL_CONCURRENCY, (job) =>
+    // `runOnce` already converts a failed generation into a failing schema
+    // assertion, so a rejection here means the harness itself broke — a bug in
+    // the runner, not a bad fixture. Caught rather than left to reject the
+    // whole suite, and recorded so it is visible in the report instead of
+    // vanishing into a stack trace.
+    runOnce(job.fixture, job.run).then(
+      (record) => ({ status: "fulfilled" as const, record }),
+      (error: unknown) => ({ status: "rejected" as const, job, error }),
+    ),
+  );
+
+  type Settled = (typeof settled)[number];
+  const isRejected = (
+    s: Settled,
+  ): s is Extract<Settled, { status: "rejected" }> => s.status === "rejected";
+  const isFulfilled = (
+    s: Settled,
+  ): s is Extract<Settled, { status: "fulfilled" }> => s.status === "fulfilled";
+
+  const harnessFailures = settled.filter(isRejected);
+  for (const failure of harnessFailures) {
+    console.error(
+      `[evals] harness error on ${failure.job.fixture.id} run ${failure.job.run}:`,
+      failure.error,
+    );
   }
+  if (harnessFailures.length > 0) {
+    // Loud on purpose. A partially-run suite that reports a pass rate over the
+    // fixtures it happened to complete is worse than no number at all.
+    throw new Error(
+      `${harnessFailures.length} of ${jobs.length} eval runs failed inside the harness. ` +
+        `See the errors above; the report was not written.`,
+    );
+  }
+
+  runs.push(...settled.filter(isFulfilled).map((s) => s.record));
 
   const finishedAt = new Date().toISOString();
 
@@ -234,15 +333,23 @@ export async function runEvals(fixtures: Fixture[] = loadFixtures()): Promise<Ev
       meetsGate: passRate >= threshold,
       failures: relevant
         .filter((r) => !r.a.passed)
-        .map((r) => ({ fixtureId: r.run.fixtureId, run: r.run.run, detail: r.a.detail })),
+        .map((r) => ({
+          fixtureId: r.run.fixtureId,
+          run: r.run.run,
+          detail: r.a.detail,
+        })),
     };
   });
 
   const grades = runs.map((r) => r.grade).filter((g): g is Grade => g !== null);
   const mean = (values: number[]) =>
-    values.length === 0 ? null : values.reduce((a, b) => a + b, 0) / values.length;
+    values.length === 0
+      ? null
+      : values.reduce((a, b) => a + b, 0) / values.length;
 
-  const redTeamIds = new Set(fixtures.filter((f) => f.redTeam).map((f) => f.id));
+  const redTeamIds = new Set(
+    fixtures.filter((f) => f.redTeam).map((f) => f.id),
+  );
   const redTeamRuns = runs.filter((r) => redTeamIds.has(r.fixtureId));
 
   // Read the hashes from the prompt files directly rather than from a run, so
@@ -250,7 +357,13 @@ export async function runEvals(fixtures: Fixture[] = loadFixtures()): Promise<Ev
   const promptHashes = {
     recipeGenerator: buildSystemPrompt(
       { mealType: "cook" },
-      { profile: EVAL_PROFILE, trainingDay: true, excluded: [], config: EMPTY_CONFIG, exemplars: [] },
+      {
+        profile: EVAL_PROFILE,
+        trainingDay: true,
+        excluded: [],
+        config: EMPTY_CONFIG,
+        exemplars: [],
+      },
     ).promptHash,
     judge: loadPrompt(PROMPT_NAMES.judge).hash,
   };
@@ -280,7 +393,9 @@ export async function runEvals(fixtures: Fixture[] = loadFixtures()): Promise<Ev
       ).length,
     },
     runs,
-    passed: assertions.filter((a) => a.gate === "hard").every((a) => a.meetsGate),
+    passed: assertions
+      .filter((a) => a.gate === "hard")
+      .every((a) => a.meetsGate),
   };
 
   return report;
@@ -312,7 +427,9 @@ export function formatReport(report: EvalReport): string {
       `  ${mark}  ${a.id.padEnd(18)} ${pct}% (${a.passed}/${a.evaluated}), need ${target}%${a.gate === "hard" ? " [hard gate]" : ""}`,
     );
     for (const failure of a.failures.slice(0, 3)) {
-      lines.push(`         - ${failure.fixtureId} run ${failure.run}: ${failure.detail}`);
+      lines.push(
+        `         - ${failure.fixtureId} run ${failure.run}: ${failure.detail}`,
+      );
     }
     if (a.failures.length > 3) {
       lines.push(`         - ...and ${a.failures.length - 3} more`);
