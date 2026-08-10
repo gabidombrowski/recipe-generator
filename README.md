@@ -12,11 +12,19 @@ one is limited to once a week), and keeping a language model inside those
 constraints reliably enough to trust it on a Sunday morning while you're asleep.
 
 Built with Next.js (App Router), tRPC v11, Drizzle + SQLite, Auth.js v5, and the
-Anthropic API. Deployed behind a Cloudflare Tunnel with no inbound ports.
+Anthropic API. Deployed as Next standalone output behind a reverse proxy under
+pm2; the repo also carries an alternative Cloudflare Tunnel + Access topology
+(`infra/`) for a host you control end to end.
 
 ---
 
 ## Architecture
+
+The diagram shows the **tunnel topology** from `infra/`. The current
+deployment is the simpler right-hand half — reverse proxy straight to the
+app — with the app's own allowlist as the only identity gate, which is why
+that gate is written to stand alone. The Terraform for the tunnel is
+committed but has not been applied to the current deployment.
 
 ```text
                        ┌──────────────────────────────────────┐
@@ -100,7 +108,7 @@ The design decisions worth reading about, each in its own document:
 | [Evals](docs/evals.md)                                              | Fixtures, hard gates, and the judge                                        |
 | [Observability](docs/observability.md)                              | Traces, metrics, logs, health                                              |
 | [Look and feel](docs/look-and-feel.md)                              | Where the visual design comes from                                         |
-| [Deployment](docs/deployment.md)                                    | Cloudflare Tunnel, pm2, container                                          |
+| [Deployment](docs/deployment.md)                                    | Reverse proxy + pm2; tunnel and container alternatives                     |
 | [Repo hygiene](docs/repo-hygiene.md)                                | Keeping personal data out of a public repository                           |
 | [Honesty notes](docs/honesty-notes.md)                              | What is weaker than it looks                                               |
 

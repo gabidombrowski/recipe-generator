@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Righteous } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
+import { Announcer } from "~/components/atoms";
 import "./globals.css";
 
 const display = Righteous({
@@ -55,6 +56,7 @@ export default function RootLayout({
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-dvh">
         <TRPCReactProvider>{children}</TRPCReactProvider>
+        <Announcer />
       </body>
     </html>
   );

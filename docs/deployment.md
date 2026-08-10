@@ -43,7 +43,12 @@ deleted), backs up the SQLite file, restarts pm2 with `--update-env`, and
 **fails the deploy if `/healthz` doesn't come back**. Migrations run at boot from
 `instrumentation.ts`, before the first request is served.
 
-## Public exposure
+## Alternative: Cloudflare Tunnel + Access
+
+The topology below is what `infra/` provisions. It is **not** what the
+current deployment uses (that is the reverse-proxy setup above), and the
+Terraform has not been applied against a live zone — read it as a documented
+option, not as running infrastructure.
 
 No inbound ports. `cloudflared` dials out and holds the connection open;
 Cloudflare Access authenticates in front of it.
@@ -132,3 +137,23 @@ Three things bite, all of them found by measuring rather than by reading docs:
    The cost is one carve-out in the host's root namespace. A sub-domain avoids
    all three problems and needs no `BASE_PATH` at all; prefer it unless the
    sub-path is a requirement.
+
+## Migrating from a sub-path to a sub-domain
+
+The sub-path deployment above works, but four separate traps were paid for to
+get there (documented in "Serving under a sub-path"). A sub-domain has none of
+them. The migration, in order:
+
+1. DNS: an A record for `app.example.com` pointing at the host.
+2. TLS: `certbot --nginx -d app.example.com` once the record resolves.
+3. nginx: a `server` block for the name proxying `/` to the app's port —
+   no path rewriting, no carve-outs.
+4. App env: `AUTH_URL=https://app.example.com`; delete the `BASE_PATH`
+   repository variable so the build serves at the root.
+5. OAuth: update the callback URL to
+   `https://app.example.com/api/auth/callback/<provider>`.
+6. Redeploy, sign in, then remove the sub-path `location` blocks from the
+   old host's config.
+
+Sessions do not survive the move (cookies are per-host); everything in the
+database does.

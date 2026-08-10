@@ -35,6 +35,13 @@ function stripBasePath(pathname: string): string {
 /** Reachable without a session. Everything else is not. */
 const PUBLIC_PATHS = new Set([
   "/healthz",
+  // Install-time fetches. Browsers request the manifest without credentials
+  // and iOS fetches the home-screen icon the same way, so behind the auth
+  // gate both 307'd to sign-in and add-to-home-screen silently broke — the
+  // feature the manifest exists for. Static branding, nothing personal.
+  // `icon.svg` needs no entry: the matcher already skips *.svg.
+  "/manifest.webmanifest",
+  "/apple-icon",
   // Present for the container/compose topology; in production the OTel
   // Prometheus exporter binds its own port to the private network instead.
   "/metrics",

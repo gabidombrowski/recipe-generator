@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
-import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import {
+  announce,
+  Badge,
+  Button,
+  Empty,
+  PageTitle,
+  Spinner,
+} from "~/components/atoms";
 import { Card, InfoHint } from "~/components/molecules";
 import { cx } from "~/components/cx";
 import { formatLongDate } from "~/lib/days";
@@ -26,10 +33,21 @@ export default function GroceryPage() {
 
   const invalidate = () => queryClient.invalidateQueries();
   const setChecked = useMutation(
-    trpc.grocery.setChecked.mutationOptions({ onSuccess: invalidate }),
+    trpc.grocery.setChecked.mutationOptions({
+      onSuccess: (_data, variables) => {
+        invalidate();
+        // The visual change is obvious; this is its screen-reader equivalent.
+        announce(variables.checked ? "Ticked off" : "Back on the list");
+      },
+    }),
   );
   const clearChecks = useMutation(
-    trpc.grocery.clearChecks.mutationOptions({ onSuccess: invalidate }),
+    trpc.grocery.clearChecks.mutationOptions({
+      onSuccess: () => {
+        invalidate();
+        announce("List reset — everything unticked");
+      },
+    }),
   );
 
   if (list.isPending) return <Spinner />;

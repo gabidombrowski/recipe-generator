@@ -4,7 +4,16 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RecipeCard } from "~/components/organisms/recipe-card";
-import { Badge, Button, Empty, Input, PageTitle, Select, Spinner } from "~/components/atoms";
+import {
+  announce,
+  Badge,
+  Button,
+  Empty,
+  Input,
+  PageTitle,
+  Select,
+  Spinner,
+} from "~/components/atoms";
 import { Card, Field, InfoHint } from "~/components/molecules";
 import { formatLongDate } from "~/lib/days";
 import { mealTypeSchema, type MealType, type Recipe } from "~/lib/schemas";
@@ -70,6 +79,7 @@ export default function GeneratePage() {
         });
         setDone(null);
         invalidate();
+        announce(`Recipe ready: ${data.recipe.name}`);
       },
     }),
   );
@@ -79,6 +89,7 @@ export default function GeneratePage() {
       onSuccess: () => {
         setDone("Saved to your library.");
         invalidate();
+        announce("Saved to your library");
       },
     }),
   );
@@ -87,6 +98,7 @@ export default function GeneratePage() {
     trpc.plan.assign.mutationOptions({
       onSuccess: () => {
         invalidate();
+        announce("Assigned to the plan");
       },
     }),
   );

@@ -4,10 +4,19 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { MacroExplainer } from "~/components/organisms/macro-explainer";
-import { ProfileFields, SettingsFields } from "~/components/organisms/profile-fields";
+import {
+  ProfileFields,
+  SettingsFields,
+} from "~/components/organisms/profile-fields";
 import { CuisineFields } from "~/components/organisms/cuisine-fields";
 import { MealFields } from "~/components/organisms/meal-fields";
-import { Button, Empty, PageTitle, Spinner } from "~/components/atoms";
+import {
+  announce,
+  Button,
+  Empty,
+  PageTitle,
+  Spinner,
+} from "~/components/atoms";
 import { Card } from "~/components/molecules";
 import { useRouter } from "next/navigation";
 import { type Profile, type Settings } from "~/lib/schemas";
@@ -41,6 +50,7 @@ export default function SettingsPage() {
     setProfileDraft(null);
     setSettingsDraft(null);
     void queryClient.invalidateQueries();
+    announce("Settings saved");
   };
   const saveProfile = useMutation(
     trpc.setup.saveProfile.mutationOptions({ onSuccess: onSaved }),

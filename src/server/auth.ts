@@ -11,10 +11,12 @@ import { resolveRedirect } from "./auth-redirect";
  * person allowed in. There is no user table, no roles and no invitations,
  * because there is no second user.
  *
- * Cloudflare Access sits in front of this in production (see `infra/`), so a
- * request reaching the app has already cleared one identity check. This is the
- * second layer, and it is the one that runs even if the tunnel is bypassed —
- * which is exactly why it is enforced here rather than assumed upstream.
+ * In the current deployment — a reverse proxy on a shared host — this
+ * allowlist is the *only* gate, so it is written to stand alone. `infra/`
+ * describes an alternative topology (Cloudflare Tunnel with Access in front)
+ * that would add an identity check upstream; nothing here assumes it exists,
+ * which is exactly why the allowlist is enforced in the app rather than
+ * delegated to infrastructure that may not be there.
  *
  * Deliberately free of database and Node-only imports: this module is pulled
  * into the edge middleware, and anything native would break that build.
@@ -96,7 +98,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       options: {
         httpOnly: true,
         sameSite: "lax",
-        path: "/",
+        // Scoped to the sub-path when one is set: at "/" the session cookie
+        // rides along on every request to the host, including other apps it
+        // serves. At the root this is the "/" it always was.
+        path: `${BASE_PATH}/`,
         secure: isSecureOrigin(),
       },
     },
