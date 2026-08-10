@@ -105,6 +105,15 @@
 
 html {
   color-scheme: light dark;
+  /*
+   * 18px root rather than the browser's 16px. Every Tailwind size unit in the
+   * app is rem-based, so this one declaration scales type, padding, gaps and
+   * tap targets together at their existing proportions — the 14px design
+   * becomes 15.75px, body text 18px, the 44px touch floor 49.5px. Set as a
+   * percentage so a user's own browser font-size preference still multiplies
+   * through rather than being overridden.
+   */
+  font-size: 112.5%;
 }
 
 body {
@@ -115,27 +124,50 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/*
+ * The tilted "sticker" label. The tilt lives on a pseudo-element carrying only
+ * the background, not on the element itself: rotating the text rasterises
+ * every glyph onto a slanted baseline, which at label sizes reads as letters
+ * sitting at different heights rather than as a tilt. The background alone can
+ * rotate as far as it likes — it has no baseline to wobble.
+ *
+ * `isolation: isolate` keeps the z-index:-1 background inside this element's
+ * own stacking context, so it can never slip behind the card it sits on.
+ */
 .plate {
+  position: relative;
+  isolation: isolate;
   display: inline-block;
-  padding: 0.1em 0.5em;
+  padding: 0.15em 0.55em;
   font-family: var(--font-display);
   font-weight: 400;
   text-transform: uppercase;
-  line-height: 1.15;
+  line-height: 1.2;
+}
+
+.plate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--plate-bg);
   transform: rotate(-2deg) skew(-4deg);
 }
 
 .plate--title {
-  background: var(--color-plate);
+  --plate-bg: var(--color-plate);
   color: var(--color-plate-ink);
   margin-bottom: 0.4rem;
 }
 
 .plate--section {
-  background: var(--color-accent);
+  --plate-bg: var(--color-accent);
   color: var(--color-accent-ink);
-  transform: rotate(-1deg) skew(-3deg);
   letter-spacing: 0.02em;
+}
+
+.plate--section::before {
+  transform: rotate(-1deg) skew(-3deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
