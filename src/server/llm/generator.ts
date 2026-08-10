@@ -95,6 +95,14 @@ export interface GenerationOptions {
   signal?: AbortSignal;
   /** Per-attempt ceiling. Defaults to the interactive deadline. */
   timeoutMs?: number;
+  /**
+   * Called with each fragment of the recipe as the model emits it — the raw
+   * partial JSON of the forced tool call. Wire it to a stream and the recipe
+   * arrives as it is written; leave it unset and behaviour is unchanged.
+   */
+  onDelta?: (text: string) => void;
+  /** Called at the start of each attempt (1-based); a retry is visible. */
+  onAttempt?: (attempt: number) => void;
 }
 
 export interface GenerationResult {
@@ -302,7 +310,12 @@ export async function generateRecipe(
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       let message: AnthropicNS.Message;
       try {
-        message = await client.messages.create(
+        options.onAttempt?.(attempt);
+        // Streamed even when nobody listens: the request shape and the final
+        // message are identical, one code path stays honest, and a stream
+        // cannot sit silently against the HTTP timeout the way a large
+        // non-streaming response can.
+        const stream = client.messages.stream(
           {
             model: MODELS.generation,
             max_tokens: MAX_TOKENS,
@@ -322,6 +335,18 @@ export async function generateRecipe(
             ),
           },
         );
+        if (options.onDelta) {
+          const onDelta = options.onDelta;
+          stream.on("streamEvent", (event) => {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "input_json_delta"
+            ) {
+              onDelta(event.delta.partial_json);
+            }
+          });
+        }
+        message = await stream.finalMessage();
       } catch (error) {
         // A cancellation is not a transient failure: retrying it would ignore
         // the caller who just walked away, or restart the clock on a deadline

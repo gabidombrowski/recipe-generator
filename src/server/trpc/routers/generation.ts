@@ -48,6 +48,21 @@ import {
  */
 
 const log = loggerFor("generation");
+
+/**
+ * Shared with the SSE route (`app/api/generate/stream`), which streams the
+ * same generation for the generate tab. One schema, two transports.
+ */
+export const generateInputSchema = z.object({
+  mealType: mealTypeSchema,
+  cuisine: z.string().max(60).optional(),
+  maxCookMinutes: z.number().int().positive().max(180).optional(),
+  /** When set, the new recipe is assigned to this slot immediately. */
+  targetDate: isoDateSchema.optional(),
+  /** Which meal on that date; defaults to the main meal. */
+  targetMeal: z.string().min(1).max(40).optional(),
+  note: z.string().max(500).optional(),
+});
 const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
 
 export const generationRouter = router({
@@ -75,18 +90,7 @@ export const generationRouter = router({
   fillLibrary: protectedProcedure.mutation(() => startLibraryFill()),
 
   generate: protectedProcedure
-    .input(
-      z.object({
-        mealType: mealTypeSchema,
-        cuisine: z.string().max(60).optional(),
-        maxCookMinutes: z.number().int().positive().max(180).optional(),
-        /** When set, the new recipe is assigned to this slot immediately. */
-        targetDate: isoDateSchema.optional(),
-        /** Which meal on that date; defaults to the main meal. */
-        targetMeal: z.string().min(1).max(40).optional(),
-        note: z.string().max(500).optional(),
-      }),
-    )
+    .input(generateInputSchema)
     .mutation(async ({ ctx, input, signal }) => {
       if (!isLlmConfigured()) {
         throw new TRPCError({
@@ -99,7 +103,7 @@ export const generationRouter = router({
       // Each generation costs real money; a runaway client must not be able to
       // run up a bill.
       const limit = rateLimit(
-        `generate:${ctx.session.user?.email ?? "unknown"}`,
+        `generate:${ctx.session.user?.id ?? "unknown"}`,
         RATE_LIMITS.generation,
       );
       if (!limit.ok) {

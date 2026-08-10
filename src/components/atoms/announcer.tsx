@@ -30,15 +30,24 @@ export function Announcer() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    let pending: ReturnType<typeof setTimeout> | undefined;
     const onAnnounce = (event: Event) => {
       const detail = (event as CustomEvent<string>).detail;
       // Clear first so repeating the same message still triggers a
-      // re-announcement — live regions only speak on *change*.
+      // re-announcement — live regions only speak on *change*. The re-set is
+      // a macrotask, NOT requestAnimationFrame: Chrome stops firing frames in
+      // a hidden tab, and an announcement queued behind a frame that never
+      // comes is an announcement that never happens — found by driving this
+      // in a hidden automation pane, which is exactly a backgrounded tab.
+      clearTimeout(pending);
       setMessage("");
-      requestAnimationFrame(() => setMessage(detail));
+      pending = setTimeout(() => setMessage(detail), 0);
     };
     window.addEventListener(EVENT, onAnnounce);
-    return () => window.removeEventListener(EVENT, onAnnounce);
+    return () => {
+      clearTimeout(pending);
+      window.removeEventListener(EVENT, onAnnounce);
+    };
   }, []);
 
   return (

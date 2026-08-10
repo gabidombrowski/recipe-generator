@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { RecipeCard } from "~/components/organisms/recipe-card";
@@ -17,6 +17,7 @@ import {
 import { Card, Field, InfoHint } from "~/components/molecules";
 import { formatLongDate } from "~/lib/days";
 import { mealTypeSchema, type MealType, type Recipe } from "~/lib/schemas";
+import { parseSse } from "~/lib/sse";
 
 /**
  * The recipe generator.
@@ -69,20 +70,104 @@ export default function GeneratePage() {
 
   const invalidate = () => queryClient.invalidateQueries();
 
-  const generate = useMutation(
-    trpc.generation.generate.mutationOptions({
-      onSuccess: (data) => {
-        setResult({
-          recipe: data.recipe,
-          costUsd: data.costUsd,
-          attempts: data.attempts,
-        });
-        setDone(null);
-        invalidate();
-        announce(`Recipe ready: ${data.recipe.name}`);
-      },
-    }),
-  );
+  /**
+   * Generation streams over SSE (`/api/generate/stream`) rather than going
+   * through the tRPC mutation the week page uses: the recipe is on screen as
+   * it is written instead of after a silent half minute. fetch + a stream
+   * reader rather than EventSource because the request is a POST with a body,
+   * which EventSource cannot send. No auto-reconnect on a dropped stream, on
+   * purpose — a generation is not idempotent, and a reconnect would be a
+   * second bill rather than a resumed first one; the user retries instead.
+   */
+  const [streaming, setStreaming] = useState(false);
+  const [streamText, setStreamText] = useState("");
+  const [attempt, setAttempt] = useState(1);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Leaving the page cancels the model call instead of billing it out.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  async function startGeneration(input: {
+    mealType: MealType;
+    cuisine?: string;
+    maxCookMinutes?: number;
+    note?: string;
+  }): Promise<void> {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    setStreamText("");
+    setAttempt(1);
+    setStreamError(null);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/generate/stream`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+          signal: controller.signal,
+        },
+      );
+
+      if (!response.ok || !response.body) {
+        const failure = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setStreamError(
+          failure?.error ?? `Generation failed (${response.status}).`,
+        );
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      for (;;) {
+        const { done: finished, value } = await reader.read();
+        if (finished) break;
+        const parsed = parseSse(
+          buffer,
+          decoder.decode(value, { stream: true }),
+        );
+        buffer = parsed.rest;
+
+        for (const event of parsed.events) {
+          if (event.event === "attempt") {
+            const { n } = event.data as { n: number };
+            setAttempt(n);
+            if (n > 1) setStreamText("");
+          } else if (event.event === "delta") {
+            setStreamText(
+              (text) => text + (event.data as { text: string }).text,
+            );
+          } else if (event.event === "done") {
+            const data = event.data as {
+              recipe: Recipe;
+              costUsd: number;
+              attempts: number;
+            };
+            setResult(data);
+            setDone(null);
+            invalidate();
+            announce(`Recipe ready: ${data.recipe.name}`);
+          } else if (event.event === "error") {
+            setStreamError((event.data as { message: string }).message);
+          }
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setStreamError("The stream dropped before the recipe finished.");
+      }
+    } finally {
+      setStreaming(false);
+    }
+  }
 
   const save = useMutation(
     trpc.recipes.setFavorite.mutationOptions({
@@ -242,7 +327,7 @@ export default function GeneratePage() {
           className="flex flex-wrap items-start gap-3"
           onSubmit={(event) => {
             event.preventDefault();
-            generate.mutate({
+            void startGeneration({
               mealType,
               cuisine: cuisine.trim() || undefined,
               maxCookMinutes:
@@ -313,27 +398,47 @@ export default function GeneratePage() {
             >
               &nbsp;
             </span>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={generate.isPending}
-            >
-              {generate.isPending ? "Generating..." : "Generate"}
+            <Button type="submit" variant="primary" disabled={streaming}>
+              {streaming ? "Generating..." : "Generate"}
             </Button>
           </div>
         </form>
 
-        {generate.isError && (
+        {streamError && (
           <p
             role="alert"
             className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
           >
-            {generate.error.message}
+            {streamError}
           </p>
         )}
       </Card>
 
-      {generate.isPending && <Spinner label="Asking Claude" />}
+      {streaming && (
+        <Card title={attempt > 1 ? `Writing (attempt ${attempt})` : "Writing"}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm">
+                {/* The name is the first field the model writes, so it is
+                    usually readable long before the recipe finishes. */}
+                {/"name"\s*:\s*"([^"]+)/.exec(streamText)?.[1] ?? "…"}
+              </p>
+              <pre
+                aria-hidden
+                className="mt-2 max-h-24 overflow-hidden font-mono text-xs break-all whitespace-pre-wrap text-ink-muted"
+              >
+                {streamText.slice(-360) || "waiting for the first tokens"}
+              </pre>
+              <p className="mt-1 text-xs text-ink-muted">
+                {streamText.length.toLocaleString()} characters so far
+              </p>
+            </div>
+            <Button variant="ghost" onClick={() => abortRef.current?.abort()}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {result && (
         <>
