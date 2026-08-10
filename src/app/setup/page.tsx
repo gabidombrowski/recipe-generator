@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "~/trpc/react";
 import { MacroExplainer } from "~/components/organisms/macro-explainer";
-import { ProfileFields, SettingsFields } from "~/components/organisms/profile-fields";
+import {
+  ProfileFields,
+  SettingsFields,
+} from "~/components/organisms/profile-fields";
 import { CuisineFields } from "~/components/organisms/cuisine-fields";
 import { MealFields } from "~/components/organisms/meal-fields";
 import {
@@ -19,6 +22,7 @@ import {
   type MealShapeDraft,
 } from "~/components/organisms/meal-shape-fields";
 import { Button, PageTitle, Spinner } from "~/components/atoms";
+import { validateStep } from "~/lib/wizard-validation";
 import { Card } from "~/components/molecules";
 import {
   DEFAULT_PROFILE,
@@ -89,6 +93,19 @@ export default function SetupPage() {
     "Cuisines",
     "Check the numbers",
   ] as const;
+
+  /**
+   * Problems belonging to the step on screen. Checked here rather than only at
+   * the end so a bad answer is caught while the field that caused it is still
+   * visible — the wizard used to accept it and fail five screens later.
+   */
+  const draft = { profile, settings, mealShapes: shapes };
+  const problems = validateStep(step, draft);
+
+  // The last step submits, so it answers for the whole wizard rather than for
+  // itself. A config that was already invalid when the wizard re-opened would
+  // otherwise sail through every step that does not own the broken field.
+  const allProblems = STEPS.flatMap((_, s) => validateStep(s, draft));
 
   if (state.isPending) return <Spinner label="Loading your settings" />;
 
@@ -229,13 +246,17 @@ export default function SetupPage() {
         </Button>
 
         {step < STEPS.length - 1 ? (
-          <Button variant="primary" onClick={() => setStep((s) => s + 1)}>
+          <Button
+            variant="primary"
+            disabled={problems.length > 0}
+            onClick={() => setStep((s) => s + 1)}
+          >
             Next
           </Button>
         ) : (
           <Button
             variant="primary"
-            disabled={complete.isPending}
+            disabled={complete.isPending || allProblems.length > 0}
             onClick={() =>
               complete.mutate({ profile, settings, mealShapes: shapes })
             }
@@ -244,6 +265,27 @@ export default function SetupPage() {
           </Button>
         )}
       </div>
+
+      {(step < STEPS.length - 1 ? problems : allProblems).length > 0 && (
+        <div
+          role="alert"
+          className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn"
+        >
+          <p className="font-medium">
+            {step < STEPS.length - 1
+              ? "Fix this before moving on:"
+              : "Something earlier needs fixing before this can be saved:"}
+          </p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {(step < STEPS.length - 1 ? problems : allProblems).map((p) => (
+              <li key={`${p.field}-${p.message}`}>
+                {p.field ? `${p.field}: ` : ""}
+                {p.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {complete.isError && (
         <p

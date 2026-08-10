@@ -57,7 +57,7 @@ const token = await encode({
   maxAge: 60 * 60 * 24 * 7,
 });
 
-console.log(`\nSigned in as ${email} for 7 days.\n`);
+console.log(`\nSigned in as GitHub id ${accountId} for 7 days.\n`);
 console.log("Paste this into the DevTools console on the sign-in page, then reload:\n");
 console.log(`  document.cookie = ${JSON.stringify(`${cookieName}=${token}; path=/; max-age=604800`)}\n`);
 console.log("Or with curl:\n");

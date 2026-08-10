@@ -32,9 +32,19 @@ export function reconcile(config: MealConfig): MealConfig {
 
   // Planned meals must exist. Order follows `meals` rather than the order they
   // were ticked, so the day always reads breakfast-to-dinner.
-  const planned = meals.filter((m) =>
+  let planned = meals.filter((m) =>
     config.plannedMeals.some((p) => sameName(p, m)),
   );
+
+  // A day with meals but nothing planned is not a state the app can represent:
+  // the targets have nothing to divide across and the schema rightly refuses
+  // it. Falling back to the first meal is the same posture as the main-meal
+  // fallback below — repair to something sensible rather than carry an
+  // invalid state forward. Reached by removing the only planned meal while
+  // unplanned ones remain, which `removeMeal`'s own guard cannot see.
+  if (planned.length === 0 && meals.length > 0) {
+    planned = [meals[0]!];
+  }
 
   // The main meal must be planned. Falling back to the first planned meal keeps
   // the cook cycle attached to something rather than silently to nothing.

@@ -39,7 +39,12 @@ export const mealTypeSchema = z.enum(["cook", "quick", "assembly"]);
 export type MealType = z.infer<typeof mealTypeSchema>;
 
 /** What a plan slot *wants*. A superset of MealType — leftovers aren't recipes. */
-export const mealSourceSchema = z.enum(["cook", "quick", "assembly", "leftover"]);
+export const mealSourceSchema = z.enum([
+  "cook",
+  "quick",
+  "assembly",
+  "leftover",
+]);
 export type MealSource = z.infer<typeof mealSourceSchema>;
 
 export const storageSchema = z.enum(["fridge", "freezer"]);
@@ -97,22 +102,23 @@ export const KNOWN_INGREDIENT_TAGS = [
  * forget one. These are culinary facts: gochujang *is* fermented, feta *is*
  * aged. Whether that matters to the cook is a separate, private question.
  */
-export const INGREDIENT_TAG_RULES: ReadonlyArray<[string, readonly string[]]> = [
-  ["soy sauce", ["fermented"]],
-  ["fish sauce", ["fermented"]],
-  ["oyster sauce", ["fermented"]],
-  ["gochujang", ["fermented", "spicy"]],
-  ["miso", ["fermented"]],
-  ["kimchi", ["fermented", "spicy"]],
-  ["vinegar", ["vinegar"]],
-  ["feta", ["aged", "dairy"]],
-  ["parmesan", ["aged", "dairy"]],
-  ["blue cheese", ["aged", "dairy"]],
-  ["prosciutto", ["cured"]],
-  ["salami", ["cured"]],
-  ["bacon", ["cured", "smoked"]],
-  ["anchovy", ["cured"]],
-];
+export const INGREDIENT_TAG_RULES: ReadonlyArray<[string, readonly string[]]> =
+  [
+    ["soy sauce", ["fermented"]],
+    ["fish sauce", ["fermented"]],
+    ["oyster sauce", ["fermented"]],
+    ["gochujang", ["fermented", "spicy"]],
+    ["miso", ["fermented"]],
+    ["kimchi", ["fermented", "spicy"]],
+    ["vinegar", ["vinegar"]],
+    ["feta", ["aged", "dairy"]],
+    ["parmesan", ["aged", "dairy"]],
+    ["blue cheese", ["aged", "dairy"]],
+    ["prosciutto", ["cured"]],
+    ["salami", ["cured"]],
+    ["bacon", ["cured", "smoked"]],
+    ["anchovy", ["cured"]],
+  ];
 
 // ---------------------------------------------------------------------------
 // Recipe
@@ -212,7 +218,9 @@ export function applyIngredientTags(
 ): Ingredient[] {
   return ingredients.map((ingredient) => {
     const name = ingredient.name.toLowerCase();
-    const existing = new Set(ingredient.tags.map((t) => t.trim().toLowerCase()));
+    const existing = new Set(
+      ingredient.tags.map((t) => t.trim().toLowerCase()),
+    );
 
     for (const [needle, tags] of INGREDIENT_TAG_RULES) {
       if (!name.includes(needle)) continue;
@@ -232,6 +240,20 @@ export function applyIngredientTags(
  * from the first-run wizard or from a gitignored `seed.local.json`, never from
  * this file. See README → "Public repo hygiene".
  */
+/**
+ * What the setup wizard edits about a meal type — a subset of `meal_shape`.
+ *
+ * Lives here rather than beside the router that consumes it so the wizard's
+ * own per-step validation can share the definition. Two copies of a rule are
+ * two rules, and the second one is always the stale one.
+ */
+export const wizardMealShapeSchema = z.object({
+  mealType: mealTypeSchema,
+  servings: z.number().int().min(1).max(12).nullable(),
+  maxMinutes: z.number().int().min(0).max(240).nullable(),
+});
+export type WizardMealShape = z.infer<typeof wizardMealShapeSchema>;
+
 export const profileSchema = z.object({
   weightKg: z.number().positive().max(400),
   heightCm: z.number().positive().max(280),
@@ -292,10 +314,28 @@ export type GroceryCopyFormat = z.infer<typeof groceryCopyFormatSchema>;
  * cuisine is harder to edit than a short list you add to.
  */
 export const DEFAULT_CUISINES = [
-  "Brazilian", "Chinese", "Ethiopian", "Filipino", "French", "Georgian",
-  "Greek", "Indian", "Italian", "Japanese", "Korean", "Lebanese", "Malaysian",
-  "Mexican", "Moroccan", "Nigerian", "Peruvian", "Portuguese", "Spanish",
-  "Thai", "Turkish", "Vietnamese",
+  "Brazilian",
+  "Chinese",
+  "Ethiopian",
+  "Filipino",
+  "French",
+  "Georgian",
+  "Greek",
+  "Indian",
+  "Italian",
+  "Japanese",
+  "Korean",
+  "Lebanese",
+  "Malaysian",
+  "Mexican",
+  "Moroccan",
+  "Nigerian",
+  "Peruvian",
+  "Portuguese",
+  "Spanish",
+  "Thai",
+  "Turkish",
+  "Vietnamese",
 ] as const;
 
 export const cuisineListSchema = z
@@ -382,7 +422,11 @@ export const settingsSchema = z.object({
    * other planned meal defaults to `quick`, which accepts a quick or an
    * assembly recipe.
    */
-  mainMeal: z.string().trim().min(1).max(40),
+  mainMeal: z
+    .string()
+    .trim()
+    .min(1, "pick which meal the app cooks and plans around")
+    .max(40),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
