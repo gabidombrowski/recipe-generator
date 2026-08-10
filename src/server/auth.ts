@@ -19,6 +19,20 @@ import { isSecureOrigin, sessionCookieName } from "./auth-cookie";
  * into the edge middleware, and anything native would break that build.
  */
 
+/** Sub-path the app is served under, or "" at the root. See `next.config.ts`. */
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/**
+ * `ab***@example.com` — enough to tell two addresses apart in a log without
+ * writing one down. This is a health app; the sign-in address is the one piece
+ * of identifying data the server handles, and an operator debugging a failed
+ * login does not need it in full.
+ */
+function maskEmail(email: string): string {
+  const [local = "", domain = ""] = email.split("@");
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
 function allowlistedEmails(): string[] {
   return (process.env.ALLOWED_EMAIL ?? "")
     .split(",")
@@ -55,7 +69,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // up, and the middleware can validate without touching SQLite.
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
 
-  pages: { signIn: "/signin", error: "/signin" },
+  /**
+   * Prefixed by hand. Auth.js treats these as origin-relative and does not
+   * know about a Next `basePath`, so under a sub-path an unauthenticated user
+   * was being sent to the *host's* `/signin` — a page belonging to whatever
+   * else is served there. Empty at the root, where it collapses to `/signin`.
+   */
+  pages: {
+    signIn: `${BASE_PATH}/signin`,
+    error: `${BASE_PATH}/signin`,
+  },
 
   cookies: {
     sessionToken: {
@@ -79,10 +102,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      */
     signIn({ profile, user }) {
       const allowed = allowlistedEmails();
-      if (allowed.length === 0) return false;
+      if (allowed.length === 0) {
+        console.warn("[auth] denied: ALLOWED_EMAIL is unset or empty");
+        return false;
+      }
 
       const email = (profile?.email ?? user?.email ?? "").toLowerCase();
-      return email !== "" && allowed.includes(email);
+      if (email === "") {
+        // The provider returned no address at all. For GitHub that means the
+        // `user:email` scope was not granted, since it falls back to
+        // /user/emails when the profile address is private.
+        console.warn("[auth] denied: the provider returned no email address");
+        return false;
+      }
+
+      if (!allowed.includes(email)) {
+        // Masked on both sides. Enough to see *that* they differ and roughly
+        // where, without putting either address in a log file. A bare
+        // "AccessDenied" is otherwise indistinguishable from a broken config.
+        console.warn(
+          `[auth] denied: ${maskEmail(email)} is not in the allowlist ` +
+            `(${allowed.map(maskEmail).join(", ")})`,
+        );
+        return false;
+      }
+
+      return true;
     },
 
     jwt({ token, profile }) {
