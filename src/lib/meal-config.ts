@@ -54,15 +54,29 @@ export function addMeal(config: MealConfig, name: string): MealConfig {
   return reconcile({ ...config, meals: [...config.meals, trimmed] });
 }
 
+/**
+ * Removing the last meal is refused rather than reconciled.
+ *
+ * `reconcile` repairs a config; it cannot invent one. With nothing left there
+ * is no planned meal to divide the day's targets across and nothing for the
+ * cook cycle to attach to, so the result fails `mealNameListSchema` — and used
+ * to do so at the wizard's final step, five screens after the mistake.
+ */
 export function removeMeal(config: MealConfig, name: string): MealConfig {
+  const remaining = config.meals.filter((m) => !sameName(m, name));
+  if (remaining.length === 0) return config;
+
   return reconcile({
     ...config,
     meals: config.meals.filter((m) => !sameName(m, name)),
   });
 }
 
+/** Unticking the last planned meal is refused, for the same reason. */
 export function togglePlanned(config: MealConfig, name: string): MealConfig {
   const isPlanned = config.plannedMeals.some((m) => sameName(m, name));
+  if (isPlanned && config.plannedMeals.length === 1) return config;
+
   return reconcile({
     ...config,
     plannedMeals: isPlanned
