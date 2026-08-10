@@ -195,14 +195,59 @@ export function buildSystemPrompt(
 
 const MAX_ATTEMPTS = 3;
 
+/**
+ * The two turns appended when a generation is rejected and retried.
+ *
+ * The shape is load-bearing, which is why it is a pure exported function with
+ * its own test. The assistant turn ends in a `tool_use` block, and the API
+ * requires the next user message to *answer* it with a `tool_result` before
+ * saying anything else — a bare text follow-up is rejected with a 400. That
+ * exact 400 shipped: every repair attempt died on it, invisibly, because the
+ * first attempt usually succeeds. The eval suite's first real run caught it.
+ *
+ * The rejection rides inside the `tool_result` (marked `is_error`) so the
+ * model sees it as the outcome of its call rather than as a new instruction,
+ * with the re-prompt as a separate text block after it.
+ */
+export function repairTurns(
+  message: AnthropicNS.Message,
+  rejection: string,
+  instruction: string,
+): AnthropicNS.MessageParam[] {
+  const toolUse = message.content.find(
+    (block): block is AnthropicNS.ToolUseBlock => block.type === "tool_use",
+  );
+
+  const content: AnthropicNS.ContentBlockParam[] = toolUse
+    ? [
+        {
+          type: "tool_result",
+          tool_use_id: toolUse.id,
+          is_error: true,
+          content: rejection,
+        },
+        { type: "text", text: instruction },
+      ]
+    : // No tool_use to answer (forced tool_choice should make this
+      // unreachable) — a plain text turn is then the correct shape.
+      [{ type: "text", text: `${rejection}\n${instruction}` }];
+
+  return [
+    { role: "assistant", content: message.content },
+    { role: "user", content },
+  ];
+}
+
 function extractToolInput(
   message: AnthropicNS.Message,
-): { ok: true; input: unknown } | { ok: false; reason: string } {
+):
+  | { ok: true; input: unknown; toolUseId: string }
+  | { ok: false; reason: string } {
   const toolUse = message.content.find(
     (block): block is AnthropicNS.ToolUseBlock =>
       block.type === "tool_use" && block.name === RECIPE_TOOL_NAME,
   );
-  if (toolUse) return { ok: true, input: toolUse.input };
+  if (toolUse) return { ok: true, input: toolUse.input, toolUseId: toolUse.id };
 
   // Defensive fallback only. A forced tool_choice should make this unreachable;
   // if it fires, something changed upstream and we want it visible in the logs
@@ -216,7 +261,10 @@ function extractToolInput(
   if (jsonMatch) {
     log.warn("no tool_use block; falling back to parsing JSON from prose");
     try {
-      return { ok: true, input: JSON.parse(jsonMatch[0]) };
+      // Synthetic id: this branch means there was no real tool_use block, so
+      // there is nothing for a later repair turn to answer. Callers only use
+      // the id to build tool_result blocks against genuine tool calls.
+      return { ok: true, input: JSON.parse(jsonMatch[0]), toolUseId: "" };
     } catch {
       return {
         ok: false,
@@ -304,11 +352,11 @@ export async function generateRecipe(
       if (!extracted.ok) {
         lastIssues = [extracted.reason];
         messages.push(
-          { role: "assistant", content: message.content },
-          {
-            role: "user",
-            content: `${extracted.reason}. Call ${RECIPE_TOOL_NAME} with the recipe.`,
-          },
+          ...repairTurns(
+            message,
+            extracted.reason,
+            `Call ${RECIPE_TOOL_NAME} with the recipe.`,
+          ),
         );
         continue;
       }
@@ -346,13 +394,13 @@ export async function generateRecipe(
       );
 
       messages.push(
-        { role: "assistant", content: message.content },
-        {
-          role: "user",
-          content: `That recipe did not match the schema:\n${lastIssues
+        ...repairTurns(
+          message,
+          `That recipe did not match the schema:\n${lastIssues
             .map((i) => `- ${i}`)
-            .join("\n")}\nCall ${RECIPE_TOOL_NAME} again with those fixed.`,
-        },
+            .join("\n")}`,
+          `Call ${RECIPE_TOOL_NAME} again with those fixed.`,
+        ),
       );
     }
 
