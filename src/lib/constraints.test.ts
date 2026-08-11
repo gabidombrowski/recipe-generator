@@ -79,3 +79,34 @@ describe("recipeRuleViolations", () => {
     expect(violations).toEqual([]);
   });
 });
+
+describe("recipeRuleViolations reads prose, not just ingredients", () => {
+  const ing = (name: string) => ({ name, qty: 1, unit: "each", tags: [] });
+
+  it("flags an excluded term in a step", () => {
+    // The escape the ingredient-only version shipped: clean ingredients, but
+    // a step saying to serve it like the excluded food.
+    const violations = recipeRuleViolations(
+      {
+        name: "Chickpea Salad",
+        ingredients: [ing("chickpeas")],
+        steps: ["Mash the chickpeas.", "Serve as you would tuna salad."],
+      },
+      ["tuna"],
+      EMPTY_CONFIG,
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("step 2");
+    expect(violations[0]).toContain('"tuna"');
+  });
+
+  it("flags an excluded term in the recipe name", () => {
+    const violations = recipeRuleViolations(
+      { name: "Tuna-Style Bowl", ingredients: [ing("chickpeas")], steps: [] },
+      ["tuna"],
+      EMPTY_CONFIG,
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("name");
+  });
+});

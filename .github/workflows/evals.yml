@@ -12,6 +12,10 @@ on:
       - "evals/**"
       - "src/server/llm/**"
       - "src/lib/schemas.ts"
+      # Renders the dietary rules into the prompt and carries the in-loop
+      # checker — changes here move generation quality as surely as the
+      # prompt files do, and one already shipped without triggering a run.
+      - "src/lib/constraints.ts"
       - ".github/workflows/evals.yml"
   push:
     branches: [main]
@@ -20,6 +24,7 @@ on:
       - "evals/**"
       - "src/server/llm/**"
       - "src/lib/schemas.ts"
+      - "src/lib/constraints.ts"
   schedule:
     # 07:00 UTC every Monday.
     - cron: "0 7 * * 1"

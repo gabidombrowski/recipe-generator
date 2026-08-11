@@ -489,7 +489,7 @@ export function describeConfig(config: DietaryConfig): string {
  * repair must not be dodgeable by under-tagging.
  */
 export function recipeRuleViolations(
-  recipe: { ingredients: Ingredient[] },
+  recipe: { name?: string; ingredients: Ingredient[]; steps?: string[] },
   excludedLower: readonly string[],
   config: DietaryConfig,
 ): string[] {
@@ -506,6 +506,27 @@ export function recipeRuleViolations(
         );
       }
     }
+  }
+
+  // Prose counts too. The first version scanned only ingredients, and the
+  // model promptly wrote a clean ingredient list for a recipe that told you
+  // to "serve as you would tuna salad" — with tuna excluded. A recipe that
+  // keeps mentioning the food you cannot eat is a worse product than one
+  // ingredient swap, and the eval gate has always read the steps and the
+  // title. One contract, stated where the model can be made to honour it.
+  for (const term of excludedLower) {
+    if (recipe.name?.toLowerCase().includes(term)) {
+      violations.push(
+        `the recipe name mentions excluded "${term}" — rename it without referencing that food`,
+      );
+    }
+    (recipe.steps ?? []).forEach((step, index) => {
+      if (step.toLowerCase().includes(term)) {
+        violations.push(
+          `step ${index + 1} mentions excluded "${term}" — rewrite the step without referencing that food`,
+        );
+      }
+    });
   }
 
   const counts = countTags(applyIngredientTags(recipe.ingredients));
