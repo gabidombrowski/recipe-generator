@@ -1,5 +1,6 @@
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
+import { recipeRuleViolations } from "~/lib/constraints";
 import {
   getClient,
   isAborted,
@@ -145,7 +146,20 @@ function describeExclusions(excluded: readonly string[]): string {
   if (excluded.length === 0) {
     return "Nothing is excluded right now.";
   }
-  return excluded.map((name) => `- ${name}`).join("\n");
+  // The contract is stated because the model cannot infer it: every checker
+  // in this system (verifier, grocery filter, eval gate) matches exclusions
+  // as substrings of ingredient names. Left unstated, "pepper" reads as bell
+  // peppers and the model reasonably writes "black pepper" — which the
+  // substring check then rejects. Predictable beats clever here: the model is
+  // told the dumb rule and asked to be conservative around it.
+  return [
+    ...excluded.map((name) => `- ${name}`),
+    "",
+    "An exclusion bans every ingredient whose name CONTAINS that term:",
+    '"pepper" also rules out black pepper, bell pepper and peppercorns.',
+    "When in doubt, choose an ingredient whose name shares no words with any",
+    "excluded term.",
+  ].join("\n");
 }
 
 /**
@@ -388,6 +402,50 @@ export async function generateRecipe(
 
       const parsed = recipeBodySchema.safeParse(extracted.input);
       if (parsed.success) {
+        // Schema is necessary, not sufficient: a well-formed recipe can still
+        // use an excluded ingredient or blow a tag cap. The eval suite's
+        // first real run proved the prompt alone lands ~91-94% on those, so
+        // the loop now repairs them the same way it repairs schema failures.
+        // Same checks, same substring contract as the runtime verifier.
+        const ruleViolations = recipeRuleViolations(
+          parsed.data,
+          context.excluded.map((e) => e.toLowerCase()),
+          context.config,
+        );
+        if (ruleViolations.length > 0 && attempt < MAX_ATTEMPTS) {
+          lastIssues = ruleViolations;
+          log.warn(
+            { attempt, issues: ruleViolations },
+            "generated recipe broke dietary rules",
+          );
+          messages.push(
+            ...repairTurns(
+              message,
+              `The recipe breaks dietary rules:\n${ruleViolations
+                .map((v) => `- ${v}`)
+                .join("\n")}`,
+              `Call ${RECIPE_TOOL_NAME} again with those fixed. Keep everything that was not flagged.`,
+            ),
+          );
+          continue;
+        }
+        if (ruleViolations.length > 0) {
+          // Out of attempts: fail loudly rather than return a recipe that
+          // breaks the user's rules — downstream trusts what this returns.
+          recordGeneration({
+            model: MODELS.generation,
+            operation: "recipe",
+            usage,
+            latencyMs: Date.now() - startedAt,
+            retries: attempt - 1,
+            status: "invalid",
+          });
+          throw new GenerationError(
+            `Recipe still breaks dietary rules after ${MAX_ATTEMPTS} attempts`,
+            attempt,
+            ruleViolations,
+          );
+        }
         const latencyMs = Date.now() - startedAt;
         const costUsd = recordGeneration({
           model: MODELS.generation,
