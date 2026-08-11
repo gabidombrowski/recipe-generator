@@ -25,14 +25,19 @@ const gradeSchema = z.object({
     .min(1)
     .max(5)
     .describe("1-5; can a cook follow these steps?"),
-  stepCoherenceNote: z.string().max(300),
+  // Clamped rather than capped. A `.max(300)` here once zeroed an entire
+  // run's Tier 2: the judge wrote rationales a few sentences long, every
+  // grade failed validation on its *commentary*, and report-only trend data
+  // vanished over prose length. The scores are the payload; the note is
+  // decoration and can lose its tail.
+  stepCoherenceNote: z.string().transform((s) => s.slice(0, 300)),
   seasoningBoldness: z
     .number()
     .int()
     .min(1)
     .max(5)
     .describe("1-5; does the dish have a point of view?"),
-  seasoningBoldnessNote: z.string().max(300),
+  seasoningBoldnessNote: z.string().transform((s) => s.slice(0, 300)),
 });
 
 export type Grade = z.infer<typeof gradeSchema>;
