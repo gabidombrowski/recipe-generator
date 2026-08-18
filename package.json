@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "node scripts/start-standalone.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",

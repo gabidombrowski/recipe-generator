@@ -151,7 +151,14 @@ cp .env.example .env          # fill in AUTH_SECRET, AUTH_GITHUB_*, ALLOWED_GITH
 npm run db:generate           # only after changing the Drizzle schema
 npm run db:migrate
 npm run db:seed
-npm run dev
+npm run dev                   # development, with hot reload
+```
+
+For a production-style run of the same build the server deploys:
+
+```bash
+npm run build:standalone      # build + copy static assets into the output
+npm start                     # loads .env from the repo root, then serves it
 ```
 
 Generate an `AUTH_SECRET` with:
