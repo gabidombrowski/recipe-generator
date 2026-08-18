@@ -27,7 +27,8 @@
     "evals:metrics": "tsx evals/report-to-prometheus.ts",
     "pack": "node scripts/pack-standalone.mjs",
     "build:standalone": "next build && node scripts/pack-standalone.mjs",
-    "dev:session": "node scripts/dev-session.mjs"
+    "dev:session": "node scripts/dev-session.mjs",
+    "dev:signed-in": "node scripts/dev-signed-in.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

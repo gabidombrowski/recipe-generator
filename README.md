@@ -166,14 +166,16 @@ npm start                     # loads .env from the repo root, then serves it
 GitHub App — a detour when you just want to look at the app. Skip it:
 
 ```bash
-npm run dev:session
+npm run dev:signed-in
 ```
 
-prints a `document.cookie` line; paste it into the browser console on the
-sign-in page and reload. It signs a real Auth.js JWT with your own
-`AUTH_SECRET`, so the middleware validates it exactly like a genuine
-sign-in — no bypass flag that could accidentally ship. The Playwright suite
-uses the same mechanism.
+starts the dev server and opens the browser already signed in. It signs a
+real Auth.js JWT with your own `AUTH_SECRET` — validated by the middleware
+exactly like a genuine sign-in, no bypass flag that could accidentally
+ship — and delivers it through a one-shot localhost helper (cookies are
+host-scoped, not port-scoped, so a Set-Cookie from any localhost port lands
+in the jar for port 3000). `npm run dev:session` prints the same cookie for
+hand-pasting instead; the Playwright suite uses the same mechanism.
 
 Generate an `AUTH_SECRET` with:
 
