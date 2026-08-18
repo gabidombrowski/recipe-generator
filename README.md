@@ -161,6 +161,20 @@ npm run build:standalone      # build + copy static assets into the output
 npm start                     # loads .env from the repo root, then serves it
 ```
 
+**Signing in locally.** Real GitHub sign-in needs the OAuth values in `.env`
+*and* a `http://localhost:3000/api/auth/callback/github` callback on the
+GitHub App — a detour when you just want to look at the app. Skip it:
+
+```bash
+npm run dev:session
+```
+
+prints a `document.cookie` line; paste it into the browser console on the
+sign-in page and reload. It signs a real Auth.js JWT with your own
+`AUTH_SECRET`, so the middleware validates it exactly like a genuine
+sign-in — no bypass flag that could accidentally ship. The Playwright suite
+uses the same mechanism.
+
 Generate an `AUTH_SECRET` with:
 
 ```bash
