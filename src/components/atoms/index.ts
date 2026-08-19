@@ -1,4 +1,4 @@
-export { Announcer, announce } from "./announcer";
+export { Announcer, announce, announceError } from "./announcer";
 /**
  * Atoms: the smallest useful pieces, which cannot be broken down further and
  * still do anything.

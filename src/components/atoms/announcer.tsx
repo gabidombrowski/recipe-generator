@@ -21,13 +21,28 @@ import { useEffect, useState } from "react";
  */
 
 const EVENT = "app:announce";
+const ERROR_EVENT = "app:announce-error";
 
 export function announce(message: string): void {
   window.dispatchEvent(new CustomEvent<string>(EVENT, { detail: message }));
 }
 
+/**
+ * For failures. Rendered as a visible banner as well as spoken, because the
+ * quiet version already burned us: a stale tab spent an afternoon failing
+ * every write while looking exactly like success, and the user redid work
+ * that was never landing. An error the user cannot see is indistinguishable
+ * from no error.
+ */
+export function announceError(message: string): void {
+  window.dispatchEvent(
+    new CustomEvent<string>(ERROR_EVENT, { detail: message }),
+  );
+}
+
 export function Announcer() {
   const [message, setMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let pending: ReturnType<typeof setTimeout> | undefined;
@@ -44,15 +59,46 @@ export function Announcer() {
       pending = setTimeout(() => setMessage(detail), 0);
     };
     window.addEventListener(EVENT, onAnnounce);
+
+    let errorTimer: ReturnType<typeof setTimeout> | undefined;
+    const onError = (event: Event) => {
+      clearTimeout(errorTimer);
+      setError((event as CustomEvent<string>).detail);
+      // Long enough to read twice; dismissable sooner. Not permanent, because
+      // a banner that outlives its failure becomes wallpaper.
+      errorTimer = setTimeout(() => setError(null), 10_000);
+    };
+    window.addEventListener(ERROR_EVENT, onError);
+
     return () => {
       clearTimeout(pending);
+      clearTimeout(errorTimer);
       window.removeEventListener(EVENT, onAnnounce);
+      window.removeEventListener(ERROR_EVENT, onError);
     };
   }, []);
 
   return (
-    <div aria-live="polite" role="status" className="sr-only">
-      {message}
-    </div>
+    <>
+      <div aria-live="polite" role="status" className="sr-only">
+        {message}
+      </div>
+      {error && (
+        <div
+          role="alert"
+          className="fixed inset-x-3 bottom-3 z-50 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-lg border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-warn shadow-lg"
+        >
+          <span className="min-w-0">{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg font-medium hover:bg-warn/10"
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </>
   );
 }

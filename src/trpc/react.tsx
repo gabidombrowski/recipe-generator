@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  MutationCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
 import superjson from "superjson";
+import { announceError } from "~/components/atoms";
 import type { AppRouter } from "~/server/trpc/root";
 
 /**
@@ -18,6 +23,24 @@ export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
 function makeQueryClient(): QueryClient {
   return new QueryClient({
+    /**
+     * Every mutation failure surfaces here, app-wide, so a failed write can
+     * never masquerade as success. This exists because exactly that happened:
+     * a tab left over from the old deployment origin spent a session failing
+     * every write on cross-origin redirects while looking perfectly normal —
+     * the selects kept their new values, nothing said otherwise, and an
+     * afternoon of meal-plan edits quietly landed nowhere. One hook here
+     * beats remembering an onError at every call site, forever.
+     */
+    mutationCache: new MutationCache({
+      onError: (error) => {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : "The change did not save.";
+        announceError(`That did not save — ${message}`);
+      },
+    }),
     defaultOptions: {
       queries: {
         // This is a single-user app on a local database; data is effectively
