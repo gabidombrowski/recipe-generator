@@ -44,8 +44,19 @@ export const mealSourceSchema = z.enum([
   "quick",
   "assembly",
   "leftover",
+  // A restaurant, a party, travel — food this app neither plans nor buys.
+  // Mechanically a sibling of "leftover" (no eligible recipes, nothing on the
+  // grocery list, never holds a recipe id) with one deliberate difference:
+  // the scheduler and both planners never *derive* it. Only a person can say
+  // they are eating out; the planner's tool schema does not even contain it.
+  "eat_out",
 ]);
 export type MealSource = z.infer<typeof mealSourceSchema>;
+
+/** `eat_out` is a storage value; people read "eat out". */
+export function mealSourceLabel(source: MealSource): string {
+  return source === "eat_out" ? "eat out" : source;
+}
 
 export const storageSchema = z.enum(["fridge", "freezer"]);
 export type Storage = z.infer<typeof storageSchema>;

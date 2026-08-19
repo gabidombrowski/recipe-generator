@@ -29,7 +29,11 @@ import {
   weekDates,
   weekStartFor,
 } from "~/lib/days";
-import { computeMacroPlan, isTrainingDay, splitAcrossMeals } from "~/lib/macros";
+import {
+  computeMacroPlan,
+  isTrainingDay,
+  splitAcrossMeals,
+} from "~/lib/macros";
 import { isoDateSchema, mealSourceSchema } from "~/lib/schemas";
 
 /**
@@ -53,6 +57,8 @@ function guidanceFor(role: string): string {
       return "Leftover day: eat yesterday's refrigerated portion.";
     case "assembly":
       return "Assembly day: no cooking — put something together from what's in the house.";
+    case "eat_out":
+      return "Eating out: a restaurant, a party, someone else's table. Nothing to plan, nothing to buy — the targets stay as a reference, not a rule.";
     default:
       return "Quick day: 5-10 minutes, one pan.";
   }
@@ -138,7 +144,9 @@ export const planRouter = router({
         flaggedTags: flaggedTags(),
         flaggedIngredients:
           recipe?.ingredients
-            .filter((i) => i.tags.some((t) => flaggedTags().includes(t.toLowerCase())))
+            .filter((i) =>
+              i.tags.some((t) => flaggedTags().includes(t.toLowerCase())),
+            )
             .map((i) => i.name) ?? [],
         leftovers,
         yesterdayWasCookDay:
@@ -162,7 +170,10 @@ export const planRouter = router({
     const today = todayInTimezone(settings.timezone);
     const thisWeek = weekStartFor(today, settings.generationDay);
 
-    const options = { meals: settings.plannedMeals, mainMeal: settings.mainMeal };
+    const options = {
+      meals: settings.plannedMeals,
+      mainMeal: settings.mainMeal,
+    };
     const candidates = [
       ...deriveSlotRoles(thisWeek, profile, options),
       ...deriveSlotRoles(addDays(thisWeek, 7), profile, options),
@@ -184,7 +195,8 @@ export const planRouter = router({
       const profile = getProfile();
       const settings = getSettings();
       const today = todayInTimezone(settings.timezone);
-      const weekStart = input.weekStart ?? weekStartFor(today, settings.generationDay);
+      const weekStart =
+        input.weekStart ?? weekStartFor(today, settings.generationDay);
 
       const macroPlan = computeMacroPlan(profile);
       const slots = getWeekSlots(weekStart);
@@ -265,11 +277,19 @@ export const planRouter = router({
       if (!getSlot(input.date, meal)) {
         const profile = getProfile();
         const role =
-          deriveSlotRoles(weekStartFor(input.date, settings.generationDay), profile, {
-            meals: settings.plannedMeals,
-            mainMeal: settings.mainMeal,
-          }).find((s) => s.date === input.date && s.meal === meal)?.mealSource ?? "quick";
-        writeSlots([{ date: input.date, meal, mealSource: role, recipeId: null }], true);
+          deriveSlotRoles(
+            weekStartFor(input.date, settings.generationDay),
+            profile,
+            {
+              meals: settings.plannedMeals,
+              mainMeal: settings.mainMeal,
+            },
+          ).find((s) => s.date === input.date && s.meal === meal)?.mealSource ??
+          "quick";
+        writeSlots(
+          [{ date: input.date, meal, mealSource: role, recipeId: null }],
+          true,
+        );
       }
       assignSlot(input.date, meal, input.recipeId);
       return { ok: true };
@@ -285,13 +305,22 @@ export const planRouter = router({
       }),
     )
     .mutation(({ input }) => {
-      setSlotMealSource(input.date, input.meal ?? getSettings().mainMeal, input.mealSource);
+      setSlotMealSource(
+        input.date,
+        input.meal ?? getSettings().mainMeal,
+        input.mealSource,
+      );
       return { ok: true };
     }),
 
   /** "Generate week now" — the same code path the cron takes. */
   generateWeek: protectedProcedure
-    .input(z.object({ weekStart: isoDateSchema.optional(), force: z.boolean().default(false) }))
+    .input(
+      z.object({
+        weekStart: isoDateSchema.optional(),
+        force: z.boolean().default(false),
+      }),
+    )
     .mutation(async ({ input }) =>
       runWeeklyGeneration({
         weekStart: input.weekStart,
@@ -302,7 +331,12 @@ export const planRouter = router({
 
   /** Re-picks a single slot, leaving the rest of the week untouched. */
   regenerateSlot: protectedProcedure
-    .input(z.object({ date: isoDateSchema, meal: z.string().min(1).max(40).optional() }))
+    .input(
+      z.object({
+        date: isoDateSchema,
+        meal: z.string().min(1).max(40).optional(),
+      }),
+    )
     .mutation(({ input }) => {
       const profile = getProfile();
       const settings = getSettings();
@@ -313,7 +347,11 @@ export const planRouter = router({
       const meal = input.meal ?? settings.mainMeal;
       const used = new Set(
         getWeekSlots(weekStart)
-          .filter((s) => !(s.date === input.date && s.meal === meal) && s.recipeId !== null)
+          .filter(
+            (s) =>
+              !(s.date === input.date && s.meal === meal) &&
+              s.recipeId !== null,
+          )
           .map((s) => s.recipeId!),
       );
       for (const id of recentRecipeIds(weekStart, settings.repeatWindowWeeks)) {
@@ -337,7 +375,10 @@ export const planRouter = router({
         (s) => s.date === input.date && s.meal === meal,
       );
       if (!replacement || replacement.recipeId === null) {
-        return { ok: false as const, message: "No other recipe fits this slot." };
+        return {
+          ok: false as const,
+          message: "No other recipe fits this slot.",
+        };
       }
 
       assignSlot(input.date, meal, replacement.recipeId);

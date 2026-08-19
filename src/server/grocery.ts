@@ -49,27 +49,78 @@ const DAYS_IN_WEEK = 7;
  * shop. A real product would use a proper ingredient taxonomy.
  */
 const SECTION_KEYWORDS: ReadonlyArray<[GrocerySection, readonly string[]]> = [
-  [
-    "Frozen",
-    ["frozen", "edamame", "flash-frozen"],
-  ],
+  ["Frozen", ["frozen", "edamame", "flash-frozen"]],
   [
     "Produce",
     [
-      "tomato", "onion", "pepper", "parsley", "lime", "lemon", "kale", "spinach",
-      "cucumber", "scallion", "garlic", "ginger", "basil", "chili", "banana",
-      "berries", "slaw", "cabbage", "carrot", "lettuce", "avocado", "cilantro",
-      "mushroom", "zucchini", "broccoli", "potato", "apple", "orange", "herb",
-      "mint", "thyme", "rosemary", "shallot", "leek", "celery", "chard",
+      "tomato",
+      "onion",
+      "pepper",
+      "parsley",
+      "lime",
+      "lemon",
+      "kale",
+      "spinach",
+      "cucumber",
+      "scallion",
+      "garlic",
+      "ginger",
+      "basil",
+      "chili",
+      "banana",
+      "berries",
+      "slaw",
+      "cabbage",
+      "carrot",
+      "lettuce",
+      "avocado",
+      "cilantro",
+      "mushroom",
+      "zucchini",
+      "broccoli",
+      "potato",
+      "apple",
+      "orange",
+      "herb",
+      "mint",
+      "thyme",
+      "rosemary",
+      "shallot",
+      "leek",
+      "celery",
+      "chard",
     ],
   ],
   [
     "Proteins & Dairy",
     [
-      "beef", "chicken", "pork", "turkey", "lamb", "shrimp", "salmon", "fish",
-      "tuna", "cod", "scallop", "prawn", "crab", "tofu", "tempeh", "egg",
-      "yogurt", "cheese", "mozzarella", "feta", "milk", "cream", "butter",
-      "bacon", "sausage", "prosciutto", "salami",
+      "beef",
+      "chicken",
+      "pork",
+      "turkey",
+      "lamb",
+      "shrimp",
+      "salmon",
+      "fish",
+      "tuna",
+      "cod",
+      "scallop",
+      "prawn",
+      "crab",
+      "tofu",
+      "tempeh",
+      "egg",
+      "yogurt",
+      "cheese",
+      "mozzarella",
+      "feta",
+      "milk",
+      "cream",
+      "butter",
+      "bacon",
+      "sausage",
+      "prosciutto",
+      "salami",
     ],
   ],
 ];
@@ -83,9 +134,25 @@ function classifySection(name: string): GrocerySection {
 }
 
 const SEAFOOD_KEYWORDS = [
-  "shrimp", "salmon", "fish", "tuna", "cod", "scallop", "prawn", "crab",
-  "lobster", "mussel", "clam", "oyster", "squid", "octopus", "halibut",
-  "snapper", "trout", "anchovy", "sardine",
+  "shrimp",
+  "salmon",
+  "fish",
+  "tuna",
+  "cod",
+  "scallop",
+  "prawn",
+  "crab",
+  "lobster",
+  "mussel",
+  "clam",
+  "oyster",
+  "squid",
+  "octopus",
+  "halibut",
+  "snapper",
+  "trout",
+  "anchovy",
+  "sardine",
 ] as const;
 
 /**
@@ -123,7 +190,9 @@ function servingsFor(
   mealSource: MealSource,
   mealShapes: BuildGroceryListInput["mealShapes"],
 ): number {
-  const configured = mealShapes.find((s) => s.mealType === mealSource)?.servings;
+  const configured = mealShapes.find(
+    (s) => s.mealType === mealSource,
+  )?.servings;
   if (configured != null) return configured;
   return mealSource === "cook" ? 2 : 1;
 }
@@ -164,7 +233,10 @@ interface Accumulator {
  * also removes "soy sauce" — the safer direction to err in for an app whose
  * exclusions are about tolerance.
  */
-function isExcluded(ingredient: Ingredient, excluded: readonly string[]): boolean {
+function isExcluded(
+  ingredient: Ingredient,
+  excluded: readonly string[],
+): boolean {
   if (excluded.length === 0) return false;
   const haystacks = [ingredient.name, ...ingredient.tags].map((s) =>
     s.trim().toLowerCase(),
@@ -174,14 +246,23 @@ function isExcluded(ingredient: Ingredient, excluded: readonly string[]): boolea
 
 export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
   const {
-    weekStart, settings, meals, excluded, pantryStaples, checkedKeys, flaggedTags,
-    dailyStaples, mealShapes,
+    weekStart,
+    settings,
+    meals,
+    excluded,
+    pantryStaples,
+    checkedKeys,
+    flaggedTags,
+    dailyStaples,
+    mealShapes,
   } = input;
 
   const flagged = new Set(flaggedTags.map((t) => t.trim().toLowerCase()));
 
   const onHand = new Set(
-    pantryStaples.filter((s) => s.onHand).map((s) => s.name.trim().toLowerCase()),
+    pantryStaples
+      .filter((s) => s.onHand)
+      .map((s) => s.name.trim().toLowerCase()),
   );
 
   const accumulated = new Map<string, Accumulator>();
@@ -216,12 +297,19 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
   };
 
   for (const meal of meals) {
-    // Leftover slots are eaten from the fridge, so they buy nothing.
-    if (meal.mealSource === "leftover" || !meal.recipe) continue;
+    // Leftover slots are eaten from the fridge and eat-out slots at someone
+    // else's table — neither buys anything.
+    if (
+      meal.mealSource === "leftover" ||
+      meal.mealSource === "eat_out" ||
+      !meal.recipe
+    )
+      continue;
 
     const { recipe } = meal;
     // Scale the recipe's own yield up or down to what this slot needs.
-    const factor = servingsFor(meal.mealSource, mealShapes) / Math.max(1, recipe.servings);
+    const factor =
+      servingsFor(meal.mealSource, mealShapes) / Math.max(1, recipe.servings);
     for (const ingredient of recipe.ingredients) {
       add(ingredient, factor, recipe.name);
     }
@@ -255,7 +343,8 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
     });
   }
 
-  const byName = (a: GroceryLine, b: GroceryLine) => a.name.localeCompare(b.name);
+  const byName = (a: GroceryLine, b: GroceryLine) =>
+    a.name.localeCompare(b.name);
   const buyLater = toBuy.filter((l) => l.buyLater).sort(byName);
   const regular = toBuy.filter((l) => !l.buyLater);
 
@@ -353,7 +442,12 @@ export function groceryListToMarkdown(list: GroceryList): string {
   };
 
   for (const group of list.sections) {
-    lines.push(`## ${escapeMarkdown(group.section)}`, "", ...group.lines.map(renderLine), "");
+    lines.push(
+      `## ${escapeMarkdown(group.section)}`,
+      "",
+      ...group.lines.map(renderLine),
+      "",
+    );
   }
 
   if (list.buyLater.length > 0) {

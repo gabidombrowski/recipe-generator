@@ -63,7 +63,11 @@ export function deleteRecipe(id: number): void {
 // ---------------------------------------------------------------------------
 
 export function listExcluded() {
-  return db.select().from(excludedIngredients).orderBy(excludedIngredients.name).all();
+  return db
+    .select()
+    .from(excludedIngredients)
+    .orderBy(excludedIngredients.name)
+    .all();
 }
 
 /** Lowercased names, the form every matching predicate expects. */
@@ -94,7 +98,10 @@ export function listPantry() {
 }
 
 export function setPantryOnHand(id: number, onHand: boolean) {
-  db.update(pantryStaples).set({ onHand }).where(eq(pantryStaples.id, id)).run();
+  db.update(pantryStaples)
+    .set({ onHand })
+    .where(eq(pantryStaples.id, id))
+    .run();
   return listPantry();
 }
 
@@ -124,7 +131,11 @@ export function listLeftovers() {
     .all();
 }
 
-export function storePortion(recipeName: string, cookedDate: IsoDate, storage: Storage) {
+export function storePortion(
+  recipeName: string,
+  cookedDate: IsoDate,
+  storage: Storage,
+) {
   db.insert(leftoverItems)
     .values({ recipeName, cookedDate, storage, portions: 1 })
     .run();
@@ -133,7 +144,9 @@ export function storePortion(recipeName: string, cookedDate: IsoDate, storage: S
 
 /** Decrements a stored portion; rows reaching zero are removed. */
 export function eatPortion(id: number) {
-  const row = db.query.leftoverItems.findFirst({ where: eq(leftoverItems.id, id) }).sync();
+  const row = db.query.leftoverItems
+    .findFirst({ where: eq(leftoverItems.id, id) })
+    .sync();
   if (!row) return listLeftovers();
 
   if (row.portions <= 1) {
@@ -195,12 +208,18 @@ export function weekIsPlanned(weekStart: IsoDate): boolean {
  * regeneration idempotent: re-running over an existing week updates in place
  * rather than erroring or duplicating.
  */
-export function writeSlots(slots: readonly SlotPlan[], overwriteAssigned: boolean): number {
+export function writeSlots(
+  slots: readonly SlotPlan[],
+  overwriteAssigned: boolean,
+): number {
   let written = 0;
   for (const slot of slots) {
     const existing = db.query.planSlots
       .findFirst({
-        where: and(eq(planSlots.date, slot.date), eq(planSlots.meal, slot.meal)),
+        where: and(
+          eq(planSlots.date, slot.date),
+          eq(planSlots.meal, slot.meal),
+        ),
       })
       .sync();
 
@@ -256,15 +275,23 @@ export function setSlotMealSource(
     .values({ date, meal, mealSource, recipeId: null })
     .onConflictDoUpdate({
       target: [planSlots.date, planSlots.meal],
-      // A leftover day eats yesterday's portion, so it never keeps a recipe.
-      set: { mealSource, ...(mealSource === "leftover" ? { recipeId: null } : {}) },
+      // A leftover day eats yesterday's portion and an eat-out day eats
+      // elsewhere — neither keeps a recipe.
+      set: {
+        mealSource,
+        ...(mealSource === "leftover" || mealSource === "eat_out"
+          ? { recipeId: null }
+          : {}),
+      },
     })
     .run();
 }
 
 export function getSlot(date: IsoDate, meal: string): PlanSlot | null {
   const row = db.query.planSlots
-    .findFirst({ where: and(eq(planSlots.date, date), eq(planSlots.meal, meal)) })
+    .findFirst({
+      where: and(eq(planSlots.date, date), eq(planSlots.meal, meal)),
+    })
     .sync();
   return row
     ? {
@@ -283,7 +310,10 @@ export function getSlot(date: IsoDate, meal: string): PlanSlot | null {
  * Past plan slots are never deleted precisely so this query can exist — the
  * plan history is what makes repeat-avoidance possible.
  */
-export function recentRecipeIds(weekStart: IsoDate, weeks: number): Set<number> {
+export function recentRecipeIds(
+  weekStart: IsoDate,
+  weeks: number,
+): Set<number> {
   if (weeks <= 0) return new Set();
   const windowStart = addDays(weekStart, -7 * weeks);
 
@@ -293,7 +323,9 @@ export function recentRecipeIds(weekStart: IsoDate, weeks: number): Set<number> 
     .where(and(gte(planSlots.date, windowStart), lt(planSlots.date, weekStart)))
     .all();
 
-  return new Set(rows.map((r) => r.recipeId).filter((id): id is number => id !== null));
+  return new Set(
+    rows.map((r) => r.recipeId).filter((id): id is number => id !== null),
+  );
 }
 
 /** The week's slots joined to their recipes, in the shape the grocery list wants. */
@@ -320,12 +352,21 @@ export function checkedLineKeys(weekStart: IsoDate): Set<string> {
   const rows = db
     .select()
     .from(groceryChecks)
-    .where(and(eq(groceryChecks.weekStart, weekStart), eq(groceryChecks.checked, true)))
+    .where(
+      and(
+        eq(groceryChecks.weekStart, weekStart),
+        eq(groceryChecks.checked, true),
+      ),
+    )
     .all();
   return new Set(rows.map((r) => r.lineKey));
 }
 
-export function setLineChecked(weekStart: IsoDate, key: string, checked: boolean): void {
+export function setLineChecked(
+  weekStart: IsoDate,
+  key: string,
+  checked: boolean,
+): void {
   db.insert(groceryChecks)
     .values({ weekStart, lineKey: key, checked })
     .onConflictDoUpdate({
@@ -387,13 +428,20 @@ export function latestSchedulerRuns(limit = 10): SchedulerRun[] {
 // Generation feedback
 // ---------------------------------------------------------------------------
 
-export function addFeedback(recipeId: number, verdict: "accepted" | "rejected", reason: string) {
+export function addFeedback(
+  recipeId: number,
+  verdict: "accepted" | "rejected",
+  reason: string,
+) {
   db.insert(generationFeedback).values({ recipeId, verdict, reason }).run();
   return listFeedback(recipeId);
 }
 
 export function listFeedback(recipeId?: number) {
-  const query = db.select().from(generationFeedback).orderBy(desc(generationFeedback.id));
+  const query = db
+    .select()
+    .from(generationFeedback)
+    .orderBy(desc(generationFeedback.id));
   const rows = recipeId
     ? query.where(eq(generationFeedback.recipeId, recipeId)).all()
     : query.all();

@@ -82,7 +82,8 @@ export function deriveSlotRoles(
     if (cookDays.has(yesterday)) return "leftover";
 
     const assemblyIndex = assemblyOrder.indexOf(day);
-    if (assemblyIndex >= 0) return assemblyIndex % 2 === 0 ? "assembly" : "quick";
+    if (assemblyIndex >= 0)
+      return assemblyIndex % 2 === 0 ? "assembly" : "quick";
 
     return "quick";
   };
@@ -114,6 +115,8 @@ export function eligibleMealTypes(mealSource: MealSource): readonly string[] {
     case "assembly":
       return ["assembly"];
     case "leftover":
+      return [];
+    case "eat_out":
       return [];
   }
 }
@@ -210,8 +213,16 @@ export interface VerifyResult {
  * fed back to the planner with the complete list — one round trip instead of N.
  */
 export function verifyWeek(input: VerifyInput): VerifyResult {
-  const { weekStart, slots, profile, settings, recipesById, excludedLower, recentRecipeIds, config } =
-    input;
+  const {
+    weekStart,
+    slots,
+    profile,
+    settings,
+    recipesById,
+    excludedLower,
+    recentRecipeIds,
+    config,
+  } = input;
   const reasons: string[] = [];
 
   const expected = deriveSlotRoles(weekStart, profile, {
@@ -245,9 +256,11 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
       );
     }
 
-    if (slot.mealSource === "leftover") {
+    if (slot.mealSource === "leftover" || slot.mealSource === "eat_out") {
       if (slot.recipeId !== null) {
-        reasons.push(`${date} is a leftover day and must not have a recipe assigned`);
+        reasons.push(
+          `${date} is a ${slot.mealSource === "eat_out" ? "eat-out" : "leftover"} day and must not have a recipe assigned`,
+        );
       }
       continue;
     }
@@ -269,7 +282,9 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
 
     // 4. No excluded ingredients.
     if (recipeHasExcluded(recipe, excludedLower)) {
-      reasons.push(`"${recipe.name}" on ${date} contains an excluded ingredient`);
+      reasons.push(
+        `"${recipe.name}" on ${date} contains an excluded ingredient`,
+      );
     }
 
     // 5. Repeat window.
@@ -288,10 +303,14 @@ export function verifyWeek(input: VerifyInput): VerifyResult {
   }
 
   // 7. No repeats inside the proposed week itself.
-  const assigned = slots.map((s) => s.recipeId).filter((id): id is number => id !== null);
+  const assigned = slots
+    .map((s) => s.recipeId)
+    .filter((id): id is number => id !== null);
   const duplicates = assigned.filter((id, i) => assigned.indexOf(id) !== i);
   for (const id of new Set(duplicates)) {
-    reasons.push(`recipe "${recipesById.get(id)?.name ?? id}" appears more than once this week`);
+    reasons.push(
+      `recipe "${recipesById.get(id)?.name ?? id}" appears more than once this week`,
+    );
   }
 
   // 8. Per-week caps on tagged ingredients, from the user's config.

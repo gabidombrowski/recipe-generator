@@ -86,9 +86,18 @@ export interface PlanWeekResult {
  * repeats a dish sooner than ideal. Each relaxation is recorded and surfaced in
  * the run status rather than applied silently.
  */
-export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult {
-  const { weekStart, profile, settings, recipes, excludedLower, recentRecipeIds, config } =
-    input;
+export function planWeekDeterministically(
+  input: PlanWeekInput,
+): PlanWeekResult {
+  const {
+    weekStart,
+    profile,
+    settings,
+    recipes,
+    excludedLower,
+    recentRecipeIds,
+    config,
+  } = input;
 
   const macroPlan = computeMacroPlan(profile);
   const random = seededRandom(hashString(weekStart));
@@ -111,59 +120,68 @@ export function planWeekDeterministically(input: PlanWeekInput): PlanWeekResult 
     meals: settings.plannedMeals,
     mainMeal: settings.mainMeal,
   }).map(({ date, meal, mealSource }) => {
-      if (mealSource === "leftover") return { date, meal, mealSource, recipeId: null };
-
-      const eligibleTypes = eligibleMealTypes(mealSource);
-      const dayTargets = isTrainingDay(profile, dayOfWeekFor(date))
-        ? macroPlan.training
-        : macroPlan.rest;
-
-      const passes = (recipe: Recipe, tier: number): boolean => {
-        if (usedThisWeek.has(recipe.id)) return false;
-        if (!eligibleTypes.includes(recipe.mealType)) return false;
-
-        // Tier 0 is the full rule set; each tier drops one constraint.
-        if (tier < 1 && recentRecipeIds.has(recipe.id)) return false;
-        if (tier < 2 && macroSanityFailure(recipe, dayTargets.kcal, config) !== null) {
-          return false;
-        }
-        if (tier < 3 && mealSource === "cook") {
-          for (const cap of config.tagCaps) {
-            if (cap.maxPerWeek === null) continue;
-            if (tagCount(recipe.tagCounts, cap.tag) === 0) continue;
-            if ((tagUsage.get(cap.tag.toLowerCase()) ?? 0) >= cap.maxPerWeek) return false;
-          }
-        }
-        return true;
-      };
-
-      const TIER_LABELS = [
-        "",
-        `repeat window (${settings.repeatWindowWeeks} weeks)`,
-        "per-meal macro sanity band",
-        "per-week dietary tag limits",
-      ];
-
-      for (let tier = 0; tier < TIER_LABELS.length; tier += 1) {
-        const choice = pool.find((r) => passes(r, tier));
-        if (!choice) continue;
-
-        if (tier > 0) {
-          relaxations.push(`${date}: relaxed ${TIER_LABELS[tier]} to fill this slot`);
-        }
-        usedThisWeek.add(choice.id);
-        if (mealSource === "cook") {
-          for (const tag of limitedTagsIn(choice, config)) {
-            tagUsage.set(tag, (tagUsage.get(tag) ?? 0) + 1);
-          }
-        }
-        return { date, meal, mealSource, recipeId: choice.id };
-      }
-
-      unfilled.push(date);
+    const eligibleTypes = eligibleMealTypes(mealSource);
+    // Leftover and eat-out slots take no recipe by definition; asking which
+    // role it is would just restate the eligibility rule in a second place.
+    if (eligibleTypes.length === 0) {
       return { date, meal, mealSource, recipeId: null };
-    },
-  );
+    }
+
+    const dayTargets = isTrainingDay(profile, dayOfWeekFor(date))
+      ? macroPlan.training
+      : macroPlan.rest;
+
+    const passes = (recipe: Recipe, tier: number): boolean => {
+      if (usedThisWeek.has(recipe.id)) return false;
+      if (!eligibleTypes.includes(recipe.mealType)) return false;
+
+      // Tier 0 is the full rule set; each tier drops one constraint.
+      if (tier < 1 && recentRecipeIds.has(recipe.id)) return false;
+      if (
+        tier < 2 &&
+        macroSanityFailure(recipe, dayTargets.kcal, config) !== null
+      ) {
+        return false;
+      }
+      if (tier < 3 && mealSource === "cook") {
+        for (const cap of config.tagCaps) {
+          if (cap.maxPerWeek === null) continue;
+          if (tagCount(recipe.tagCounts, cap.tag) === 0) continue;
+          if ((tagUsage.get(cap.tag.toLowerCase()) ?? 0) >= cap.maxPerWeek)
+            return false;
+        }
+      }
+      return true;
+    };
+
+    const TIER_LABELS = [
+      "",
+      `repeat window (${settings.repeatWindowWeeks} weeks)`,
+      "per-meal macro sanity band",
+      "per-week dietary tag limits",
+    ];
+
+    for (let tier = 0; tier < TIER_LABELS.length; tier += 1) {
+      const choice = pool.find((r) => passes(r, tier));
+      if (!choice) continue;
+
+      if (tier > 0) {
+        relaxations.push(
+          `${date}: relaxed ${TIER_LABELS[tier]} to fill this slot`,
+        );
+      }
+      usedThisWeek.add(choice.id);
+      if (mealSource === "cook") {
+        for (const tag of limitedTagsIn(choice, config)) {
+          tagUsage.set(tag, (tagUsage.get(tag) ?? 0) + 1);
+        }
+      }
+      return { date, meal, mealSource, recipeId: choice.id };
+    }
+
+    unfilled.push(date);
+    return { date, meal, mealSource, recipeId: null };
+  });
 
   return { slots, unfilled, relaxations };
 }

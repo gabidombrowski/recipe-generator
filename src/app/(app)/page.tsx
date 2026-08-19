@@ -7,6 +7,7 @@ import { RecipeCard } from "~/components/organisms/recipe-card";
 import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
 import { Card, MacroRow } from "~/components/molecules";
 import { formatLongDate } from "~/lib/days";
+import { mealSourceLabel } from "~/lib/schemas";
 import { LeftoverList } from "~/components/connected/leftover-list";
 
 /**
@@ -98,13 +99,13 @@ export default function TodayPage() {
                 })
               }
             >
-              {(["cook", "quick", "assembly", "leftover"] as const).map(
-                (role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ),
-              )}
+              {(
+                ["cook", "quick", "assembly", "leftover", "eat_out"] as const
+              ).map((role) => (
+                <option key={role} value={role}>
+                  {mealSourceLabel(role)}
+                </option>
+              ))}
             </select>
           }
         >
@@ -114,6 +115,14 @@ export default function TodayPage() {
             <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
               Cook for two. Get the second portion into the fridge while you eat
               the first — not after.
+            </p>
+          )}
+
+          {entry.role === "eat_out" && (
+            <p className="mt-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+              Enjoy it. If you want a rough compass: the day&rsquo;s targets
+              above still apply, but this is one meal out of a week of planned
+              ones — one evening off plan is noise, not failure.
             </p>
           )}
 
@@ -145,7 +154,8 @@ export default function TodayPage() {
               />
             </div>
           ) : (
-            entry.role !== "leftover" && (
+            entry.role !== "leftover" &&
+            entry.role !== "eat_out" && (
               <p className="mt-3 rounded-lg border border-dashed border-border px-4 py-4 text-center text-sm text-ink-muted">
                 Nothing assigned. Pick something on the{" "}
                 <a className="underline" href="/week">

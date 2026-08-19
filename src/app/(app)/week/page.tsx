@@ -8,6 +8,7 @@ import { Card, MacroRow } from "~/components/molecules";
 import { cx } from "~/components/cx";
 import { GenerateRecipeButton } from "~/components/connected/generate-recipe";
 import { RecipeCard } from "~/components/organisms/recipe-card";
+import { mealSourceLabel } from "~/lib/schemas";
 import { formatLongDate, formatShortDate } from "~/lib/days";
 
 /**
@@ -161,10 +162,13 @@ export default function WeekPage() {
                     <span className="plate plate--section text-[10px]">
                       {entry.meal}
                     </span>
-                    <Badge tone="accent">{entry.mealSource}</Badge>
+                    <Badge tone="accent">
+                      {mealSourceLabel(entry.mealSource)}
+                    </Badge>
                     {entry.mealSource !== entry.derivedMealSource && (
                       <Badge tone="warn">
-                        overridden from {entry.derivedMealSource}
+                        overridden from{" "}
+                        {mealSourceLabel(entry.derivedMealSource)}
                       </Badge>
                     )}
                     {entry.recipe && (
@@ -176,7 +180,12 @@ export default function WeekPage() {
                     )}
                   </div>
 
-                  {entry.mealSource === "leftover" ? (
+                  {entry.mealSource === "eat_out" ? (
+                    <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
+                      Eating out — nothing to plan here, and nothing lands on
+                      the grocery list.
+                    </p>
+                  ) : entry.mealSource === "leftover" ? (
                     <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
                       Eating yesterday&rsquo;s refrigerated portion — nothing to
                       assign, and nothing added to the grocery list.

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { deriveSlotRoles, verifyWeek, type SlotPlan } from "./rules";
-import { EMPTY_CONFIG, resolveConfig, type Constraint } from "~/lib/constraints";
+import {
+  deriveSlotRoles,
+  eligibleMealTypes,
+  verifyWeek,
+  type SlotPlan,
+} from "./rules";
+import {
+  EMPTY_CONFIG,
+  resolveConfig,
+  type Constraint,
+} from "~/lib/constraints";
 
 import {
   DEFAULT_SETTINGS,
@@ -39,7 +48,9 @@ const settings: Settings = { ...DEFAULT_SETTINGS, repeatWindowWeeks: 2 };
 // 2026-02-08 is a Sunday.
 const WEEK_START = "2026-02-08";
 
-function recipe(overrides: Partial<Recipe> & { id: number; name: string }): Recipe {
+function recipe(
+  overrides: Partial<Recipe> & { id: number; name: string },
+): Recipe {
   return {
     cuisine: "Test",
     cookMinutes: 20,
@@ -72,21 +83,39 @@ describe("deriveSlotRoles", () => {
   });
 
   it("marks the day after each cook day as leftover", () => {
-    expect(roles.find((r) => r.date === "2026-02-11")?.mealSource).toBe("leftover"); // Wed
-    expect(roles.find((r) => r.date === "2026-02-13")?.mealSource).toBe("leftover"); // Fri
+    expect(roles.find((r) => r.date === "2026-02-11")?.mealSource).toBe(
+      "leftover",
+    ); // Wed
+    expect(roles.find((r) => r.date === "2026-02-13")?.mealSource).toBe(
+      "leftover",
+    ); // Fri
   });
 
   it("alternates assembly and quick across assembly days", () => {
     // Assembly days in week order: Sunday, Monday, Saturday.
-    expect(roles.find((r) => r.date === "2026-02-08")?.mealSource).toBe("assembly");
-    expect(roles.find((r) => r.date === "2026-02-09")?.mealSource).toBe("quick");
-    expect(roles.find((r) => r.date === "2026-02-14")?.mealSource).toBe("assembly");
+    expect(roles.find((r) => r.date === "2026-02-08")?.mealSource).toBe(
+      "assembly",
+    );
+    expect(roles.find((r) => r.date === "2026-02-09")?.mealSource).toBe(
+      "quick",
+    );
+    expect(roles.find((r) => r.date === "2026-02-14")?.mealSource).toBe(
+      "assembly",
+    );
   });
 
   it("lets cook win over leftover on back-to-back cook days", () => {
-    const backToBack = { ...profile, cookDays: ["Tuesday", "Wednesday"] as const };
-    const result = deriveSlotRoles(WEEK_START, backToBack as unknown as Profile);
-    expect(result.find((r) => r.date === "2026-02-11")?.mealSource).toBe("cook");
+    const backToBack = {
+      ...profile,
+      cookDays: ["Tuesday", "Wednesday"] as const,
+    };
+    const result = deriveSlotRoles(
+      WEEK_START,
+      backToBack as unknown as Profile,
+    );
+    expect(result.find((r) => r.date === "2026-02-11")?.mealSource).toBe(
+      "cook",
+    );
   });
 
   it("changes shape when the settings change, rather than being hardcoded", () => {
@@ -95,8 +124,12 @@ describe("deriveSlotRoles", () => {
       cookDays: ["Monday"],
       assemblyDays: [],
     });
-    expect(shifted.find((r) => r.date === "2026-02-09")?.mealSource).toBe("cook");
-    expect(shifted.find((r) => r.date === "2026-02-10")?.mealSource).toBe("leftover");
+    expect(shifted.find((r) => r.date === "2026-02-09")?.mealSource).toBe(
+      "cook",
+    );
+    expect(shifted.find((r) => r.date === "2026-02-10")?.mealSource).toBe(
+      "leftover",
+    );
   });
 });
 
@@ -104,35 +137,53 @@ describe("deriveSlotRoles across several meals", () => {
   const meals = ["Breakfast", "Lunch", "Dinner"];
 
   it("produces a slot per meal per day", () => {
-    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    const roles = deriveSlotRoles(WEEK_START, profile, {
+      meals,
+      mainMeal: "Dinner",
+    });
     expect(roles).toHaveLength(21);
-    expect(roles.filter((r) => r.date === WEEK_START).map((r) => r.meal)).toEqual(meals);
+    expect(
+      roles.filter((r) => r.date === WEEK_START).map((r) => r.meal),
+    ).toEqual(meals);
   });
 
   it("gives the cook/leftover cycle to the main meal only", () => {
     // A cook day means cooking once and eating the second portion tomorrow.
     // If breakfast were also "cook", the day would produce two portions nobody
     // planned to eat, and the leftover day would have two to get through.
-    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    const roles = deriveSlotRoles(WEEK_START, profile, {
+      meals,
+      mainMeal: "Dinner",
+    });
     const onCookDay = roles.filter((r) => r.date === "2026-02-10"); // Tue, a cook day
     expect(onCookDay.find((r) => r.meal === "Dinner")?.mealSource).toBe("cook");
-    expect(onCookDay.find((r) => r.meal === "Breakfast")?.mealSource).toBe("quick");
+    expect(onCookDay.find((r) => r.meal === "Breakfast")?.mealSource).toBe(
+      "quick",
+    );
     expect(onCookDay.find((r) => r.meal === "Lunch")?.mealSource).toBe("quick");
   });
 
   it("never marks a non-main meal as leftover", () => {
     // Leftover slots are eaten from the fridge and hold no recipe; handing one
     // to breakfast would silently drop breakfast from the plan.
-    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Dinner" });
+    const roles = deriveSlotRoles(WEEK_START, profile, {
+      meals,
+      mainMeal: "Dinner",
+    });
     const nonMain = roles.filter((r) => r.meal !== "Dinner");
     expect(nonMain.every((r) => r.mealSource !== "leftover")).toBe(true);
   });
 
   it("follows the main meal when it is not dinner", () => {
-    const roles = deriveSlotRoles(WEEK_START, profile, { meals, mainMeal: "Lunch" });
+    const roles = deriveSlotRoles(WEEK_START, profile, {
+      meals,
+      mainMeal: "Lunch",
+    });
     const onCookDay = roles.filter((r) => r.date === "2026-02-10");
     expect(onCookDay.find((r) => r.meal === "Lunch")?.mealSource).toBe("cook");
-    expect(onCookDay.find((r) => r.meal === "Dinner")?.mealSource).toBe("quick");
+    expect(onCookDay.find((r) => r.meal === "Dinner")?.mealSource).toBe(
+      "quick",
+    );
   });
 
   it("matches the old single-meal behaviour when one meal is planned", () => {
@@ -142,7 +193,9 @@ describe("deriveSlotRoles across several meals", () => {
       mainMeal: "Dinner",
     });
     const legacy = deriveSlotRoles(WEEK_START, profile);
-    expect(single.map((r) => r.mealSource)).toEqual(legacy.map((r) => r.mealSource));
+    expect(single.map((r) => r.mealSource)).toEqual(
+      legacy.map((r) => r.mealSource),
+    );
     expect(single).toHaveLength(7);
   });
 });
@@ -165,23 +218,45 @@ describe("verifyWeek", () => {
     macrosPerServing: { kcal: 420, proteinG: 38, carbsG: 40, fatG: 10 },
   });
 
-  const recipesById = new Map([cookA, cookB, quick, assembly].map((r) => [r.id, r]));
+  const recipesById = new Map(
+    [cookA, cookB, quick, assembly].map((r) => [r.id, r]),
+  );
 
   const validWeek: SlotPlan[] = [
     { date: "2026-02-08", meal: "Dinner", mealSource: "assembly", recipeId: 4 },
     { date: "2026-02-09", meal: "Dinner", mealSource: "quick", recipeId: 3 },
     { date: "2026-02-10", meal: "Dinner", mealSource: "cook", recipeId: 1 },
-    { date: "2026-02-11", meal: "Dinner", mealSource: "leftover", recipeId: null },
+    {
+      date: "2026-02-11",
+      meal: "Dinner",
+      mealSource: "leftover",
+      recipeId: null,
+    },
     { date: "2026-02-12", meal: "Dinner", mealSource: "cook", recipeId: 2 },
-    { date: "2026-02-13", meal: "Dinner", mealSource: "leftover", recipeId: null },
-    { date: "2026-02-14", meal: "Dinner", mealSource: "assembly", recipeId: null },
+    {
+      date: "2026-02-13",
+      meal: "Dinner",
+      mealSource: "leftover",
+      recipeId: null,
+    },
+    {
+      date: "2026-02-14",
+      meal: "Dinner",
+      mealSource: "assembly",
+      recipeId: null,
+    },
   ];
 
   /** The user rule that replaces what used to be a hardcoded setting. */
   const oneFermentedCookPerWeek = resolveConfig([
     {
       id: 1,
-      constraint: { kind: "tag_cap", tag: "fermented", maxPerRecipe: 1, maxPerWeek: 1 } as Constraint,
+      constraint: {
+        kind: "tag_cap",
+        tag: "fermented",
+        maxPerRecipe: 1,
+        maxPerWeek: 1,
+      } as Constraint,
       active: true,
       createdAt: "2026-01-01",
     },
@@ -231,7 +306,11 @@ describe("verifyWeek", () => {
   });
 
   it("rejects an excluded ingredient", () => {
-    const result = verifyWeek({ ...base, slots: validWeek, excludedLower: ["chicken"] });
+    const result = verifyWeek({
+      ...base,
+      slots: validWeek,
+      excludedLower: ["chicken"],
+    });
     expect(result.ok).toBe(false);
     expect(result.reasons.join(" ")).toContain("excluded ingredient");
   });
@@ -242,7 +321,9 @@ describe("verifyWeek", () => {
       slots: validWeek,
       recentRecipeIds: new Set([1]),
     });
-    expect(result.reasons.join(" ")).toContain("already used within the last 2 week");
+    expect(result.reasons.join(" ")).toContain(
+      "already used within the last 2 week",
+    );
   });
 
   it("rejects a repeat inside the same week", () => {
@@ -265,7 +346,9 @@ describe("verifyWeek", () => {
       recipesById: taggedById,
       config: oneFermentedCookPerWeek,
     });
-    expect(result.reasons.join(" ")).toContain('cook recipes contain "fermented"');
+    expect(result.reasons.join(" ")).toContain(
+      'cook recipes contain "fermented"',
+    );
   });
 
   it("allows both when no guideline caps that tag", () => {
@@ -291,12 +374,21 @@ describe("verifyWeek", () => {
     const withBand = resolveConfig([
       {
         id: 1,
-        constraint: { kind: "meal_macros", proteinMinG: 25, proteinMaxG: 60 } as Constraint,
+        constraint: {
+          kind: "meal_macros",
+          proteinMinG: 25,
+          proteinMaxG: 60,
+        } as Constraint,
         active: true,
         createdAt: "2026-01-01",
       },
     ]);
-    const result = verifyWeek({ ...base, slots: validWeek, recipesById: thinById, config: withBand });
+    const result = verifyWeek({
+      ...base,
+      slots: validWeek,
+      recipesById: thinById,
+      config: withBand,
+    });
     expect(result.reasons.join(" ")).toContain("below the 25 g per-meal floor");
   });
 
@@ -307,13 +399,19 @@ describe("verifyWeek", () => {
       ...cookA,
       macrosPerServing: { kcal: 400, proteinG: 8, carbsG: 60, fatG: 12 },
     });
-    const result = verifyWeek({ ...base, slots: validWeek, recipesById: thinById });
+    const result = verifyWeek({
+      ...base,
+      slots: validWeek,
+      recipesById: thinById,
+    });
     expect(result.reasons.join(" ")).not.toContain("per-meal floor");
   });
 
   it("reports every violation at once, not just the first", () => {
     const slots = validWeek.map((s) =>
-      s.date === "2026-02-10" ? { ...s, mealSource: "quick" as const, recipeId: 1 } : s,
+      s.date === "2026-02-10"
+        ? { ...s, mealSource: "quick" as const, recipeId: 1 }
+        : s,
     );
     const result = verifyWeek({
       ...base,
@@ -334,6 +432,16 @@ describe("verifyWeek", () => {
     const slots = validWeek.map((s) =>
       s.date === "2026-02-10" ? { ...s, recipeId: 999 } : s,
     );
-    expect(verifyWeek({ ...base, slots }).reasons.join(" ")).toContain("unknown recipe id");
+    expect(verifyWeek({ ...base, slots }).reasons.join(" ")).toContain(
+      "unknown recipe id",
+    );
+  });
+});
+
+describe("eat_out", () => {
+  it("accepts no recipe types", () => {
+    // The planner fills slots from this list; empty means neither planner can
+    // ever put food into a meal eaten elsewhere.
+    expect(eligibleMealTypes("eat_out")).toEqual([]);
   });
 });

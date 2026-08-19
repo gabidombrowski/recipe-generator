@@ -213,7 +213,7 @@ export default function GeneratePage() {
    */
   const assignableSlots = (week.data?.days ?? []).flatMap((day) =>
     day.meals
-      .filter((m) => m.mealSource !== "leftover")
+      .filter((m) => m.mealSource !== "leftover" && m.mealSource !== "eat_out")
       .map((m) => ({
         date: day.date,
         day: day.day,

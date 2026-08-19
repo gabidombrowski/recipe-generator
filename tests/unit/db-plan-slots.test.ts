@@ -41,7 +41,9 @@ describe("setSlotMealSource", () => {
     h.db.setSlotMealSource(DATE, MEAL, "quick");
 
     expect(h.db.getSlot(DATE, MEAL)?.mealSource).toBe("quick");
-    expect(h.db.getWeekSlots("2026-03-01").filter((s) => s.date === DATE)).toHaveLength(1);
+    expect(
+      h.db.getWeekSlots("2026-03-01").filter((s) => s.date === DATE),
+    ).toHaveLength(1);
   });
 
   it("clears the recipe when a day becomes a leftover day", () => {
@@ -53,6 +55,19 @@ describe("setSlotMealSource", () => {
     expect(h.db.getSlot(DATE, MEAL)?.recipeId).toBe(recipe.id);
 
     h.db.setSlotMealSource(DATE, MEAL, "leftover");
+
+    expect(h.db.getSlot(DATE, MEAL)?.recipeId).toBeNull();
+  });
+
+  it("clears the recipe when a day becomes an eat-out day", () => {
+    // Same contract as leftover for the same reason: an eat-out slot keeping
+    // its recipe would put ingredients on the grocery list for a meal eaten
+    // at someone else's table.
+    const recipe = h.db.listRecipes()[0]!;
+    h.db.setSlotMealSource(DATE, MEAL, "cook");
+    h.db.assignSlot(DATE, MEAL, recipe.id);
+
+    h.db.setSlotMealSource(DATE, MEAL, "eat_out");
 
     expect(h.db.getSlot(DATE, MEAL)?.recipeId).toBeNull();
   });
@@ -117,10 +132,16 @@ describe("writeSlots", () => {
     h.db.setSlotMealSource(DATE, MEAL, "cook");
     h.db.assignSlot(DATE, MEAL, a!.id);
 
-    h.db.writeSlots([{ date: DATE, meal: MEAL, mealSource: "cook", recipeId: b!.id }], false);
+    h.db.writeSlots(
+      [{ date: DATE, meal: MEAL, mealSource: "cook", recipeId: b!.id }],
+      false,
+    );
     expect(h.db.getSlot(DATE, MEAL)?.recipeId).toBe(a!.id);
 
-    h.db.writeSlots([{ date: DATE, meal: MEAL, mealSource: "cook", recipeId: b!.id }], true);
+    h.db.writeSlots(
+      [{ date: DATE, meal: MEAL, mealSource: "cook", recipeId: b!.id }],
+      true,
+    );
     expect(h.db.getSlot(DATE, MEAL)?.recipeId).toBe(b!.id);
   });
 });

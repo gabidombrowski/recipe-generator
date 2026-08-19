@@ -8,7 +8,9 @@ import {
 } from "./grocery";
 import { type Recipe } from "~/lib/schemas";
 
-function recipe(overrides: Partial<Recipe> & { id: number; name: string }): Recipe {
+function recipe(
+  overrides: Partial<Recipe> & { id: number; name: string },
+): Recipe {
   return {
     cuisine: "Test",
     cookMinutes: 20,
@@ -40,7 +42,10 @@ const base = {
     { name: "frozen berries", qty: 0.75, unit: "cup" },
     { name: "casein", qty: 30, unit: "g" },
   ],
-  mealShapes: [] as Array<{ mealType: "cook" | "quick" | "assembly"; servings: number | null }>,
+  mealShapes: [] as Array<{
+    mealType: "cook" | "quick" | "assembly";
+    servings: number | null;
+  }>,
   checkedKeys: new Set<string>(),
 };
 
@@ -61,7 +66,9 @@ describe("grocery list", () => {
           id: 1,
           name: "Single",
           servings: 1,
-          ingredients: [{ name: "chicken breast", qty: 6, unit: "oz", tags: [] }],
+          ingredients: [
+            { name: "chicken breast", qty: 6, unit: "oz", tags: [] },
+          ],
         }),
       },
     ];
@@ -77,29 +84,69 @@ describe("grocery list", () => {
           id: 1,
           name: "Double",
           servings: 2,
-          ingredients: [{ name: "chicken breast", qty: 12, unit: "oz", tags: [] }],
+          ingredients: [
+            { name: "chicken breast", qty: 12, unit: "oz", tags: [] },
+          ],
         }),
       },
     ];
-    expect(findLine(buildGroceryList({ ...base, meals }), "chicken breast")?.qty).toBe(12);
+    expect(
+      findLine(buildGroceryList({ ...base, meals }), "chicken breast")?.qty,
+    ).toBe(12);
   });
 
   it("contributes nothing for leftover slots", () => {
     const meals: PlannedMeal[] = [
-      { mealSource: "leftover", recipe: recipe({ id: 1, name: "Ignored", ingredients: [{ name: "beef", qty: 9, unit: "oz", tags: [] }] }) },
+      {
+        mealSource: "leftover",
+        recipe: recipe({
+          id: 1,
+          name: "Ignored",
+          ingredients: [{ name: "beef", qty: 9, unit: "oz", tags: [] }],
+        }),
+      },
     ];
-    expect(findLine(buildGroceryList({ ...base, meals }), "beef")).toBeUndefined();
+    expect(
+      findLine(buildGroceryList({ ...base, meals }), "beef"),
+    ).toBeUndefined();
+  });
+
+  it("contributes nothing for eat-out slots", () => {
+    // Restaurant, party, travel: food this app neither plans nor buys. The
+    // recipe here should be impossible (the write path nulls it), and the
+    // list must hold the line even if one sneaks through.
+    const meals: PlannedMeal[] = [
+      {
+        mealSource: "eat_out",
+        recipe: recipe({
+          id: 1,
+          name: "Ignored",
+          ingredients: [{ name: "beef", qty: 9, unit: "oz", tags: [] }],
+        }),
+      },
+    ];
+    expect(
+      findLine(buildGroceryList({ ...base, meals }), "beef"),
+    ).toBeUndefined();
   });
 
   it("merges duplicate lines on name and unit, summing quantities", () => {
     const meals: PlannedMeal[] = [
       {
         mealSource: "cook",
-        recipe: recipe({ id: 1, name: "A", ingredients: [{ name: "garlic", qty: 4, unit: "clove", tags: [] }] }),
+        recipe: recipe({
+          id: 1,
+          name: "A",
+          ingredients: [{ name: "garlic", qty: 4, unit: "clove", tags: [] }],
+        }),
       },
       {
         mealSource: "cook",
-        recipe: recipe({ id: 2, name: "B", ingredients: [{ name: "garlic", qty: 6, unit: "clove", tags: [] }] }),
+        recipe: recipe({
+          id: 2,
+          name: "B",
+          ingredients: [{ name: "garlic", qty: 6, unit: "clove", tags: [] }],
+        }),
       },
     ];
     const line = findLine(buildGroceryList({ ...base, meals }), "garlic");
@@ -122,7 +169,9 @@ describe("grocery list", () => {
       },
     ];
     const list = buildGroceryList({ ...base, meals });
-    const oils = list.sections.flatMap((s) => s.lines).filter((l) => l.name === "olive oil");
+    const oils = list.sections
+      .flatMap((s) => s.lines)
+      .filter((l) => l.name === "olive oil");
     expect(oils).toHaveLength(2);
   });
 
@@ -175,7 +224,9 @@ describe("grocery list", () => {
         recipe: recipe({
           id: 1,
           name: "A",
-          ingredients: [{ name: "gochujang", qty: 2, unit: "tbsp", tags: ["fermented"] }],
+          ingredients: [
+            { name: "gochujang", qty: 2, unit: "tbsp", tags: ["fermented"] },
+          ],
         }),
       },
     ];
@@ -190,11 +241,15 @@ describe("grocery list", () => {
         recipe: recipe({
           id: 1,
           name: "A",
-          ingredients: [{ name: "gochujang", qty: 2, unit: "tbsp", tags: ["fermented"] }],
+          ingredients: [
+            { name: "gochujang", qty: 2, unit: "tbsp", tags: ["fermented"] },
+          ],
         }),
       },
     ];
-    expect(findLine(buildGroceryList({ ...base, meals }), "gochujang")?.flaggedTags).toEqual(["fermented"]);
+    expect(
+      findLine(buildGroceryList({ ...base, meals }), "gochujang")?.flaggedTags,
+    ).toEqual(["fermented"]);
   });
 
   it("pulls seafood into the buy-later subsection", () => {
@@ -213,7 +268,9 @@ describe("grocery list", () => {
     ];
     const list = buildGroceryList({ ...base, meals });
     expect(list.buyLater.map((l) => l.name)).toEqual(["fresh salmon"]);
-    expect(list.sections.flatMap((s) => s.lines).map((l) => l.name)).not.toContain("fresh salmon");
+    expect(
+      list.sections.flatMap((s) => s.lines).map((l) => l.name),
+    ).not.toContain("fresh salmon");
   });
 
   it("does not treat shelf-stable sauces as seafood", () => {
@@ -264,7 +321,11 @@ describe("grocery list", () => {
 
   it("reflects persisted check state", () => {
     const key = lineKey("banana", "each");
-    const list = buildGroceryList({ ...base, meals: [], checkedKeys: new Set([key]) });
+    const list = buildGroceryList({
+      ...base,
+      meals: [],
+      checkedKeys: new Set([key]),
+    });
     expect(findLine(list, "banana")?.checked).toBe(true);
   });
 
@@ -289,7 +350,10 @@ describe("configured servings per meal type", () => {
   ];
 
   it("still doubles a cook day when nothing is configured", () => {
-    const list = buildGroceryList({ ...base, meals: oneServingCook("Default") });
+    const list = buildGroceryList({
+      ...base,
+      meals: oneServingCook("Default"),
+    });
     expect(findLine(list, "chicken breast")?.qty).toBe(8);
   });
 
@@ -324,7 +388,9 @@ describe("configured servings per meal type", () => {
             name: "Quick",
             servings: 1,
             mealType: "quick",
-            ingredients: [{ name: "chicken breast", qty: 4, unit: "oz", tags: [] }],
+            ingredients: [
+              { name: "chicken breast", qty: 4, unit: "oz", tags: [] },
+            ],
           }),
         },
       ],
@@ -365,7 +431,9 @@ describe("markdown rendering", () => {
           id: 1,
           name: "Fermented",
           servings: 2,
-          ingredients: [{ name: "miso", qty: 2, unit: "tbsp", tags: ["fermented"] }],
+          ingredients: [
+            { name: "miso", qty: 2, unit: "tbsp", tags: ["fermented"] },
+          ],
         }),
       },
     ];
@@ -383,7 +451,9 @@ describe("markdown rendering", () => {
           id: 1,
           name: "Tricky",
           servings: 2,
-          ingredients: [{ name: "ancho *chile* [dried]", qty: 1, unit: "each", tags: [] }],
+          ingredients: [
+            { name: "ancho *chile* [dried]", qty: 1, unit: "each", tags: [] },
+          ],
         }),
       },
     ];
