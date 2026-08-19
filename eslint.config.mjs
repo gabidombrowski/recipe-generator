@@ -20,7 +20,7 @@ const config = [
       "evals/reports/**",
       "tests/e2e/.auth/**",
       "storybook-static/**",
-    ],
+    , "demo/.next-demo/**", "demo/.next/**"],
   },
   {
     rules: {

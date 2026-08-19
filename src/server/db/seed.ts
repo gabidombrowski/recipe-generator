@@ -30,8 +30,17 @@ export interface SeedResult {
   pantryCreated: number;
 }
 
-/** Reads and validates `seed.local.json`, or returns null if it is absent. */
+/**
+ * Reads and validates `seed.local.json`, or returns null if it is absent.
+ *
+ * `SEED_SKIP_LOCAL=1` refuses the file even when it exists. The demo fixture
+ * recorder sets it because its guarantee is "synthetic by construction" — a
+ * temp database it seeds must not quietly absorb the owner's real profile
+ * just because the recorder happens to run from a working tree that has one.
+ * That exact absorption happened; this is the latch against it.
+ */
 export function readLocalSeed(cwd = process.cwd()): LocalSeed | null {
+  if (process.env.SEED_SKIP_LOCAL === "1") return null;
   const path = resolve(cwd, LOCAL_SEED_FILENAME);
   if (!existsSync(path)) return null;
 

@@ -122,6 +122,40 @@ jobs:
             echo "app did not become healthy; check: pm2 logs recipe-generator"
             exit 1
 
+  demo:
+    # The static UI demo served from the portfolio site. Fixtures are
+    # committed (recorded, synthetic by construction — see
+    # scripts/record-demo-fixtures.mjs), so this is a pure build + copy: no
+    # database, no secrets beyond the SSH four, nothing to restart.
+    name: Build and deploy the demo
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the demo
+        run: npm run build:demo
+
+      - name: Deploy the demo
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          # --delete is safe here precisely because nothing lives in this
+          # directory except the previous build.
+          switches: -az --delete --omit-dir-times --no-perms
+          path: demo/.next-demo/
+          remote_path: /var/www/recipe-generator-demo/
+          remote_host: ${{ secrets.SERVER_HOST }}
+          remote_user: ${{ secrets.SERVER_USER }}
+          remote_key: ${{ secrets.SERVER_SSH_KEY }}
+          remote_port: 22
+
   image:
     # Builds on every deploy; pushes only when the PUBLISH_IMAGE repository
     # variable is "true". The push has failed with permission_denied since the

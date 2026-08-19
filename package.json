@@ -28,7 +28,9 @@
     "pack": "node scripts/pack-standalone.mjs",
     "build:standalone": "next build && node scripts/pack-standalone.mjs",
     "dev:session": "node scripts/dev-session.mjs",
-    "dev:signed-in": "node scripts/dev-signed-in.mjs"
+    "dev:signed-in": "node scripts/dev-signed-in.mjs",
+    "build:demo": "next build demo",
+    "record-demo-fixtures": "node scripts/record-demo-fixtures.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

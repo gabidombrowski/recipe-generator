@@ -5,6 +5,8 @@ node_modules/
 
 # next
 .next/
+demo/.next-demo/
+demo/.next/
 out/
 next-env.d.ts
 

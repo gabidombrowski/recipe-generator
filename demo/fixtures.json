@@ -1,0 +1,4293 @@
+{
+  "plan.today": {
+    "date": "2026-08-18",
+    "day": "Tuesday",
+    "training": false,
+    "trainingIsOverridden": false,
+    "role": "quick",
+    "guidance": "Quick day: 5-10 minutes, one pan.",
+    "targets": {
+      "kcal": 2025,
+      "proteinG": 112,
+      "fatG": 56,
+      "carbsG": 270
+    },
+    "recipe": {
+      "id": 13,
+      "name": "Garlic Fried Rice with Egg",
+      "cuisine": "Filipino",
+      "cookMinutes": 10,
+      "servings": 1,
+      "mealType": "quick",
+      "ingredients": [
+        {
+          "name": "cooked rice",
+          "qty": 1,
+          "unit": "cup",
+          "tags": []
+        },
+        {
+          "name": "garlic",
+          "qty": 5,
+          "unit": "clove",
+          "tags": []
+        },
+        {
+          "name": "eggs",
+          "qty": 2,
+          "unit": "each",
+          "tags": []
+        },
+        {
+          "name": "egg whites",
+          "qty": 0.5,
+          "unit": "cup",
+          "tags": []
+        },
+        {
+          "name": "coconut aminos",
+          "qty": 2,
+          "unit": "tsp",
+          "tags": []
+        },
+        {
+          "name": "scallion",
+          "qty": 2,
+          "unit": "each",
+          "tags": []
+        }
+      ],
+      "steps": [
+        "Crisp sliced garlic in oil, set aside",
+        "Fry rice in the garlic oil with coconut aminos",
+        "Top with fried eggs, garlic chips and scallion"
+      ],
+      "macrosPerServing": {
+        "kcal": 445,
+        "proteinG": 32,
+        "carbsG": 48,
+        "fatG": 14
+      },
+      "favorite": false,
+      "tagCounts": {},
+      "source": "seed",
+      "promptHash": null,
+      "modelString": null,
+      "createdAt": "2026-08-19 03:56:29"
+    },
+    "meals": [
+      {
+        "meal": "Dinner",
+        "isMain": true,
+        "role": "quick",
+        "guidance": "Quick day: 5-10 minutes, one pan.",
+        "recipe": {
+          "id": 13,
+          "name": "Garlic Fried Rice with Egg",
+          "cuisine": "Filipino",
+          "cookMinutes": 10,
+          "servings": 1,
+          "mealType": "quick",
+          "ingredients": [
+            {
+              "name": "cooked rice",
+              "qty": 1,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "garlic",
+              "qty": 5,
+              "unit": "clove",
+              "tags": []
+            },
+            {
+              "name": "eggs",
+              "qty": 2,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "egg whites",
+              "qty": 0.5,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "coconut aminos",
+              "qty": 2,
+              "unit": "tsp",
+              "tags": []
+            },
+            {
+              "name": "scallion",
+              "qty": 2,
+              "unit": "each",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Crisp sliced garlic in oil, set aside",
+            "Fry rice in the garlic oil with coconut aminos",
+            "Top with fried eggs, garlic chips and scallion"
+          ],
+          "macrosPerServing": {
+            "kcal": 445,
+            "proteinG": 32,
+            "carbsG": 48,
+            "fatG": 14
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      }
+    ],
+    "mainMeal": "Dinner",
+    "mealTargets": [
+      {
+        "meal": "Breakfast",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      },
+      {
+        "meal": "Lunch",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      },
+      {
+        "meal": "Dinner",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      }
+    ],
+    "flaggedTags": [],
+    "flaggedIngredients": [],
+    "leftovers": [
+      {
+        "id": 1,
+        "recipeName": "Gochujang Beef Bowl",
+        "cookedDate": "2026-08-18",
+        "storage": "fridge",
+        "portions": 1,
+        "createdAt": "2026-08-19 03:56:31",
+        "ageDays": 0,
+        "atRisk": false,
+        "dueToday": false
+      }
+    ],
+    "yesterdayWasCookDay": false
+  },
+  "plan.week": {
+    "weekStart": "2026-08-16",
+    "exists": true,
+    "days": [
+      {
+        "date": "2026-08-16",
+        "day": "Sunday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 18,
+              "name": "Piri-Piri Chicken and Rice",
+              "cuisine": "Portuguese",
+              "cookMinutes": 10,
+              "servings": 1,
+              "mealType": "quick",
+              "ingredients": [
+                {
+                  "name": "cooked chicken breast",
+                  "qty": 5,
+                  "unit": "oz",
+                  "tags": []
+                },
+                {
+                  "name": "piri-piri sauce",
+                  "qty": 1,
+                  "unit": "tbsp",
+                  "tags": [
+                    "spicy"
+                  ]
+                },
+                {
+                  "name": "lemon",
+                  "qty": 0.5,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "garlic",
+                  "qty": 2,
+                  "unit": "clove",
+                  "tags": []
+                },
+                {
+                  "name": "microwave rice pouch",
+                  "qty": 1,
+                  "unit": "pouch",
+                  "tags": []
+                },
+                {
+                  "name": "parsley",
+                  "qty": 2,
+                  "unit": "tbsp",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Warm chicken through with garlic and piri-piri",
+                "Microwave the rice pouch",
+                "Finish with lemon and parsley"
+              ],
+              "macrosPerServing": {
+                "kcal": 450,
+                "proteinG": 40,
+                "carbsG": 46,
+                "fatG": 12
+              },
+              "favorite": false,
+              "tagCounts": {
+                "spicy": 1
+              },
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 18,
+          "name": "Piri-Piri Chicken and Rice",
+          "cuisine": "Portuguese",
+          "cookMinutes": 10,
+          "servings": 1,
+          "mealType": "quick",
+          "ingredients": [
+            {
+              "name": "cooked chicken breast",
+              "qty": 5,
+              "unit": "oz",
+              "tags": []
+            },
+            {
+              "name": "piri-piri sauce",
+              "qty": 1,
+              "unit": "tbsp",
+              "tags": [
+                "spicy"
+              ]
+            },
+            {
+              "name": "lemon",
+              "qty": 0.5,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "garlic",
+              "qty": 2,
+              "unit": "clove",
+              "tags": []
+            },
+            {
+              "name": "microwave rice pouch",
+              "qty": 1,
+              "unit": "pouch",
+              "tags": []
+            },
+            {
+              "name": "parsley",
+              "qty": 2,
+              "unit": "tbsp",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Warm chicken through with garlic and piri-piri",
+            "Microwave the rice pouch",
+            "Finish with lemon and parsley"
+          ],
+          "macrosPerServing": {
+            "kcal": 450,
+            "proteinG": 40,
+            "carbsG": 46,
+            "fatG": 12
+          },
+          "favorite": false,
+          "tagCounts": {
+            "spicy": 1
+          },
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-17",
+        "day": "Monday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 19,
+              "name": "Rotisserie Chicken Sesame Bowl",
+              "cuisine": "Any",
+              "cookMinutes": 5,
+              "servings": 1,
+              "mealType": "assembly",
+              "ingredients": [
+                {
+                  "name": "rotisserie chicken breast",
+                  "qty": 6,
+                  "unit": "oz",
+                  "tags": []
+                },
+                {
+                  "name": "microwave rice pouch",
+                  "qty": 1,
+                  "unit": "pouch",
+                  "tags": []
+                },
+                {
+                  "name": "bagged slaw mix",
+                  "qty": 2,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "sesame ginger dressing",
+                  "qty": 2,
+                  "unit": "tbsp",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Microwave rice",
+                "Toss slaw with dressing",
+                "Top with pulled chicken"
+              ],
+              "macrosPerServing": {
+                "kcal": 520,
+                "proteinG": 48,
+                "carbsG": 50,
+                "fatG": 14
+              },
+              "favorite": false,
+              "tagCounts": {},
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 19,
+          "name": "Rotisserie Chicken Sesame Bowl",
+          "cuisine": "Any",
+          "cookMinutes": 5,
+          "servings": 1,
+          "mealType": "assembly",
+          "ingredients": [
+            {
+              "name": "rotisserie chicken breast",
+              "qty": 6,
+              "unit": "oz",
+              "tags": []
+            },
+            {
+              "name": "microwave rice pouch",
+              "qty": 1,
+              "unit": "pouch",
+              "tags": []
+            },
+            {
+              "name": "bagged slaw mix",
+              "qty": 2,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "sesame ginger dressing",
+              "qty": 2,
+              "unit": "tbsp",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Microwave rice",
+            "Toss slaw with dressing",
+            "Top with pulled chicken"
+          ],
+          "macrosPerServing": {
+            "kcal": 520,
+            "proteinG": 48,
+            "carbsG": 50,
+            "fatG": 14
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-18",
+        "day": "Tuesday",
+        "isToday": true,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 13,
+              "name": "Garlic Fried Rice with Egg",
+              "cuisine": "Filipino",
+              "cookMinutes": 10,
+              "servings": 1,
+              "mealType": "quick",
+              "ingredients": [
+                {
+                  "name": "cooked rice",
+                  "qty": 1,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "garlic",
+                  "qty": 5,
+                  "unit": "clove",
+                  "tags": []
+                },
+                {
+                  "name": "eggs",
+                  "qty": 2,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "egg whites",
+                  "qty": 0.5,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "coconut aminos",
+                  "qty": 2,
+                  "unit": "tsp",
+                  "tags": []
+                },
+                {
+                  "name": "scallion",
+                  "qty": 2,
+                  "unit": "each",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Crisp sliced garlic in oil, set aside",
+                "Fry rice in the garlic oil with coconut aminos",
+                "Top with fried eggs, garlic chips and scallion"
+              ],
+              "macrosPerServing": {
+                "kcal": 445,
+                "proteinG": 32,
+                "carbsG": 48,
+                "fatG": 14
+              },
+              "favorite": false,
+              "tagCounts": {},
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 13,
+          "name": "Garlic Fried Rice with Egg",
+          "cuisine": "Filipino",
+          "cookMinutes": 10,
+          "servings": 1,
+          "mealType": "quick",
+          "ingredients": [
+            {
+              "name": "cooked rice",
+              "qty": 1,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "garlic",
+              "qty": 5,
+              "unit": "clove",
+              "tags": []
+            },
+            {
+              "name": "eggs",
+              "qty": 2,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "egg whites",
+              "qty": 0.5,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "coconut aminos",
+              "qty": 2,
+              "unit": "tsp",
+              "tags": []
+            },
+            {
+              "name": "scallion",
+              "qty": 2,
+              "unit": "each",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Crisp sliced garlic in oil, set aside",
+            "Fry rice in the garlic oil with coconut aminos",
+            "Top with fried eggs, garlic chips and scallion"
+          ],
+          "macrosPerServing": {
+            "kcal": 445,
+            "proteinG": 32,
+            "carbsG": 48,
+            "fatG": 14
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-19",
+        "day": "Wednesday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 21,
+              "name": "Caprese White Bean Plate",
+              "cuisine": "Italian",
+              "cookMinutes": 5,
+              "servings": 1,
+              "mealType": "assembly",
+              "ingredients": [
+                {
+                  "name": "fresh mozzarella",
+                  "qty": 3,
+                  "unit": "oz",
+                  "tags": []
+                },
+                {
+                  "name": "cannellini beans",
+                  "qty": 1,
+                  "unit": "can",
+                  "tags": []
+                },
+                {
+                  "name": "tomato",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "basil",
+                  "qty": 0.5,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "olive oil",
+                  "qty": 2,
+                  "unit": "tsp",
+                  "tags": []
+                },
+                {
+                  "name": "balsamic glaze",
+                  "qty": 1,
+                  "unit": "tsp",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Drain beans, slice tomato and mozzarella",
+                "Layer with basil",
+                "Dress with oil and balsamic"
+              ],
+              "macrosPerServing": {
+                "kcal": 460,
+                "proteinG": 34,
+                "carbsG": 38,
+                "fatG": 18
+              },
+              "favorite": false,
+              "tagCounts": {},
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 21,
+          "name": "Caprese White Bean Plate",
+          "cuisine": "Italian",
+          "cookMinutes": 5,
+          "servings": 1,
+          "mealType": "assembly",
+          "ingredients": [
+            {
+              "name": "fresh mozzarella",
+              "qty": 3,
+              "unit": "oz",
+              "tags": []
+            },
+            {
+              "name": "cannellini beans",
+              "qty": 1,
+              "unit": "can",
+              "tags": []
+            },
+            {
+              "name": "tomato",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "basil",
+              "qty": 0.5,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "olive oil",
+              "qty": 2,
+              "unit": "tsp",
+              "tags": []
+            },
+            {
+              "name": "balsamic glaze",
+              "qty": 1,
+              "unit": "tsp",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Drain beans, slice tomato and mozzarella",
+            "Layer with basil",
+            "Dress with oil and balsamic"
+          ],
+          "macrosPerServing": {
+            "kcal": 460,
+            "proteinG": 34,
+            "carbsG": 38,
+            "fatG": 18
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-20",
+        "day": "Thursday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 24,
+              "name": "Walnut Yogurt Chicken Plate",
+              "cuisine": "Georgian",
+              "cookMinutes": 5,
+              "servings": 1,
+              "mealType": "assembly",
+              "ingredients": [
+                {
+                  "name": "rotisserie chicken breast",
+                  "qty": 5,
+                  "unit": "oz",
+                  "tags": []
+                },
+                {
+                  "name": "greek yogurt",
+                  "qty": 0.5,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "walnuts",
+                  "qty": 3,
+                  "unit": "tbsp",
+                  "tags": [
+                    "nut"
+                  ]
+                },
+                {
+                  "name": "garlic",
+                  "qty": 1,
+                  "unit": "clove",
+                  "tags": []
+                },
+                {
+                  "name": "coriander",
+                  "qty": 1,
+                  "unit": "tsp",
+                  "tags": []
+                },
+                {
+                  "name": "cilantro",
+                  "qty": 3,
+                  "unit": "tbsp",
+                  "tags": []
+                },
+                {
+                  "name": "cucumber",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Crush walnuts with garlic and coriander, stir through yogurt",
+                "Pull the chicken and fold into the sauce",
+                "Plate with cucumber and plenty of cilantro"
+              ],
+              "macrosPerServing": {
+                "kcal": 480,
+                "proteinG": 44,
+                "carbsG": 22,
+                "fatG": 24
+              },
+              "favorite": false,
+              "tagCounts": {
+                "nut": 1
+              },
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 24,
+          "name": "Walnut Yogurt Chicken Plate",
+          "cuisine": "Georgian",
+          "cookMinutes": 5,
+          "servings": 1,
+          "mealType": "assembly",
+          "ingredients": [
+            {
+              "name": "rotisserie chicken breast",
+              "qty": 5,
+              "unit": "oz",
+              "tags": []
+            },
+            {
+              "name": "greek yogurt",
+              "qty": 0.5,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "walnuts",
+              "qty": 3,
+              "unit": "tbsp",
+              "tags": [
+                "nut"
+              ]
+            },
+            {
+              "name": "garlic",
+              "qty": 1,
+              "unit": "clove",
+              "tags": []
+            },
+            {
+              "name": "coriander",
+              "qty": 1,
+              "unit": "tsp",
+              "tags": []
+            },
+            {
+              "name": "cilantro",
+              "qty": 3,
+              "unit": "tbsp",
+              "tags": []
+            },
+            {
+              "name": "cucumber",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Crush walnuts with garlic and coriander, stir through yogurt",
+            "Pull the chicken and fold into the sauce",
+            "Plate with cucumber and plenty of cilantro"
+          ],
+          "macrosPerServing": {
+            "kcal": 480,
+            "proteinG": 44,
+            "carbsG": 22,
+            "fatG": 24
+          },
+          "favorite": false,
+          "tagCounts": {
+            "nut": 1
+          },
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-21",
+        "day": "Friday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 20,
+              "name": "Pea Protein Power Shake",
+              "cuisine": "Any",
+              "cookMinutes": 3,
+              "servings": 1,
+              "mealType": "assembly",
+              "ingredients": [
+                {
+                  "name": "pea protein powder",
+                  "qty": 40,
+                  "unit": "g",
+                  "tags": []
+                },
+                {
+                  "name": "banana",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "frozen berries",
+                  "qty": 0.75,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "oat milk",
+                  "qty": 1,
+                  "unit": "cup",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Blend everything"
+              ],
+              "macrosPerServing": {
+                "kcal": 380,
+                "proteinG": 42,
+                "carbsG": 40,
+                "fatG": 6
+              },
+              "favorite": false,
+              "tagCounts": {},
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 20,
+          "name": "Pea Protein Power Shake",
+          "cuisine": "Any",
+          "cookMinutes": 3,
+          "servings": 1,
+          "mealType": "assembly",
+          "ingredients": [
+            {
+              "name": "pea protein powder",
+              "qty": 40,
+              "unit": "g",
+              "tags": []
+            },
+            {
+              "name": "banana",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "frozen berries",
+              "qty": 0.75,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "oat milk",
+              "qty": 1,
+              "unit": "cup",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Blend everything"
+          ],
+          "macrosPerServing": {
+            "kcal": 380,
+            "proteinG": 42,
+            "carbsG": 40,
+            "fatG": 6
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      },
+      {
+        "date": "2026-08-22",
+        "day": "Saturday",
+        "isToday": false,
+        "training": false,
+        "targets": {
+          "kcal": 2025,
+          "proteinG": 112,
+          "fatG": 56,
+          "carbsG": 270
+        },
+        "mealTargets": [
+          {
+            "meal": "Breakfast",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Lunch",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          },
+          {
+            "meal": "Dinner",
+            "kcal": 675,
+            "proteinG": 37,
+            "carbsG": 90,
+            "fatG": 19
+          }
+        ],
+        "meals": [
+          {
+            "meal": "Dinner",
+            "isMain": true,
+            "mealSource": "quick",
+            "derivedMealSource": "quick",
+            "recipe": {
+              "id": 23,
+              "name": "Hummus Chicken Mezze",
+              "cuisine": "Lebanese",
+              "cookMinutes": 5,
+              "servings": 1,
+              "mealType": "assembly",
+              "ingredients": [
+                {
+                  "name": "rotisserie chicken breast",
+                  "qty": 5,
+                  "unit": "oz",
+                  "tags": []
+                },
+                {
+                  "name": "hummus",
+                  "qty": 0.5,
+                  "unit": "cup",
+                  "tags": []
+                },
+                {
+                  "name": "cucumber",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "tomato",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "pita",
+                  "qty": 1,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "lemon",
+                  "qty": 0.5,
+                  "unit": "each",
+                  "tags": []
+                },
+                {
+                  "name": "parsley",
+                  "qty": 3,
+                  "unit": "tbsp",
+                  "tags": []
+                }
+              ],
+              "steps": [
+                "Spread hummus across a plate",
+                "Top with pulled chicken, chopped cucumber and tomato",
+                "Squeeze over lemon, scatter parsley, serve with pita"
+              ],
+              "macrosPerServing": {
+                "kcal": 470,
+                "proteinG": 42,
+                "carbsG": 40,
+                "fatG": 16
+              },
+              "favorite": false,
+              "tagCounts": {},
+              "source": "seed",
+              "promptHash": null,
+              "modelString": null,
+              "createdAt": "2026-08-19 03:56:29"
+            },
+            "eligibleMealTypes": [
+              "quick",
+              "assembly"
+            ]
+          }
+        ],
+        "mealSource": "quick",
+        "derivedMealSource": "quick",
+        "recipe": {
+          "id": 23,
+          "name": "Hummus Chicken Mezze",
+          "cuisine": "Lebanese",
+          "cookMinutes": 5,
+          "servings": 1,
+          "mealType": "assembly",
+          "ingredients": [
+            {
+              "name": "rotisserie chicken breast",
+              "qty": 5,
+              "unit": "oz",
+              "tags": []
+            },
+            {
+              "name": "hummus",
+              "qty": 0.5,
+              "unit": "cup",
+              "tags": []
+            },
+            {
+              "name": "cucumber",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "tomato",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "pita",
+              "qty": 1,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "lemon",
+              "qty": 0.5,
+              "unit": "each",
+              "tags": []
+            },
+            {
+              "name": "parsley",
+              "qty": 3,
+              "unit": "tbsp",
+              "tags": []
+            }
+          ],
+          "steps": [
+            "Spread hummus across a plate",
+            "Top with pulled chicken, chopped cucumber and tomato",
+            "Squeeze over lemon, scatter parsley, serve with pita"
+          ],
+          "macrosPerServing": {
+            "kcal": 470,
+            "proteinG": 42,
+            "carbsG": 40,
+            "fatG": 16
+          },
+          "favorite": false,
+          "tagCounts": {},
+          "source": "seed",
+          "promptHash": null,
+          "modelString": null,
+          "createdAt": "2026-08-19 03:56:29"
+        },
+        "eligibleMealTypes": [
+          "quick",
+          "assembly"
+        ]
+      }
+    ],
+    "flaggedTags": [],
+    "plannerMode": "deterministic",
+    "llmConfigured": false,
+    "aiNovelRecipesPerWeek": 0,
+    "lastRuns": [
+      {
+        "id": 1,
+        "startedAt": "2026-08-19 03:56:31",
+        "finishedAt": "2026-08-19T03:56:31.926Z",
+        "weekStart": "2026-08-16",
+        "mode": "deterministic",
+        "fellBack": false,
+        "status": "success",
+        "slotsCreated": 7,
+        "aiRecipesCreated": 0,
+        "message": "Week planned.",
+        "verifierVerdicts": []
+      }
+    ]
+  },
+  "plan.nextOpenSlot": {
+    "date": "2026-08-23",
+    "meal": "Dinner",
+    "day": "Sunday",
+    "mealSource": "quick"
+  },
+  "grocery.list": {
+    "weekStart": "2026-08-16",
+    "shoppingDay": "Sunday",
+    "sections": [
+      {
+        "section": "Produce",
+        "lines": [
+          {
+            "key": "bagged slaw mix|cup",
+            "name": "bagged slaw mix",
+            "qty": 2,
+            "unit": "cup",
+            "section": "Produce",
+            "checked": true,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Rotisserie Chicken Sesame Bowl"
+            ]
+          },
+          {
+            "key": "banana|each",
+            "name": "banana",
+            "qty": 1,
+            "unit": "each",
+            "section": "Produce",
+            "checked": true,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Pea Protein Power Shake"
+            ]
+          },
+          {
+            "key": "basil|cup",
+            "name": "basil",
+            "qty": 0.5,
+            "unit": "cup",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate"
+            ]
+          },
+          {
+            "key": "cilantro|tbsp",
+            "name": "cilantro",
+            "qty": 3,
+            "unit": "tbsp",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Walnut Yogurt Chicken Plate"
+            ]
+          },
+          {
+            "key": "cucumber|each",
+            "name": "cucumber",
+            "qty": 2,
+            "unit": "each",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze",
+              "Walnut Yogurt Chicken Plate"
+            ]
+          },
+          {
+            "key": "garlic|clove",
+            "name": "garlic",
+            "qty": 8,
+            "unit": "clove",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg",
+              "Piri-Piri Chicken and Rice",
+              "Walnut Yogurt Chicken Plate"
+            ]
+          },
+          {
+            "key": "lemon|each",
+            "name": "lemon",
+            "qty": 1,
+            "unit": "each",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze",
+              "Piri-Piri Chicken and Rice"
+            ]
+          },
+          {
+            "key": "parsley|tbsp",
+            "name": "parsley",
+            "qty": 5,
+            "unit": "tbsp",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze",
+              "Piri-Piri Chicken and Rice"
+            ]
+          },
+          {
+            "key": "scallion|each",
+            "name": "scallion",
+            "qty": 2,
+            "unit": "each",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg"
+            ]
+          },
+          {
+            "key": "sesame ginger dressing|tbsp",
+            "name": "sesame ginger dressing",
+            "qty": 2,
+            "unit": "tbsp",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Rotisserie Chicken Sesame Bowl"
+            ]
+          },
+          {
+            "key": "tomato|each",
+            "name": "tomato",
+            "qty": 2,
+            "unit": "each",
+            "section": "Produce",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate",
+              "Hummus Chicken Mezze"
+            ]
+          }
+        ]
+      },
+      {
+        "section": "Proteins & Dairy",
+        "lines": [
+          {
+            "key": "cooked chicken breast|oz",
+            "name": "cooked chicken breast",
+            "qty": 5,
+            "unit": "oz",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Piri-Piri Chicken and Rice"
+            ]
+          },
+          {
+            "key": "egg whites|cup",
+            "name": "egg whites",
+            "qty": 0.5,
+            "unit": "cup",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg"
+            ]
+          },
+          {
+            "key": "eggs|each",
+            "name": "eggs",
+            "qty": 2,
+            "unit": "each",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg"
+            ]
+          },
+          {
+            "key": "fresh mozzarella|oz",
+            "name": "fresh mozzarella",
+            "qty": 3,
+            "unit": "oz",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate"
+            ]
+          },
+          {
+            "key": "greek yogurt|cup",
+            "name": "greek yogurt",
+            "qty": 0.5,
+            "unit": "cup",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Walnut Yogurt Chicken Plate"
+            ]
+          },
+          {
+            "key": "oat milk|cup",
+            "name": "oat milk",
+            "qty": 1,
+            "unit": "cup",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Pea Protein Power Shake"
+            ]
+          },
+          {
+            "key": "rotisserie chicken breast|oz",
+            "name": "rotisserie chicken breast",
+            "qty": 16,
+            "unit": "oz",
+            "section": "Proteins & Dairy",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze",
+              "Rotisserie Chicken Sesame Bowl",
+              "Walnut Yogurt Chicken Plate"
+            ]
+          }
+        ]
+      },
+      {
+        "section": "Pantry",
+        "lines": [
+          {
+            "key": "balsamic glaze|tsp",
+            "name": "balsamic glaze",
+            "qty": 1,
+            "unit": "tsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate"
+            ]
+          },
+          {
+            "key": "cannellini beans|can",
+            "name": "cannellini beans",
+            "qty": 1,
+            "unit": "can",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate"
+            ]
+          },
+          {
+            "key": "coconut aminos|tsp",
+            "name": "coconut aminos",
+            "qty": 2,
+            "unit": "tsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg"
+            ]
+          },
+          {
+            "key": "cooked rice|cup",
+            "name": "cooked rice",
+            "qty": 1,
+            "unit": "cup",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Garlic Fried Rice with Egg"
+            ]
+          },
+          {
+            "key": "coriander|tsp",
+            "name": "coriander",
+            "qty": 1,
+            "unit": "tsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Walnut Yogurt Chicken Plate"
+            ]
+          },
+          {
+            "key": "hummus|cup",
+            "name": "hummus",
+            "qty": 0.5,
+            "unit": "cup",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze"
+            ]
+          },
+          {
+            "key": "microwave rice pouch|pouch",
+            "name": "microwave rice pouch",
+            "qty": 2,
+            "unit": "pouch",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Piri-Piri Chicken and Rice",
+              "Rotisserie Chicken Sesame Bowl"
+            ]
+          },
+          {
+            "key": "olive oil|tsp",
+            "name": "olive oil",
+            "qty": 2,
+            "unit": "tsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Caprese White Bean Plate"
+            ]
+          },
+          {
+            "key": "pea protein powder|g",
+            "name": "pea protein powder",
+            "qty": 40,
+            "unit": "g",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Pea Protein Power Shake"
+            ]
+          },
+          {
+            "key": "piri-piri sauce|tbsp",
+            "name": "piri-piri sauce",
+            "qty": 1,
+            "unit": "tbsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Piri-Piri Chicken and Rice"
+            ]
+          },
+          {
+            "key": "pita|each",
+            "name": "pita",
+            "qty": 1,
+            "unit": "each",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Hummus Chicken Mezze"
+            ]
+          },
+          {
+            "key": "walnuts|tbsp",
+            "name": "walnuts",
+            "qty": 3,
+            "unit": "tbsp",
+            "section": "Pantry",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Walnut Yogurt Chicken Plate"
+            ]
+          }
+        ]
+      },
+      {
+        "section": "Frozen",
+        "lines": [
+          {
+            "key": "frozen berries|cup",
+            "name": "frozen berries",
+            "qty": 0.75,
+            "unit": "cup",
+            "section": "Frozen",
+            "checked": false,
+            "flaggedTags": [],
+            "buyLater": false,
+            "sources": [
+              "Pea Protein Power Shake"
+            ]
+          }
+        ]
+      }
+    ],
+    "buyLater": [],
+    "checkYourSupply": []
+  },
+  "grocery.copyText": {
+    "format": "text",
+    "content": "Shopping day: Sunday\n\nProduce\n  [x] 2 cup bagged slaw mix\n  [x] 1 each banana\n  [ ] 0.5 cup basil\n  [ ] 3 tbsp cilantro\n  [ ] 2 each cucumber\n  [ ] 8 clove garlic\n  [ ] 1 each lemon\n  [ ] 5 tbsp parsley\n  [ ] 2 each scallion\n  [ ] 2 tbsp sesame ginger dressing\n  [ ] 2 each tomato\n\nProteins & Dairy\n  [ ] 5 oz cooked chicken breast\n  [ ] 0.5 cup egg whites\n  [ ] 2 each eggs\n  [ ] 3 oz fresh mozzarella\n  [ ] 0.5 cup greek yogurt\n  [ ] 1 cup oat milk\n  [ ] 16 oz rotisserie chicken breast\n\nPantry\n  [ ] 1 tsp balsamic glaze\n  [ ] 1 can cannellini beans\n  [ ] 2 tsp coconut aminos\n  [ ] 1 cup cooked rice\n  [ ] 1 tsp coriander\n  [ ] 0.5 cup hummus\n  [ ] 2 pouch microwave rice pouch\n  [ ] 2 tsp olive oil\n  [ ] 40 g pea protein powder\n  [ ] 1 tbsp piri-piri sauce\n  [ ] 1 each pita\n  [ ] 3 tbsp walnuts\n\nFrozen\n  [ ] 0.75 cup frozen berries"
+  },
+  "generation.available": {
+    "configured": true
+  },
+  "generation.libraryCoverage": {
+    "uncovered": [],
+    "status": {
+      "running": false,
+      "startedAt": null,
+      "finishedAt": null,
+      "total": 0,
+      "completed": 0,
+      "created": [],
+      "failed": [],
+      "costUsd": 0,
+      "error": null
+    }
+  },
+  "generation.feedback": [],
+  "setup.state": {
+    "profile": {
+      "weightKg": 70,
+      "heightCm": 170,
+      "age": 30,
+      "sex": "female",
+      "activityFactor": 1.4,
+      "deficitKcal": 0,
+      "proteinPerKg": 1.6,
+      "fatPerKg": 0.8,
+      "trainingDays": [],
+      "cookDays": [],
+      "assemblyDays": []
+    },
+    "settings": {
+      "shoppingDay": "Sunday",
+      "generationDay": "Sunday",
+      "generationTime": "06:00",
+      "timezone": "America/New_York",
+      "aiNovelRecipesPerWeek": 0,
+      "repeatWindowWeeks": 2,
+      "plannerMode": "deterministic",
+      "groceryCopyFormat": "text",
+      "units": "metric",
+      "cuisines": [
+        "Brazilian",
+        "Chinese",
+        "Ethiopian",
+        "Filipino",
+        "French",
+        "Georgian",
+        "Greek",
+        "Indian",
+        "Italian",
+        "Japanese",
+        "Korean",
+        "Lebanese",
+        "Malaysian",
+        "Mexican",
+        "Moroccan",
+        "Nigerian",
+        "Peruvian",
+        "Portuguese",
+        "Spanish",
+        "Thai",
+        "Turkish",
+        "Vietnamese"
+      ],
+      "meals": [
+        "Breakfast",
+        "Lunch",
+        "Dinner"
+      ],
+      "plannedMeals": [
+        "Dinner"
+      ],
+      "mainMeal": "Dinner",
+      "setupComplete": true
+    },
+    "plan": {
+      "bmrExact": 1451.5,
+      "bmr": 1452,
+      "tdee": 2030,
+      "weeklyAverageTarget": 2030,
+      "trainingDayCount": 0,
+      "restDayCount": 7,
+      "training": {
+        "kcal": 2025,
+        "proteinG": 112,
+        "fatG": 56,
+        "carbsG": 270
+      },
+      "rest": {
+        "kcal": 2025,
+        "proteinG": 112,
+        "fatG": 56,
+        "carbsG": 270
+      },
+      "achievedWeeklyMeanKcal": 2025
+    },
+    "mealShapes": [],
+    "formulas": [
+      {
+        "label": "BMR (Mifflin-St Jeor)",
+        "formula": "10 x kg + 6.25 x cm - 5 x age - 161",
+        "substituted": "10 x 70.0 + 6.25 x 170.0 - 5 x 30 - 161",
+        "result": "1452 kcal"
+      },
+      {
+        "label": "TDEE",
+        "formula": "BMR x activity factor",
+        "substituted": "1451.5 x 1.4",
+        "result": "2030 kcal"
+      },
+      {
+        "label": "Weekly average target",
+        "formula": "TDEE - daily deficit",
+        "substituted": "2030 - 0",
+        "result": "2030 kcal/day"
+      },
+      {
+        "label": "Training-day calories",
+        "formula": "weekly average x (1 + 9%)",
+        "substituted": "2030 x 1.09",
+        "result": "2025 kcal"
+      },
+      {
+        "label": "Rest-day calories",
+        "formula": "(weekly average x 7 - training kcal x training days) / rest days",
+        "substituted": "(2030 x 7 - 2025 x 0) / 7",
+        "result": "2025 kcal"
+      },
+      {
+        "label": "Protein (every day)",
+        "formula": "protein per kg x kg",
+        "substituted": "1.6 x 70.0",
+        "result": "112 g"
+      },
+      {
+        "label": "Fat (every day)",
+        "formula": "fat per kg x kg",
+        "substituted": "0.8 x 70.0",
+        "result": "56 g"
+      },
+      {
+        "label": "Carbs (training day)",
+        "formula": "(day kcal - protein x 4 - fat x 9) / 4",
+        "substituted": "(2025 - 112 x 4 - 56 x 9) / 4",
+        "result": "270 g"
+      },
+      {
+        "label": "Carbs (rest day)",
+        "formula": "(day kcal - protein x 4 - fat x 9) / 4",
+        "substituted": "(2025 - 112 x 4 - 56 x 9) / 4",
+        "result": "270 g"
+      }
+    ],
+    "perMealProtein": {
+      "meals": 3,
+      "gramsPerMeal": 37,
+      "withinGuide": true
+    },
+    "mealSplit": [
+      {
+        "meal": "Breakfast",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      },
+      {
+        "meal": "Lunch",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      },
+      {
+        "meal": "Dinner",
+        "kcal": 675,
+        "proteinG": 37,
+        "carbsG": 90,
+        "fatG": 19
+      }
+    ],
+    "llmConfigured": false
+  },
+  "recipes.list": {
+    "recipes": [
+      {
+        "id": 1,
+        "name": "Gochujang Beef Bowl",
+        "cuisine": "Korean",
+        "cookMinutes": 15,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "lean ground beef 93/7",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "gochujang",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": [
+              "fermented",
+              "spicy"
+            ]
+          },
+          {
+            "name": "coconut aminos",
+            "qty": 4,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "honey",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "sesame oil",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 4,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cucumber",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "scallion",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Brown beef with garlic",
+          "Stir in gochujang, coconut aminos, honey, sesame oil",
+          "Serve one portion over rice with cucumber and scallions",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 560,
+          "proteinG": 45,
+          "carbsG": 55,
+          "fatG": 18
+        },
+        "favorite": false,
+        "tagCounts": {
+          "fermented": 1,
+          "spicy": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 2,
+        "name": "Chicken with Brazilian Vinagrete",
+        "cuisine": "Brazilian",
+        "cookMinutes": 20,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "chicken thighs",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "smoked paprika",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "onion",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "bell pepper",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "parsley",
+            "qty": 4,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 4,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "lime",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 1.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "kale",
+            "qty": 4,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Season and sear chicken",
+          "Dice tomato, onion, pepper; toss with parsley, oil, lime juice, salt",
+          "Saute kale with garlic; plate with rice",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 500,
+          "proteinG": 42,
+          "carbsG": 45,
+          "fatG": 16
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 3,
+        "name": "Pad Krapow Gai",
+        "cuisine": "Thai",
+        "cookMinutes": 15,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "ground chicken",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 6,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "thai chili",
+            "qty": 4,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "oyster sauce",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": [
+              "fermented"
+            ]
+          },
+          {
+            "name": "coconut aminos",
+            "qty": 4,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "sugar",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "basil",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Stir-fry garlic and chilies, add chicken",
+          "Add oyster sauce, coconut aminos, sugar",
+          "Off heat stir in basil; serve one portion over rice",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 510,
+          "proteinG": 44,
+          "carbsG": 50,
+          "fatG": 14
+        },
+        "favorite": false,
+        "tagCounts": {
+          "fermented": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 4,
+        "name": "Chipotle Chicken Tacos",
+        "cuisine": "Mexican",
+        "cookMinutes": 20,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "chicken breast",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "chipotle in adobo",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "cumin",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "oregano",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "lime",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "corn tortillas",
+            "qty": 6,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "red onion",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "greek yogurt",
+            "qty": 6,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Quick-pickle onion in lime juice and salt",
+          "Sear chipotle-spiced chicken",
+          "Assemble tacos with yogurt-lime crema",
+          "Refrigerate the second portion of chicken promptly; eat within 1 day (tortillas fresh each day)"
+        ],
+        "macrosPerServing": {
+          "kcal": 470,
+          "proteinG": 48,
+          "carbsG": 42,
+          "fatG": 12
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 5,
+        "name": "Lemon Garlic Shrimp with White Beans",
+        "cuisine": "Spanish",
+        "cookMinutes": 15,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "fresh or flash-frozen shrimp",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 4,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 8,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "chili flakes",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "cannellini beans",
+            "qty": 2,
+            "unit": "can",
+            "tags": []
+          },
+          {
+            "name": "spinach",
+            "qty": 4,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "lemon",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "goat cheese",
+            "qty": 2,
+            "unit": "oz",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Saute shrimp with garlic and chili flakes",
+          "Add beans and spinach until wilted",
+          "Finish with lemon and goat cheese",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 480,
+          "proteinG": 46,
+          "carbsG": 38,
+          "fatG": 15
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 6,
+        "name": "Salmon Ginger Rice Bowl",
+        "cuisine": "Japanese",
+        "cookMinutes": 15,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "fresh salmon",
+            "qty": 10,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "coconut aminos",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "honey",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "ginger",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "edamame",
+            "qty": 1,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cucumber",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Pan-sear salmon",
+          "Glaze with coconut aminos, honey, ginger",
+          "Serve over rice with edamame and cucumber",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 540,
+          "proteinG": 40,
+          "carbsG": 52,
+          "fatG": 18
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 7,
+        "name": "Ginger Scallion Chicken Stir-Fry",
+        "cuisine": "Chinese",
+        "cookMinutes": 15,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "chicken breast",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "ginger",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "scallion",
+            "qty": 6,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 4,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "coconut aminos",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "sesame oil",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "bok choy",
+            "qty": 4,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Slice chicken thin; sear hot and fast",
+          "Add ginger, garlic, white parts of scallion",
+          "Add bok choy and coconut aminos; finish with sesame oil and scallion greens",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 535,
+          "proteinG": 46,
+          "carbsG": 52,
+          "fatG": 16
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 8,
+        "name": "Chicken Tikka Skillet",
+        "cuisine": "Indian",
+        "cookMinutes": 25,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "chicken thighs",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "greek yogurt",
+            "qty": 4,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "garam masala",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "turmeric",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "ginger",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 4,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 3,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "cooked rice",
+            "qty": 1.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cilantro",
+            "qty": 4,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Marinate chicken in yogurt, garam masala, turmeric, ginger, garlic",
+          "Sear, then simmer with chopped tomato until thick",
+          "Serve one portion over rice with cilantro",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 520,
+          "proteinG": 48,
+          "carbsG": 42,
+          "fatG": 18
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 9,
+        "name": "Lemongrass Pork Bowl",
+        "cuisine": "Vietnamese",
+        "cookMinutes": 20,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "pork tenderloin",
+            "qty": 12,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "lemongrass",
+            "qty": 2,
+            "unit": "stalk",
+            "tags": []
+          },
+          {
+            "name": "fish sauce",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": [
+              "fermented"
+            ]
+          },
+          {
+            "name": "lime",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "honey",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "rice noodles",
+            "qty": 5,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "carrot",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "cucumber",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "mint",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Marinate pork in lemongrass, fish sauce, lime, honey",
+          "Sear hot, rest, then slice",
+          "Serve over noodles with carrot, cucumber, mint",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 545,
+          "proteinG": 44,
+          "carbsG": 54,
+          "fatG": 17
+        },
+        "favorite": false,
+        "tagCounts": {
+          "fermented": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 10,
+        "name": "Berbere Chicken and Lentils",
+        "cuisine": "Ethiopian",
+        "cookMinutes": 30,
+        "servings": 2,
+        "mealType": "cook",
+        "ingredients": [
+          {
+            "name": "chicken thighs",
+            "qty": 10,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "red lentils",
+            "qty": 1,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "berbere",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "onion",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 4,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "ginger",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 4,
+            "unit": "tsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Soften onion, garlic, ginger; bloom berbere in the oil",
+          "Add chicken and tomato, then lentils and water",
+          "Simmer until lentils collapse and chicken is tender",
+          "Refrigerate the second portion promptly; eat within 1 day"
+        ],
+        "macrosPerServing": {
+          "kcal": 500,
+          "proteinG": 42,
+          "carbsG": 50,
+          "fatG": 15
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 11,
+        "name": "Green Curry Egg Scramble",
+        "cuisine": "Thai",
+        "cookMinutes": 8,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "eggs",
+            "qty": 3,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "egg whites",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "green curry paste",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "coconut milk",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "spinach",
+            "qty": 1,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "microwave rice pouch",
+            "qty": 0.5,
+            "unit": "pouch",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Whisk eggs with curry paste and coconut milk",
+          "Soft-scramble with spinach",
+          "Serve over microwaved rice"
+        ],
+        "macrosPerServing": {
+          "kcal": 430,
+          "proteinG": 36,
+          "carbsG": 30,
+          "fatG": 18
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 12,
+        "name": "Harissa Chickpea Skillet",
+        "cuisine": "Moroccan",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "chickpeas",
+            "qty": 1,
+            "unit": "can",
+            "tags": []
+          },
+          {
+            "name": "harissa",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "eggs",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "baby spinach",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cumin",
+            "qty": 0.5,
+            "unit": "tsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Saute chickpeas in harissa and cumin",
+          "Wilt in spinach",
+          "Crack eggs on top, cover 3 min"
+        ],
+        "macrosPerServing": {
+          "kcal": 450,
+          "proteinG": 32,
+          "carbsG": 48,
+          "fatG": 14
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 13,
+        "name": "Garlic Fried Rice with Egg",
+        "cuisine": "Filipino",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "cooked rice",
+            "qty": 1,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 5,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "eggs",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "egg whites",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "coconut aminos",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "scallion",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Crisp sliced garlic in oil, set aside",
+          "Fry rice in the garlic oil with coconut aminos",
+          "Top with fried eggs, garlic chips and scallion"
+        ],
+        "macrosPerServing": {
+          "kcal": 445,
+          "proteinG": 32,
+          "carbsG": 48,
+          "fatG": 14
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 14,
+        "name": "Herb Omelette with Gruyere",
+        "cuisine": "French",
+        "cookMinutes": 8,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "eggs",
+            "qty": 3,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "egg whites",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "gruyere",
+            "qty": 1,
+            "unit": "oz",
+            "tags": [
+              "aged",
+              "dairy"
+            ]
+          },
+          {
+            "name": "butter",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "chives",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "parsley",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Beat eggs with herbs and salt",
+          "Cook gently in butter, keeping the curd soft",
+          "Add gruyere, fold, and slide out while still creamy"
+        ],
+        "macrosPerServing": {
+          "kcal": 400,
+          "proteinG": 34,
+          "carbsG": 8,
+          "fatG": 26
+        },
+        "favorite": false,
+        "tagCounts": {
+          "aged": 1,
+          "dairy": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 15,
+        "name": "Menemen",
+        "cuisine": "Turkish",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "eggs",
+            "qty": 3,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "green pepper",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "feta",
+            "qty": 1,
+            "unit": "oz",
+            "tags": [
+              "aged",
+              "dairy"
+            ]
+          },
+          {
+            "name": "chili flakes",
+            "qty": 0.5,
+            "unit": "tsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Soften pepper in olive oil, add grated tomato",
+          "Cook down, then stir in beaten eggs off the heat",
+          "Crumble feta over and finish with chili flakes"
+        ],
+        "macrosPerServing": {
+          "kcal": 425,
+          "proteinG": 30,
+          "carbsG": 22,
+          "fatG": 24
+        },
+        "favorite": false,
+        "tagCounts": {
+          "aged": 1,
+          "dairy": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 16,
+        "name": "Sambal Green Beans with Egg",
+        "cuisine": "Malaysian",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "green beans",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "sambal",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": [
+              "fermented",
+              "spicy"
+            ]
+          },
+          {
+            "name": "eggs",
+            "qty": 2,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "shallot",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 2,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "peanuts",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": [
+              "nut"
+            ]
+          },
+          {
+            "name": "cooked rice",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Blister green beans in a hot pan",
+          "Add shallot, garlic and sambal; toss to coat",
+          "Top with fried eggs and crushed peanuts, serve with rice"
+        ],
+        "macrosPerServing": {
+          "kcal": 430,
+          "proteinG": 28,
+          "carbsG": 30,
+          "fatG": 22
+        },
+        "favorite": false,
+        "tagCounts": {
+          "fermented": 1,
+          "spicy": 1,
+          "nut": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 17,
+        "name": "Egg and Pepper Sauce",
+        "cuisine": "Nigerian",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "eggs",
+            "qty": 3,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "red bell pepper",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "scotch bonnet",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "onion",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "plantain",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Blend pepper, scotch bonnet, onion and tomato",
+          "Fry the blend down until the raw edge is gone",
+          "Stir in beaten eggs; serve with pan-fried plantain"
+        ],
+        "macrosPerServing": {
+          "kcal": 440,
+          "proteinG": 30,
+          "carbsG": 26,
+          "fatG": 24
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 18,
+        "name": "Piri-Piri Chicken and Rice",
+        "cuisine": "Portuguese",
+        "cookMinutes": 10,
+        "servings": 1,
+        "mealType": "quick",
+        "ingredients": [
+          {
+            "name": "cooked chicken breast",
+            "qty": 5,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "piri-piri sauce",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": [
+              "spicy"
+            ]
+          },
+          {
+            "name": "lemon",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "garlic",
+            "qty": 2,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "microwave rice pouch",
+            "qty": 1,
+            "unit": "pouch",
+            "tags": []
+          },
+          {
+            "name": "parsley",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Warm chicken through with garlic and piri-piri",
+          "Microwave the rice pouch",
+          "Finish with lemon and parsley"
+        ],
+        "macrosPerServing": {
+          "kcal": 450,
+          "proteinG": 40,
+          "carbsG": 46,
+          "fatG": 12
+        },
+        "favorite": false,
+        "tagCounts": {
+          "spicy": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 19,
+        "name": "Rotisserie Chicken Sesame Bowl",
+        "cuisine": "Any",
+        "cookMinutes": 5,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "rotisserie chicken breast",
+            "qty": 6,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "microwave rice pouch",
+            "qty": 1,
+            "unit": "pouch",
+            "tags": []
+          },
+          {
+            "name": "bagged slaw mix",
+            "qty": 2,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "sesame ginger dressing",
+            "qty": 2,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Microwave rice",
+          "Toss slaw with dressing",
+          "Top with pulled chicken"
+        ],
+        "macrosPerServing": {
+          "kcal": 520,
+          "proteinG": 48,
+          "carbsG": 50,
+          "fatG": 14
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 20,
+        "name": "Pea Protein Power Shake",
+        "cuisine": "Any",
+        "cookMinutes": 3,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "pea protein powder",
+            "qty": 40,
+            "unit": "g",
+            "tags": []
+          },
+          {
+            "name": "banana",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "frozen berries",
+            "qty": 0.75,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "oat milk",
+            "qty": 1,
+            "unit": "cup",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Blend everything"
+        ],
+        "macrosPerServing": {
+          "kcal": 380,
+          "proteinG": 42,
+          "carbsG": 40,
+          "fatG": 6
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 21,
+        "name": "Caprese White Bean Plate",
+        "cuisine": "Italian",
+        "cookMinutes": 5,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "fresh mozzarella",
+            "qty": 3,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "cannellini beans",
+            "qty": 1,
+            "unit": "can",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "basil",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "olive oil",
+            "qty": 2,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "balsamic glaze",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Drain beans, slice tomato and mozzarella",
+          "Layer with basil",
+          "Dress with oil and balsamic"
+        ],
+        "macrosPerServing": {
+          "kcal": 460,
+          "proteinG": 34,
+          "carbsG": 38,
+          "fatG": 18
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 22,
+        "name": "Greek Yogurt Protein Bowl",
+        "cuisine": "Greek",
+        "cookMinutes": 3,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "greek yogurt 2%",
+            "qty": 1.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "honey",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "granola",
+            "qty": 0.33,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "berries",
+            "qty": 0.75,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cinnamon",
+            "qty": 0.5,
+            "unit": "tsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Layer yogurt, honey, granola, berries, cinnamon"
+        ],
+        "macrosPerServing": {
+          "kcal": 400,
+          "proteinG": 38,
+          "carbsG": 45,
+          "fatG": 8
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 23,
+        "name": "Hummus Chicken Mezze",
+        "cuisine": "Lebanese",
+        "cookMinutes": 5,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "rotisserie chicken breast",
+            "qty": 5,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "hummus",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "cucumber",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "tomato",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "pita",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "lemon",
+            "qty": 0.5,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "parsley",
+            "qty": 3,
+            "unit": "tbsp",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Spread hummus across a plate",
+          "Top with pulled chicken, chopped cucumber and tomato",
+          "Squeeze over lemon, scatter parsley, serve with pita"
+        ],
+        "macrosPerServing": {
+          "kcal": 470,
+          "proteinG": 42,
+          "carbsG": 40,
+          "fatG": 16
+        },
+        "favorite": false,
+        "tagCounts": {},
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 24,
+        "name": "Walnut Yogurt Chicken Plate",
+        "cuisine": "Georgian",
+        "cookMinutes": 5,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "rotisserie chicken breast",
+            "qty": 5,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "greek yogurt",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "walnuts",
+            "qty": 3,
+            "unit": "tbsp",
+            "tags": [
+              "nut"
+            ]
+          },
+          {
+            "name": "garlic",
+            "qty": 1,
+            "unit": "clove",
+            "tags": []
+          },
+          {
+            "name": "coriander",
+            "qty": 1,
+            "unit": "tsp",
+            "tags": []
+          },
+          {
+            "name": "cilantro",
+            "qty": 3,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "cucumber",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Crush walnuts with garlic and coriander, stir through yogurt",
+          "Pull the chicken and fold into the sauce",
+          "Plate with cucumber and plenty of cilantro"
+        ],
+        "macrosPerServing": {
+          "kcal": 480,
+          "proteinG": 44,
+          "carbsG": 22,
+          "fatG": 24
+        },
+        "favorite": false,
+        "tagCounts": {
+          "nut": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      },
+      {
+        "id": 25,
+        "name": "Aji Verde Chicken Bowl",
+        "cuisine": "Peruvian",
+        "cookMinutes": 5,
+        "servings": 1,
+        "mealType": "assembly",
+        "ingredients": [
+          {
+            "name": "rotisserie chicken breast",
+            "qty": 5,
+            "unit": "oz",
+            "tags": []
+          },
+          {
+            "name": "aji amarillo paste",
+            "qty": 1,
+            "unit": "tbsp",
+            "tags": [
+              "spicy"
+            ]
+          },
+          {
+            "name": "greek yogurt",
+            "qty": 3,
+            "unit": "tbsp",
+            "tags": []
+          },
+          {
+            "name": "cilantro",
+            "qty": 0.5,
+            "unit": "cup",
+            "tags": []
+          },
+          {
+            "name": "lime",
+            "qty": 1,
+            "unit": "each",
+            "tags": []
+          },
+          {
+            "name": "microwave rice pouch",
+            "qty": 1,
+            "unit": "pouch",
+            "tags": []
+          },
+          {
+            "name": "red onion",
+            "qty": 0.25,
+            "unit": "each",
+            "tags": []
+          }
+        ],
+        "steps": [
+          "Blend cilantro, aji amarillo, yogurt and lime into a green sauce",
+          "Microwave the rice and pull the chicken",
+          "Spoon the sauce over, top with thin red onion"
+        ],
+        "macrosPerServing": {
+          "kcal": 480,
+          "proteinG": 45,
+          "carbsG": 44,
+          "fatG": 14
+        },
+        "favorite": false,
+        "tagCounts": {
+          "spicy": 1
+        },
+        "source": "seed",
+        "promptHash": null,
+        "modelString": null,
+        "createdAt": "2026-08-19 03:56:29"
+      }
+    ],
+    "excludedRecipeIds": [],
+    "cuisines": [
+      "Any",
+      "Brazilian",
+      "Chinese",
+      "Ethiopian",
+      "Filipino",
+      "French",
+      "Georgian",
+      "Greek",
+      "Indian",
+      "Italian",
+      "Japanese",
+      "Korean",
+      "Lebanese",
+      "Malaysian",
+      "Mexican",
+      "Moroccan",
+      "Nigerian",
+      "Peruvian",
+      "Portuguese",
+      "Spanish",
+      "Thai",
+      "Turkish",
+      "Vietnamese"
+    ]
+  },
+  "kitchen.constraints": [],
+  "kitchen.excluded": [],
+  "kitchen.leftovers": [
+    {
+      "id": 1,
+      "recipeName": "Gochujang Beef Bowl",
+      "cookedDate": "2026-08-18",
+      "storage": "fridge",
+      "portions": 1,
+      "createdAt": "2026-08-19 03:56:31",
+      "ageDays": 0,
+      "atRisk": false,
+      "dueToday": false
+    }
+  ],
+  "kitchen.pantry": [
+    {
+      "id": 12,
+      "name": "casein",
+      "onHand": false
+    },
+    {
+      "id": 3,
+      "name": "chili flakes",
+      "onHand": false
+    },
+    {
+      "id": 6,
+      "name": "cinnamon",
+      "onHand": false
+    },
+    {
+      "id": 10,
+      "name": "creatine",
+      "onHand": false
+    },
+    {
+      "id": 2,
+      "name": "cumin",
+      "onHand": false
+    },
+    {
+      "id": 9,
+      "name": "honey",
+      "onHand": false
+    },
+    {
+      "id": 13,
+      "name": "oat milk",
+      "onHand": false
+    },
+    {
+      "id": 1,
+      "name": "olive oil",
+      "onHand": false
+    },
+    {
+      "id": 5,
+      "name": "oregano",
+      "onHand": false
+    },
+    {
+      "id": 11,
+      "name": "pea protein powder",
+      "onHand": false
+    },
+    {
+      "id": 8,
+      "name": "pepper",
+      "onHand": false
+    },
+    {
+      "id": 7,
+      "name": "salt",
+      "onHand": false
+    },
+    {
+      "id": 4,
+      "name": "smoked paprika",
+      "onHand": false
+    }
+  ],
+  "context.get": {
+    "content": "# Nutrition context\n\nCopy this to `nutrition-context.md` (gitignored) and replace it with your own\nnotes, or just edit it in the app at `/context`.\n\nThis file is free text on purpose. It holds the things that don't belong in a\nschema — the reasons behind the numbers, what's actually been working, what to\nraise at the next check-in. The app renders it and writes back to it; nothing\nhere is parsed.\n\n## Goal\n\nGain muscle, lose fat, longevity.\n\n## What's working\n\nMeals that have felt good, timings that fit the week, anything worth repeating.\n\n## What isn't\n\nDishes that sat badly, days the plan didn't survive contact with reality.\n\n## Constraints worth remembering\n\nNo high-histamine foods or seasonings. Consider a ingredients and how they might work with MCAS.\n\n## Questions for the next check-in\n\nThings to ask a coach, dietitian or doctor.\n",
+    "exists": true
+  },
+  "context.exportData": {
+    "exportedAt": "2026-08-19T03:56:32.150Z",
+    "profile": {
+      "weightKg": 70,
+      "heightCm": 170,
+      "age": 30,
+      "sex": "female",
+      "activityFactor": 1.4,
+      "deficitKcal": 0,
+      "proteinPerKg": 1.6,
+      "fatPerKg": 0.8,
+      "trainingDays": [],
+      "cookDays": [],
+      "assemblyDays": []
+    },
+    "settings": {
+      "shoppingDay": "Sunday",
+      "generationDay": "Sunday",
+      "generationTime": "06:00",
+      "timezone": "America/New_York",
+      "aiNovelRecipesPerWeek": 0,
+      "repeatWindowWeeks": 2,
+      "plannerMode": "deterministic",
+      "groceryCopyFormat": "text",
+      "units": "metric",
+      "cuisines": [
+        "Brazilian",
+        "Chinese",
+        "Ethiopian",
+        "Filipino",
+        "French",
+        "Georgian",
+        "Greek",
+        "Indian",
+        "Italian",
+        "Japanese",
+        "Korean",
+        "Lebanese",
+        "Malaysian",
+        "Mexican",
+        "Moroccan",
+        "Nigerian",
+        "Peruvian",
+        "Portuguese",
+        "Spanish",
+        "Thai",
+        "Turkish",
+        "Vietnamese"
+      ],
+      "meals": [
+        "Breakfast",
+        "Lunch",
+        "Dinner"
+      ],
+      "plannedMeals": [
+        "Dinner"
+      ],
+      "mainMeal": "Dinner",
+      "setupComplete": true
+    },
+    "macroPlan": {
+      "bmrExact": 1451.5,
+      "bmr": 1452,
+      "tdee": 2030,
+      "weeklyAverageTarget": 2030,
+      "trainingDayCount": 0,
+      "restDayCount": 7,
+      "training": {
+        "kcal": 2025,
+        "proteinG": 112,
+        "fatG": 56,
+        "carbsG": 270
+      },
+      "rest": {
+        "kcal": 2025,
+        "proteinG": 112,
+        "fatG": 56,
+        "carbsG": 270
+      },
+      "achievedWeeklyMeanKcal": 2025
+    },
+    "favorites": [],
+    "excluded": [],
+    "pantry": [
+      {
+        "id": 12,
+        "name": "casein",
+        "onHand": false
+      },
+      {
+        "id": 3,
+        "name": "chili flakes",
+        "onHand": false
+      },
+      {
+        "id": 6,
+        "name": "cinnamon",
+        "onHand": false
+      },
+      {
+        "id": 10,
+        "name": "creatine",
+        "onHand": false
+      },
+      {
+        "id": 2,
+        "name": "cumin",
+        "onHand": false
+      },
+      {
+        "id": 9,
+        "name": "honey",
+        "onHand": false
+      },
+      {
+        "id": 13,
+        "name": "oat milk",
+        "onHand": false
+      },
+      {
+        "id": 1,
+        "name": "olive oil",
+        "onHand": false
+      },
+      {
+        "id": 5,
+        "name": "oregano",
+        "onHand": false
+      },
+      {
+        "id": 11,
+        "name": "pea protein powder",
+        "onHand": false
+      },
+      {
+        "id": 8,
+        "name": "pepper",
+        "onHand": false
+      },
+      {
+        "id": 7,
+        "name": "salt",
+        "onHand": false
+      },
+      {
+        "id": 4,
+        "name": "smoked paprika",
+        "onHand": false
+      }
+    ],
+    "leftovers": [
+      {
+        "id": 1,
+        "recipeName": "Gochujang Beef Bowl",
+        "cookedDate": "2026-08-18",
+        "storage": "fridge",
+        "portions": 1,
+        "createdAt": "2026-08-19 03:56:31"
+      }
+    ]
+  },
+  "__streamTranscript": {
+    "recipe": {
+      "id": 1,
+      "name": "Gochujang Beef Bowl",
+      "cuisine": "Korean",
+      "cookMinutes": 15,
+      "servings": 2,
+      "mealType": "cook",
+      "ingredients": [
+        {
+          "name": "lean ground beef 93/7",
+          "qty": 12,
+          "unit": "oz",
+          "tags": []
+        },
+        {
+          "name": "gochujang",
+          "qty": 2,
+          "unit": "tbsp",
+          "tags": [
+            "fermented",
+            "spicy"
+          ]
+        },
+        {
+          "name": "coconut aminos",
+          "qty": 4,
+          "unit": "tsp",
+          "tags": []
+        },
+        {
+          "name": "honey",
+          "qty": 2,
+          "unit": "tsp",
+          "tags": []
+        },
+        {
+          "name": "sesame oil",
+          "qty": 2,
+          "unit": "tsp",
+          "tags": []
+        },
+        {
+          "name": "garlic",
+          "qty": 4,
+          "unit": "clove",
+          "tags": []
+        },
+        {
+          "name": "cooked rice",
+          "qty": 2,
+          "unit": "cup",
+          "tags": []
+        },
+        {
+          "name": "cucumber",
+          "qty": 1,
+          "unit": "each",
+          "tags": []
+        },
+        {
+          "name": "scallion",
+          "qty": 2,
+          "unit": "each",
+          "tags": []
+        }
+      ],
+      "steps": [
+        "Brown beef with garlic",
+        "Stir in gochujang, coconut aminos, honey, sesame oil",
+        "Serve one portion over rice with cucumber and scallions",
+        "Refrigerate the second portion promptly; eat within 1 day"
+      ],
+      "macrosPerServing": {
+        "kcal": 560,
+        "proteinG": 45,
+        "carbsG": 55,
+        "fatG": 18
+      },
+      "favorite": false,
+      "tagCounts": {
+        "fermented": 1,
+        "spicy": 1
+      },
+      "source": "seed",
+      "promptHash": null,
+      "modelString": null,
+      "createdAt": "2026-08-19 03:56:29"
+    },
+    "chunks": [
+      "{\n \"name\": \"Gochujang Be",
+      "ef Bowl\",\n \"cuisine\": \"K",
+      "orean\",\n \"cookMinutes\": ",
+      "15,\n \"servings\": 2,\n \"me",
+      "alType\": \"cook\",\n \"ingre",
+      "dients\": [\n  {\n   \"name\"",
+      ": \"lean ground beef 93/7",
+      "\",\n   \"qty\": 12,\n   \"uni",
+      "t\": \"oz\",\n   \"tags\": []\n",
+      "  },\n  {\n   \"name\": \"goc",
+      "hujang\",\n   \"qty\": 2,\n  ",
+      " \"unit\": \"tbsp\",\n   \"tag",
+      "s\": [\n    \"fermented\",\n ",
+      "   \"spicy\"\n   ]\n  },\n  {",
+      "\n   \"name\": \"coconut ami",
+      "nos\",\n   \"qty\": 4,\n   \"u",
+      "nit\": \"tsp\",\n   \"tags\": ",
+      "[]\n  },\n  {\n   \"name\": \"",
+      "honey\",\n   \"qty\": 2,\n   ",
+      "\"unit\": \"tsp\",\n   \"tags\"",
+      ": []\n  },\n  {\n   \"name\":",
+      " \"sesame oil\",\n   \"qty\":",
+      " 2,\n   \"unit\": \"tsp\",\n  ",
+      " \"tags\": []\n  },\n  {\n   ",
+      "\"name\": \"garlic\",\n   \"qt",
+      "y\": 4,\n   \"unit\": \"clove",
+      "\",\n   \"tags\": []\n  },\n  ",
+      "{\n   \"name\": \"cooked ric",
+      "e\",\n   \"qty\": 2,\n   \"uni",
+      "t\": \"cup\",\n   \"tags\": []",
+      "\n  },\n  {\n   \"name\": \"cu",
+      "cumber\",\n   \"qty\": 1,\n  ",
+      " \"unit\": \"each\",\n   \"tag",
+      "s\": []\n  },\n  {\n   \"name",
+      "\": \"scallion\",\n   \"qty\":",
+      " 2,\n   \"unit\": \"each\",\n ",
+      "  \"tags\": []\n  }\n ],\n \"s",
+      "teps\": [\n  \"Brown beef w",
+      "ith garlic\",\n  \"Stir in ",
+      "gochujang, coconut amino",
+      "s, honey, sesame oil\",\n ",
+      " \"Serve one portion over",
+      " rice with cucumber and ",
+      "scallions\",\n  \"Refrigera",
+      "te the second portion pr",
+      "omptly; eat within 1 day",
+      "\"\n ],\n \"macrosPerServing",
+      "\": {\n  \"kcal\": 560,\n  \"p",
+      "roteinG\": 45,\n  \"carbsG\"",
+      ": 55,\n  \"fatG\": 18\n },\n ",
+      "\"tagCounts\": {\n  \"fermen",
+      "ted\": 1,\n  \"spicy\": 1\n }",
+      ",\n \"source\": \"seed\",\n \"p",
+      "romptHash\": null,\n \"mode",
+      "lString\": null,\n \"create",
+      "dAt\": \"2026-08-19 03:56:",
+      "29\"\n}"
+    ]
+  }
+}
