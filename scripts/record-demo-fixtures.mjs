@@ -87,12 +87,18 @@ const kill = () => {
 };
 process.on("exit", kill);
 
-for (;;) {
+// Bounded, because this also runs in CI: a dev server that never comes up
+// must fail the job, not hang it until the runner's six-hour limit.
+for (let attempt = 1; ; attempt++) {
   try {
     await fetch(`${BASE}/healthz`, { signal: AbortSignal.timeout(1000) });
     break;
   } catch {
-    await new Promise((r) => setTimeout(r, 400));
+    if (attempt >= 180) {
+      console.error("[fixtures] dev server never became healthy; giving up");
+      process.exit(1);
+    }
+    await new Promise((r) => setTimeout(r, 500));
   }
 }
 

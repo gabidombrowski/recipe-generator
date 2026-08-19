@@ -22,6 +22,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Sundays 07:00 UTC, the morning each plan week starts: the demo's
+    # fixtures are re-recorded at build time, so without this they would
+    # freeze at the date of the last push. Only the demo job runs on the
+    # schedule — restarting the real app weekly for no code change would be
+    # pure risk.
+    - cron: "0 7 * * 0"
 
 concurrency:
   group: deploy-production
@@ -35,6 +42,7 @@ jobs:
   deploy:
     name: Build and deploy over SSH
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     environment: production
 
     steps:
@@ -124,12 +132,17 @@ jobs:
 
   demo:
     # The static UI demo served from the portfolio site. Fixtures are
-    # committed (recorded, synthetic by construction — see
-    # scripts/record-demo-fixtures.mjs), so this is a pure build + copy: no
-    # database, no secrets beyond the SSH four, nothing to restart.
+    # re-recorded here on every deploy (synthetic by construction — see
+    # scripts/record-demo-fixtures.mjs), so the demo always shows the current
+    # week instead of the week of the last push; the weekly schedule above
+    # keeps it current between pushes. Still no database, no secrets beyond
+    # the SSH four, nothing to restart — the recorder builds its own temp
+    # database from migrations and seed. The committed fixtures file remains
+    # as the recorder's checked-in example and for local demo work.
     name: Build and deploy the demo
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -139,6 +152,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Record fresh fixtures
+        run: node scripts/record-demo-fixtures.mjs
 
       - name: Build the demo
         run: npm run build:demo
@@ -170,6 +186,7 @@ jobs:
     # then set the repository variable PUBLISH_IMAGE=true.
     name: Build container image
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     steps:
       - uses: actions/checkout@v4
 
