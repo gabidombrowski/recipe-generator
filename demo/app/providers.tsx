@@ -40,7 +40,10 @@ export function DemoProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     const original = window.fetch.bind(window);
     window.fetch = (input, init) => {
-      const url = typeof input === "string" ? input : (input as Request).url;
+      // fetch accepts string | URL | Request. Next's router passes URL
+      // objects for RSC payloads; reading `.url` off those is undefined and
+      // the throw made every client navigation fall back to a full reload.
+      const url = input instanceof Request ? input.url : String(input);
       if (!url.includes("/api/generate/stream")) return original(input, init);
 
       const { recipe, chunks } = (
