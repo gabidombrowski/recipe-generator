@@ -7,6 +7,7 @@ import { Badge, Button, Empty, PageTitle, Spinner } from "~/components/atoms";
 import { Card, MacroRow } from "~/components/molecules";
 import { cx } from "~/components/cx";
 import { GenerateRecipeButton } from "~/components/connected/generate-recipe";
+import { RecipeCard } from "~/components/organisms/recipe-card";
 import { formatLongDate, formatShortDate } from "~/lib/days";
 
 /**
@@ -234,6 +235,17 @@ export default function WeekPage() {
                         }
                         onGenerated={invalidate}
                       />
+                    </div>
+                  )}
+
+                  {/* The full recipe, collapsed. The week is an overview, so
+                      the instructions sit one "Show recipe" away instead of
+                      inflating every day card — and it is the same card Today
+                      uses, which is what keeps the two pages reading as one
+                      app. Leftover slots have no recipe of their own. */}
+                  {entry.recipe && entry.mealSource !== "leftover" && (
+                    <div className="mt-2">
+                      <RecipeCard recipe={entry.recipe} />
                     </div>
                   )}
                 </div>

@@ -61,10 +61,14 @@ export function RecipeCard({
             type="button"
             onClick={() => onToggleFavorite(!recipe.favorite)}
             aria-pressed={recipe.favorite}
-            aria-label={recipe.favorite ? "Remove from favourites" : "Add to favourites"}
+            aria-label={
+              recipe.favorite ? "Remove from favourites" : "Add to favourites"
+            }
             className={cx(
               "shrink-0 rounded-lg px-2 py-1 text-lg transition",
-              recipe.favorite ? "text-training" : "text-ink-muted hover:bg-surface-sunken",
+              recipe.favorite
+                ? "text-training"
+                : "text-ink-muted hover:bg-surface-sunken",
             )}
           >
             {recipe.favorite ? "★" : "☆"}
@@ -77,7 +81,11 @@ export function RecipeCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button variant="ghost" onClick={() => setExpanded((v) => !v)}>
+        <Button
+          variant="ghost"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
           {expanded ? "Hide recipe" : "Show recipe"}
         </Button>
         {actions}
@@ -95,13 +103,18 @@ export function RecipeCard({
                   flaggedTags.includes(t.toLowerCase()),
                 );
                 return (
-                  <li key={ingredient.name} className="flex flex-wrap items-baseline gap-1.5">
+                  <li
+                    key={ingredient.name}
+                    className="flex flex-wrap items-baseline gap-1.5"
+                  >
                     <span className="font-mono text-xs tabular-nums text-ink-muted">
                       {ingredient.qty} {ingredient.unit}
                     </span>
                     <span>{ingredient.name}</span>
                     {flagged.map((t) => (
-                      <Badge key={t} tone="flagged">{t}</Badge>
+                      <Badge key={t} tone="flagged">
+                        {t}
+                      </Badge>
                     ))}
                   </li>
                 );
