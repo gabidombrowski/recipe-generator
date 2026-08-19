@@ -106,6 +106,16 @@
 html {
   color-scheme: light dark;
   /*
+   * Reserve the scrollbar's column whether or not one is showing. Every tab
+   * shares one centred max-width container, but pages taller than the
+   * viewport grow a classic scrollbar (macOS with a mouse attached, most
+   * Windows browsers) that consumes ~15px of viewport — so switching between
+   * a tall tab and a short one nudged the whole column sideways. Overlay
+   * scrollbars never had the problem, which is why it only shows up for some
+   * people on some machines.
+   */
+  scrollbar-gutter: stable;
+  /*
    * Fluid root size: 18px up to laptop widths, growing linearly to 22px on a
    * 2560px display. Every size in the app is rem-based — including the
    * max-w-* column widths — so this one declaration scales type, spacing, tap
