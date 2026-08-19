@@ -535,7 +535,12 @@ export function recipeRuleViolations(
     const n = counts[cap.tag.toLowerCase()] ?? 0;
     if (n > cap.maxPerRecipe) {
       violations.push(
-        `${n} ingredients are "${cap.tag}" but at most ${cap.maxPerRecipe} allowed — replace the extras with non-${cap.tag} alternatives`,
+        // The escape route is spelled out because the stuck case is real:
+        // a cuisine whose classics are built on the capped tag (Thai and a
+        // fermented cap, in the eval failures) needs telling that fresh
+        // aromatics, citrus, chilli or salt are legitimate substitutes — not
+        // just that the count is wrong.
+        `${n} ingredients are "${cap.tag}" but at most ${cap.maxPerRecipe} allowed — keep the most essential one and replace the rest with non-${cap.tag} alternatives (fresh aromatics, citrus, chilli, herbs or salt often fill the same role)`,
       );
     }
   }

@@ -215,7 +215,16 @@ export function buildSystemPrompt(
 // Generation
 // ---------------------------------------------------------------------------
 
-const MAX_ATTEMPTS = 3;
+/**
+ * Four, raised from three by eval evidence: twice across the armed runs a
+ * generation exhausted its attempts against a dietary-rule violation and
+ * failed closed — both times cook-thai, whose classic dishes genuinely fight
+ * a fermented cap. The refusals were correct (never ship a rule-breaking
+ * recipe), but a refusal on an ordinary request is still a failure, and one
+ * more attempt is a few cents against a ~1% exhaustion rate on the worst
+ * fixture. The weekly drift table is the judge of whether it was enough.
+ */
+const MAX_ATTEMPTS = 4;
 
 /**
  * The two turns appended when a generation is rejected and retried.
