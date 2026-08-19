@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Righteous } from "next/font/google";
 import { Announcer } from "~/components/atoms";
 import { Nav } from "~/components/organisms/nav";
-import "../../src/app/globals.css";
+import "./demo.css";
 import { DemoProviders } from "./providers";
 
 /**

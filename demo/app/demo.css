@@ -1,0 +1,13 @@
+/*
+ * The demo's stylesheet entry: the production stylesheet plus explicit
+ * source roots. Tailwind v4 discovers class names by scanning source files
+ * relative to the build it is running in — which for `next build demo` is
+ * the demo directory, not the repo. Without these directives the scan never
+ * reaches ../src, and the emitted CSS contains only the classes the demo's
+ * own two files use: the banner styled, every production component reduced
+ * to raw HTML. Found in production by a person, because the automated checks
+ * verified text where they should have verified layout.
+ */
+@import "../../src/app/globals.css";
+@source "../../src";
+@source "./";
