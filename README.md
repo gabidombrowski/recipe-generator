@@ -11,6 +11,10 @@ is _tomorrow's_ food), the constraint satisfaction (this ingredient is out, this
 one is limited to once a week), and keeping a language model inside those
 constraints reliably enough to trust it on a Sunday morning while you're asleep.
 
+**[Try the interactive demo](https://digitallotusdev.com/recipe-generator)** — the
+full UI over recorded data: generation is a replay, and nothing you do there is
+saved.
+
 Built with Next.js (App Router), tRPC v11, Drizzle + SQLite, Auth.js v5, and the
 Anthropic API. Deployed as Next standalone output behind a reverse proxy under
 pm2; the repo also carries an alternative Cloudflare Tunnel + Access topology
