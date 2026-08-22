@@ -15,44 +15,47 @@ resource "random_password" "tunnel_secret" {
   special = false
 }
 
-resource "cloudflare_tunnel" "app" {
-  account_id = var.cloudflare_account_id
-  name       = var.tunnel_name
-  secret     = base64encode(random_password.tunnel_secret.result)
-  config_src = "cloudflare"
+resource "cloudflare_zero_trust_tunnel_cloudflared" "app" {
+  account_id    = var.cloudflare_account_id
+  name          = var.tunnel_name
+  tunnel_secret = base64encode(random_password.tunnel_secret.result)
+  config_src    = "cloudflare"
 }
 
 # Routes the public hostname to the local origin. Everything else 404s at the
 # edge rather than reaching the app.
-resource "cloudflare_tunnel_config" "app" {
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "app" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_tunnel.app.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.app.id
 
-  config {
-    ingress_rule {
-      hostname = var.hostname
-      service  = var.origin_url
-    }
-
-    # cloudflared requires a catch-all as the final rule.
-    ingress_rule {
-      service = "http_status:404"
-    }
+  config = {
+    ingress = [
+      {
+        hostname = var.hostname
+        service  = var.origin_url
+      },
+      # cloudflared requires a catch-all as the final rule.
+      {
+        service = "http_status:404"
+      },
+    ]
   }
 }
 
 # Points the hostname at the tunnel. Proxied is required — an unproxied record
-# would expose the origin directly and defeat the whole arrangement.
-resource "cloudflare_record" "app" {
+# would expose the origin directly and defeat the whole arrangement. TTL 1 is
+# "automatic", the only valid choice for a proxied record.
+resource "cloudflare_dns_record" "app" {
   zone_id = var.cloudflare_zone_id
   name    = var.hostname
-  content = "${cloudflare_tunnel.app.id}.cfargotunnel.com"
+  ttl     = 1
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.app.id}.cfargotunnel.com"
   type    = "CNAME"
   proxied = true
   comment = "Managed by Terraform — recipe-generator tunnel"
 }
 
-resource "cloudflare_access_application" "app" {
+resource "cloudflare_zero_trust_access_application" "app" {
   zone_id          = var.cloudflare_zone_id
   name             = var.tunnel_name
   domain           = var.hostname
@@ -63,31 +66,40 @@ resource "cloudflare_access_application" "app" {
   # beyond its identity check.
   auto_redirect_to_identity = true
   app_launcher_visible      = false
+
+  # v5 policies are account-level and reusable; precedence moved here, onto
+  # the application that binds them.
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.allow_owner.id
+      precedence = 1
+    },
+    {
+      id         = cloudflare_zero_trust_access_policy.deny_everyone_else.id
+      precedence = 2
+    },
+  ]
 }
 
 # The allowlist. One address, and an explicit deny for everyone else — a policy
 # that only allows would leave the default to Cloudflare's, which is not a
 # default worth inheriting for a personal app.
-resource "cloudflare_access_policy" "allow_owner" {
-  application_id = cloudflare_access_application.app.id
-  zone_id        = var.cloudflare_zone_id
-  name           = "Owner only"
-  precedence     = 1
-  decision       = "allow"
+resource "cloudflare_zero_trust_access_policy" "allow_owner" {
+  account_id = var.cloudflare_account_id
+  name       = "Owner only"
+  decision   = "allow"
 
-  include {
-    email = [var.allowed_email]
-  }
+  include = [{
+    email = { email = var.allowed_email }
+  }]
 }
 
-resource "cloudflare_access_policy" "deny_everyone_else" {
-  application_id = cloudflare_access_application.app.id
-  zone_id        = var.cloudflare_zone_id
-  name           = "Deny all others"
-  precedence     = 2
-  decision       = "deny"
+resource "cloudflare_zero_trust_access_policy" "deny_everyone_else" {
+  account_id = var.cloudflare_account_id
+  name       = "Deny all others"
+  decision   = "deny"
 
-  include {
-    everyone = true
-  }
+  include = [{
+    everyone = {}
+  }]
 }

@@ -4,11 +4,13 @@ terraform {
   required_providers {
     cloudflare = {
       source = "cloudflare/cloudflare"
-      # Pinned to v4. The v5 provider renamed most Zero Trust resources
-      # (`cloudflare_tunnel` -> `cloudflare_zero_trust_tunnel_cloudflared`,
-      # `cloudflare_record` -> `cloudflare_dns_record`, and so on). Upgrading is
-      # a deliberate migration, not a version bump — pin until it is done.
-      version = "~> 4.40"
+      # v5, migrated from the v4 resource names in one pass: the provider's
+      # ground-up rewrite renamed every resource here and reshaped Access
+      # policies into account-level objects bound through the application.
+      # CI runs `terraform validate` against this constraint, so a future
+      # provider bump that breaks the schema fails visibly instead of
+      # merging green.
+      version = "~> 5.23"
     }
     random = {
       source  = "hashicorp/random"

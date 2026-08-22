@@ -1,3 +1,10 @@
+# v5 moved the tunnel token off the tunnel resource and into its own data
+# source; the output contract below stays the same.
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "app" {
+  account_id = var.cloudflare_account_id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.app.id
+}
+
 output "tunnel_token" {
   description = <<-EOT
     The token the cloudflared container runs with. Put it in the server's .env as
@@ -7,13 +14,13 @@ output "tunnel_token" {
 
     Marked sensitive so it is not printed by a plain `terraform output`.
   EOT
-  value       = cloudflare_tunnel.app.tunnel_token
+  value       = data.cloudflare_zero_trust_tunnel_cloudflared_token.app.token
   sensitive   = true
 }
 
 output "tunnel_id" {
   description = "Tunnel id, for cross-referencing in the Zero Trust dashboard."
-  value       = cloudflare_tunnel.app.id
+  value       = cloudflare_zero_trust_tunnel_cloudflared.app.id
 }
 
 output "hostname" {

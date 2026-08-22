@@ -1,0 +1,37 @@
+# Schema-validates the Terraform in infra/ against the provider constraint.
+# Nothing here talks to a Cloudflare account — no token, no state, no plan.
+# The point is narrower: the Cloudflare provider's v5 rewrite renamed every
+# resource this config uses, and the dependabot PR proposing that bump sat
+# green because no job exercised terraform at all. This one does, so a
+# provider bump that breaks the schema fails its PR instead of merging quietly.
+
+name: Infra
+
+on:
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/infra.yml"]
+  pull_request:
+    paths: ["infra/**", ".github/workflows/infra.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Init (no backend, resolves the provider)
+        run: terraform -chdir=infra init -backend=false
+
+      - name: Validate
+        run: terraform -chdir=infra validate
+
+      - name: Format check
+        run: terraform -chdir=infra fmt -check -diff
