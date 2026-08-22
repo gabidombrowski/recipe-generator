@@ -15,7 +15,7 @@ exports[`LLM tool input schemas > constraint extractor tool 1`] = `
             "type": "string",
           },
           "constraint": {
-            "anyOf": [
+            "oneOf": [
               {
                 "additionalProperties": false,
                 "properties": {
