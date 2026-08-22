@@ -31,7 +31,6 @@ on:
   # On-demand armed runs, e.g. right after a dependency migration rather
   # than waiting for Monday's cron.
   workflow_dispatch:
-  workflow_dispatch:
 
 concurrency:
   # Never two paid runs on the same ref at once.
