@@ -1,5 +1,5 @@
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
+import { toToolInputSchema } from "./tool-schema";
 import { recipeRuleViolations } from "~/lib/constraints";
 import {
   getClient,
@@ -44,27 +44,11 @@ const log = loggerFor("generator");
 
 export const RECIPE_TOOL_NAME = "save_recipe";
 
-/**
- * The JSON Schema handed to the model. `$refStrategy: "none"` inlines
- * definitions, because a schema full of `$ref` pointers is harder for a model
- * to follow than one that repeats itself.
- */
-function buildRecipeToolSchema(): Record<string, unknown> {
-  const schema = zodToJsonSchema(recipeBodySchema, {
-    $refStrategy: "none",
-    target: "jsonSchema7",
-  }) as Record<string, unknown>;
-
-  // The API rejects the meta-schema key.
-  delete schema.$schema;
-  return schema;
-}
-
 export const RECIPE_TOOL: AnthropicNS.Tool = {
   name: RECIPE_TOOL_NAME,
   description:
     "Save the finished recipe. Call this exactly once with the complete recipe; it is the only way to return your answer.",
-  input_schema: buildRecipeToolSchema() as AnthropicNS.Tool["input_schema"],
+  input_schema: toToolInputSchema(recipeBodySchema),
 };
 
 // ---------------------------------------------------------------------------

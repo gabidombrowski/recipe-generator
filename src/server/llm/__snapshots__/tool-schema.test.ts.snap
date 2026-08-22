@@ -1,0 +1,575 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LLM tool input schemas > constraint extractor tool 1`] = `
+{
+  "additionalProperties": false,
+  "properties": {
+    "proposals": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "because": {
+            "description": "The words of theirs that imply this rule. Shown to them for approval.",
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+          },
+          "constraint": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "tag_cap",
+                    "type": "string",
+                  },
+                  "maxPerRecipe": {
+                    "anyOf": [
+                      {
+                        "maximum": 20,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                  "maxPerWeek": {
+                    "anyOf": [
+                      {
+                        "maximum": 7,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                  "tag": {
+                    "maxLength": 32,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "tag",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "exclude_ingredient",
+                    "type": "string",
+                  },
+                  "name": {
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "name",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "meal_macros",
+                    "type": "string",
+                  },
+                  "proteinMaxG": {
+                    "maximum": 300,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                  "proteinMinG": {
+                    "maximum": 200,
+                    "minimum": 0,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "proteinMinG",
+                  "proteinMaxG",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "meal_shape",
+                    "type": "string",
+                  },
+                  "maxMinutes": {
+                    "anyOf": [
+                      {
+                        "maximum": 240,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                  "mealType": {
+                    "enum": [
+                      "cook",
+                      "quick",
+                      "assembly",
+                    ],
+                    "type": "string",
+                  },
+                  "minMinutes": {
+                    "anyOf": [
+                      {
+                        "maximum": 240,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                  "requiredFinalStepPhrases": {
+                    "default": [],
+                    "items": {
+                      "maxLength": 60,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "servings": {
+                    "anyOf": [
+                      {
+                        "maximum": 12,
+                        "minimum": 1,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                },
+                "required": [
+                  "kind",
+                  "mealType",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "exempt": {
+                    "default": [],
+                    "items": {
+                      "maxLength": 40,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "forbid": {
+                    "items": {
+                      "maxLength": 40,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                  "kind": {
+                    "const": "ingredient_form",
+                    "type": "string",
+                  },
+                  "match": {
+                    "items": {
+                      "maxLength": 60,
+                      "minLength": 1,
+                      "type": "string",
+                    },
+                    "minItems": 1,
+                    "type": "array",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "match",
+                  "forbid",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "leftover_window",
+                    "type": "string",
+                  },
+                  "maxAgeDays": {
+                    "anyOf": [
+                      {
+                        "maximum": 365,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      {
+                        "type": "null",
+                      },
+                    ],
+                    "default": null,
+                  },
+                  "storage": {
+                    "enum": [
+                      "fridge",
+                      "freezer",
+                    ],
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "storage",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "daily_staple",
+                    "type": "string",
+                  },
+                  "name": {
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "qty": {
+                    "exclusiveMinimum": 0,
+                    "type": "number",
+                  },
+                  "unit": {
+                    "maxLength": 24,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "name",
+                  "qty",
+                  "unit",
+                ],
+                "type": "object",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "note",
+                    "type": "string",
+                  },
+                  "text": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "kind",
+                  "text",
+                ],
+                "type": "object",
+              },
+            ],
+          },
+        },
+        "required": [
+          "constraint",
+          "because",
+        ],
+        "type": "object",
+      },
+      "maxItems": 20,
+      "type": "array",
+    },
+  },
+  "required": [
+    "proposals",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`LLM tool input schemas > eval judge tool 1`] = `
+{
+  "additionalProperties": false,
+  "properties": {
+    "seasoningBoldness": {
+      "description": "1-5; does the dish have a point of view?",
+      "maximum": 5,
+      "minimum": 1,
+      "type": "integer",
+    },
+    "seasoningBoldnessNote": {
+      "type": "string",
+    },
+    "stepCoherence": {
+      "description": "1-5; can a cook follow these steps?",
+      "maximum": 5,
+      "minimum": 1,
+      "type": "integer",
+    },
+    "stepCoherenceNote": {
+      "type": "string",
+    },
+  },
+  "required": [
+    "stepCoherence",
+    "stepCoherenceNote",
+    "seasoningBoldness",
+    "seasoningBoldnessNote",
+  ],
+  "type": "object",
+}
+`;
+
+exports[`LLM tool input schemas > planner tools 1`] = `
+[
+  {
+    "input_schema": {
+      "properties": {},
+      "type": "object",
+    },
+    "name": "list_recipes",
+  },
+  {
+    "input_schema": {
+      "properties": {},
+      "type": "object",
+    },
+    "name": "get_recent_history",
+  },
+  {
+    "input_schema": {
+      "properties": {},
+      "type": "object",
+    },
+    "name": "read_pantry_and_leftovers",
+  },
+  {
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "reasoning": {
+          "description": "One short paragraph on why this week hangs together.",
+          "maxLength": 1200,
+          "type": "string",
+        },
+        "slots": {
+          "description": "One entry for every slot you were given, in date order, each carrying its date and meal.",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "description": "YYYY-MM-DD",
+                "type": "string",
+              },
+              "meal": {
+                "description": "Which meal of the day this slot is, copied exactly from the slot you were given.",
+                "type": "string",
+              },
+              "mealSource": {
+                "enum": [
+                  "cook",
+                  "quick",
+                  "assembly",
+                  "leftover",
+                ],
+                "type": "string",
+              },
+              "recipeId": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                  },
+                  {
+                    "type": "null",
+                  },
+                ],
+                "description": "Recipe id, or null for leftover days.",
+              },
+            },
+            "required": [
+              "date",
+              "meal",
+              "mealSource",
+              "recipeId",
+            ],
+            "type": "object",
+          },
+          "maxItems": 70,
+          "minItems": 1,
+          "type": "array",
+        },
+      },
+      "required": [
+        "slots",
+        "reasoning",
+      ],
+      "type": "object",
+    },
+    "name": "propose_week",
+  },
+]
+`;
+
+exports[`LLM tool input schemas > recipe generator tool 1`] = `
+{
+  "additionalProperties": false,
+  "properties": {
+    "cookMinutes": {
+      "description": "Total hands-on minutes, start to plate.",
+      "exclusiveMinimum": 0,
+      "maximum": 240,
+      "type": "integer",
+    },
+    "cuisine": {
+      "description": "Cuisine or culinary tradition, e.g. Korean, Peruvian.",
+      "maxLength": 60,
+      "minLength": 1,
+      "type": "string",
+    },
+    "ingredients": {
+      "description": "Every ingredient with quantity and unit, plus any culinary tags that apply (fermented, aged, cured, vinegar, smoked, dairy, gluten, nut, shellfish, nightshade).",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string",
+          },
+          "qty": {
+            "exclusiveMinimum": 0,
+            "type": "number",
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "maxLength": 48,
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "unit": {
+            "maxLength": 24,
+            "minLength": 1,
+            "type": "string",
+          },
+        },
+        "required": [
+          "name",
+          "qty",
+          "unit",
+        ],
+        "type": "object",
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "type": "array",
+    },
+    "macrosPerServing": {
+      "additionalProperties": false,
+      "description": "Per single serving, not per batch. kcal must agree with 4*protein + 4*carbs + 9*fat.",
+      "properties": {
+        "carbsG": {
+          "minimum": 0,
+          "type": "number",
+        },
+        "fatG": {
+          "minimum": 0,
+          "type": "number",
+        },
+        "kcal": {
+          "minimum": 0,
+          "type": "number",
+        },
+        "proteinG": {
+          "minimum": 0,
+          "type": "number",
+        },
+      },
+      "required": [
+        "kcal",
+        "proteinG",
+        "carbsG",
+        "fatG",
+      ],
+      "type": "object",
+    },
+    "mealType": {
+      "description": "cook = 15-30 min, scales to 2 servings. quick = 5-10 min. assembly = no-cook.",
+      "enum": [
+        "cook",
+        "quick",
+        "assembly",
+      ],
+      "type": "string",
+    },
+    "name": {
+      "description": "Short dish name.",
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string",
+    },
+    "servings": {
+      "description": "Servings this ingredient list yields. Cook recipes must be 2.",
+      "exclusiveMinimum": 0,
+      "maximum": 12,
+      "type": "integer",
+    },
+    "steps": {
+      "description": "Ordered instructions, one sentence or two each.",
+      "items": {
+        "maxLength": 600,
+        "minLength": 1,
+        "type": "string",
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array",
+    },
+  },
+  "required": [
+    "name",
+    "cuisine",
+    "cookMinutes",
+    "servings",
+    "mealType",
+    "ingredients",
+    "steps",
+    "macrosPerServing",
+  ],
+  "type": "object",
+}
+`;

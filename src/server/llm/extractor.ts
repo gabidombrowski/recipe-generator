@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
+import { toToolInputSchema } from "./tool-schema";
 import { getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
 import { loggerFor } from "~/server/logger";
@@ -47,18 +47,11 @@ const proposalsSchema = z.object({
   proposals: z.array(proposalSchema).max(20),
 });
 
-const EXTRACT_TOOL: AnthropicNS.Tool = {
+export const EXTRACT_TOOL: AnthropicNS.Tool = {
   name: EXTRACT_TOOL_NAME,
   description:
     "Return the dietary rules implied by their description. Every entry is a proposal for a person to approve; nothing is applied automatically.",
-  input_schema: (() => {
-    const schema = zodToJsonSchema(proposalsSchema, {
-      $refStrategy: "none",
-      target: "jsonSchema7",
-    }) as Record<string, unknown>;
-    delete schema.$schema;
-    return schema as AnthropicNS.Tool["input_schema"];
-  })(),
+  input_schema: toToolInputSchema(proposalsSchema),
 };
 
 export interface Proposal {

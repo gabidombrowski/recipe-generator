@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { toToolInputSchema } from "./tool-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
 import { getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
@@ -79,21 +79,12 @@ const proposeWeekSchema = z.object({
     .describe("One short paragraph on why this week hangs together."),
 });
 
-function toolSchema(schema: z.ZodTypeAny): AnthropicNS.Tool["input_schema"] {
-  const json = zodToJsonSchema(schema, {
-    $refStrategy: "none",
-    target: "jsonSchema7",
-  }) as Record<string, unknown>;
-  delete json.$schema;
-  return json as AnthropicNS.Tool["input_schema"];
-}
-
 const EMPTY_INPUT: AnthropicNS.Tool["input_schema"] = {
   type: "object",
   properties: {},
 };
 
-const PLANNER_TOOLS: AnthropicNS.Tool[] = [
+export const PLANNER_TOOLS: AnthropicNS.Tool[] = [
   {
     name: "list_recipes",
     description:
@@ -116,7 +107,7 @@ const PLANNER_TOOLS: AnthropicNS.Tool[] = [
     name: "propose_week",
     description:
       "Submit the finished week. A deterministic verifier checks it against the rules and may reject it with reasons.",
-    input_schema: toolSchema(proposeWeekSchema),
+    input_schema: toToolInputSchema(proposeWeekSchema),
   },
 ];
 

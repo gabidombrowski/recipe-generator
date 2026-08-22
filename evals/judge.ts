@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { toToolInputSchema } from "~/server/llm/tool-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
 import { getClient, MODELS, TIMEOUTS, withDeadline } from "~/server/llm/client";
 import { loadPrompt, PROMPT_NAMES } from "~/server/llm/prompts";
@@ -42,17 +42,10 @@ const gradeSchema = z.object({
 
 export type Grade = z.infer<typeof gradeSchema>;
 
-const GRADE_TOOL: AnthropicNS.Tool = {
+export const GRADE_TOOL: AnthropicNS.Tool = {
   name: "grade_recipe",
   description: "Return the two scores.",
-  input_schema: (() => {
-    const schema = zodToJsonSchema(gradeSchema, {
-      $refStrategy: "none",
-      target: "jsonSchema7",
-    }) as Record<string, unknown>;
-    delete schema.$schema;
-    return schema as AnthropicNS.Tool["input_schema"];
-  })(),
+  input_schema: toToolInputSchema(gradeSchema),
 };
 
 export interface JudgeResult {
