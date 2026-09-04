@@ -43,6 +43,14 @@ describe("chunkContext", () => {
     for (const chunk of chunks) expect(chunk.heading).toBe("H");
   });
 
+  it("treats a heading marker with no text as no heading at all", () => {
+    // "#   " trims to "", which behaves like null everywhere downstream but
+    // would persist as a second, distinct representation of the same thing.
+    const chunks = chunkContext("#   \n\nOrphaned prose.");
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]?.heading).toBeNull();
+  });
+
   it("does not cut a single oversized paragraph mid-sentence", () => {
     const huge = "y".repeat(3000);
     const chunks = chunkContext(`# H\n\n${huge}`);

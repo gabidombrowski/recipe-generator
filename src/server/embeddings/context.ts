@@ -53,7 +53,11 @@ export function chunkContext(markdown: string): ContextChunk[] {
   for (const line of markdown.split(/\r?\n/)) {
     const headingMatch = /^#{1,6}\s+(.*)$/.exec(line);
     if (headingMatch) {
-      current = { heading: (headingMatch[1] ?? "").trim(), lines: [] };
+      const heading = (headingMatch[1] ?? "").trim();
+      // `#` with nothing after it is not a heading. Normalising to null here
+      // keeps one representation of "no heading" rather than two that behave
+      // the same but store differently.
+      current = { heading: heading === "" ? null : heading, lines: [] };
       sections.push(current);
     } else {
       current.lines.push(line);
@@ -105,19 +109,31 @@ const asVecKey = (chunkId: number): bigint => BigInt(chunkId);
  * would silently keep influencing generation.
  */
 export async function reindexContext(markdown: string): Promise<number> {
-  if (!vectorSearchAvailable()) return 0;
+  // Clear first, and unconditionally. Returning early on an unavailable
+  // extension used to leave the previous index in place, so notes edited while
+  // sqlite-vec could not load stayed indexed under their old text — and were
+  // retrieved as if current the next time it did load. An empty index is
+  // wrong in the harmless direction; a stale one is not.
+  db.delete(contextChunks).run();
+  if (vectorSearchAvailable()) {
+    sqlite.prepare("DELETE FROM vec_context").run();
+  } else {
+    return 0;
+  }
 
   const chunks = chunkContext(markdown);
-
-  db.delete(contextChunks).run();
-  sqlite.prepare("DELETE FROM vec_context").run();
   if (chunks.length === 0) return 0;
 
   let indexed = 0;
   for (const chunk of chunks) {
     const text = embeddingTextFor(chunk);
     const vector = await embed(text);
-    if (!vector) break; // model unavailable; leave the rest unindexed
+    if (!vector) {
+      // The model went away mid-run. Everything already written matches the
+      // file, and the rest is simply absent — a short index, never a stale one.
+      log.warn({ indexed, of: chunks.length }, "embedding unavailable; index is partial");
+      break;
+    }
 
     const row = db
       .insert(contextChunks)
