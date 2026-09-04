@@ -72,7 +72,7 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: ${{ vars.BASE_PATH }}
 
       - name: Deploy over rsync
-        uses: burnett01/rsync-deployments@7.0.1
+        uses: burnett01/rsync-deployments@9.0.0
         with:
           # No --delete: the SQLite database lives inside APP_PATH's data
           # directory, and deleting it would be an unrecoverable data loss on
@@ -160,7 +160,7 @@ jobs:
         run: npm run build:demo
 
       - name: Deploy the demo
-        uses: burnett01/rsync-deployments@7.0.1
+        uses: burnett01/rsync-deployments@9.0.0
         with:
           # --delete is safe here precisely because nothing lives in this
           # directory except the previous build.
