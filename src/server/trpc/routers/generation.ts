@@ -25,9 +25,11 @@ import {
 } from "~/server/llm/library-fill";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
 import {
+  embedQuery,
   similarFavorites,
   upsertRecipeEmbedding,
 } from "~/server/embeddings/index";
+import { similarContext } from "~/server/embeddings/context";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { loggerFor } from "~/server/logger";
 import { dayOfWeekFor } from "~/lib/days";
@@ -121,11 +123,18 @@ export const generationRouter = router({
       // Retrieve exemplars that resemble the request rather than arbitrary
       // favourites — the retrieval is what makes few-shot prompting useful here.
       const favorites = listRecipes().filter((r) => r.favorite);
-      const exemplars = await similarFavorites(
-        [input.cuisine, input.mealType, input.note].filter(Boolean).join(" "),
-        favorites,
-        3,
-      );
+      const query = [input.cuisine, input.mealType, input.note]
+        .filter(Boolean)
+        .join(" ");
+      // Two lookups against the same request text — the notes file is far too
+      // large to inline, so it is retrieved rather than pasted. Embed once and
+      // hand the vector to both: MiniLM over identical input is the expensive
+      // half, and running it twice bought nothing.
+      const queryVector = await embedQuery(query);
+      const [exemplars, contextNotes] = await Promise.all([
+        similarFavorites(query, favorites, 3, queryVector),
+        similarContext(query, 3, queryVector),
+      ]);
 
       try {
         const result = await generateRecipe(
@@ -136,6 +145,7 @@ export const generationRouter = router({
             excluded: excludedLower(),
             config: getDietaryConfig(),
             exemplars,
+            contextNotes,
           },
           // tRPC surfaces the request's own signal, so closing the tab or
           // navigating away stops the generation instead of leaving it to run

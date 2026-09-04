@@ -21,7 +21,11 @@
   semantically diverse set. It earns its place for natural-language queries that
   keywords genuinely cannot serve ("something cozy with chickpeas") and because
   the same embeddings feed exemplar retrieval for the generator. It is not here
-  because the corpus needed a vector index.
+  because the corpus needed a vector index. Retrieval over
+  [the notes file](context-retrieval.md) is the part that genuinely does need
+  it: 256 KB is far too large to inline, and the notes are written in the user's
+  own words, sharing no vocabulary with a recipe request — so keywords cannot
+  reach them at any corpus size.
 - **The grocery list's store-section classifier is a keyword heuristic, not a
   food ontology.** Unrecognised items land in Pantry, which costs one extra
   glance in the shop. A real product would use a proper taxonomy.

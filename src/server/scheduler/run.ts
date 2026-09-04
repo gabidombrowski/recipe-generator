@@ -14,6 +14,8 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { isLlmConfigured } from "~/server/llm/client";
 import { generateRecipe } from "~/server/llm/generator";
+import { embedQuery, similarFavorites } from "~/server/embeddings/index";
+import { similarContext } from "~/server/embeddings/context";
 import { planWeekWithAgent } from "~/server/llm/planner";
 import { loggerFor } from "~/server/logger";
 import { recordPlannerFallback, recordSchedulerRun as recordRunMetric, withSpan } from "~/server/telemetry";
@@ -192,6 +194,15 @@ async function fillWithNovelRecipes(args: {
     return 0;
   }
 
+  // `cuisineListSchema` permits an empty array, and every cuisine below is
+  // indexed out of this list. Empty meant `undefined` reached the request and
+  // the retrieval query read "undefined cook" — which embeds and matches
+  // against nonsense rather than failing loudly.
+  if (cuisines.length === 0) {
+    notes.push("aiNovelRecipesPerWeek is set but no cuisines are configured; skipped AI recipes.");
+    return 0;
+  }
+
   const profile = getProfile();
   const cookSlots = getWeekSlots(weekStart).filter((s) => s.mealSource === "cook");
   const targets = cookSlots.slice(0, novelCount);
@@ -209,13 +220,24 @@ async function fillWithNovelRecipes(args: {
   // Rotate deterministically by week so successive weeks explore new cuisines.
   const offset = Number(weekStart.replaceAll("-", "")) % Math.max(1, freshCuisines.length);
 
-  const favorites = listRecipes()
-    .filter((r) => r.favorite)
-    .slice(0, 3);
+  const favorites = listRecipes().filter((r) => r.favorite);
 
   let created = 0;
   for (const [index, slot] of targets.entries()) {
     const cuisine = freshCuisines[(offset + index) % Math.max(1, freshCuisines.length)];
+
+    // Retrieve per slot rather than reusing one arbitrary trio for the whole
+    // week: every slot here asks for a different cuisine, so the exemplars
+    // should differ too. The interactive path has always done this; the cron
+    // is the one that runs unattended and produces most of the library.
+    const query = `${cuisine} cook`;
+    // Embed once per slot and share the vector; a week of slots would
+    // otherwise run MiniLM twice over identical text for each one.
+    const queryVector = await embedQuery(query);
+    const [exemplars, contextNotes] = await Promise.all([
+      similarFavorites(query, favorites, 3, queryVector),
+      similarContext(query, 3, queryVector),
+    ]);
 
     try {
       const result = await generateRecipe(
@@ -225,7 +247,8 @@ async function fillWithNovelRecipes(args: {
           trainingDay: isTrainingDay(profile, dayOfWeekFor(slot.date)),
           excluded,
           config: getDietaryConfig(),
-          exemplars: favorites,
+          exemplars,
+          contextNotes,
         },
       );
 

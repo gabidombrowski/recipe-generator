@@ -16,7 +16,7 @@ import { join } from "node:path";
  */
 
 export const PROMPT_NAMES = {
-  recipeGenerator: "recipe-generator.v1.md",
+  recipeGenerator: "recipe-generator.v2.md",
   planner: "planner.v1.md",
   judge: "judge.v1.md",
   constraintExtractor: "constraint-extractor.v1.md",
