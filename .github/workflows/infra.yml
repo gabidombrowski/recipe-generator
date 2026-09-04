@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
 
       - name: Init (no backend, resolves the provider)
         run: terraform -chdir=infra init -backend=false
