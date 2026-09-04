@@ -37,7 +37,9 @@ export const contextRouter = router({
     }
     // Seed the editor with the committed example so a fresh clone has a shape
     // to start from rather than a blank box.
-    const example = existsSync(EXAMPLE_FILE) ? readFileSync(EXAMPLE_FILE, "utf8") : "";
+    const example = existsSync(EXAMPLE_FILE)
+      ? readFileSync(EXAMPLE_FILE, "utf8")
+      : "";
     return { content: example, exists: false };
   }),
 
@@ -47,10 +49,15 @@ export const contextRouter = router({
         // `.max()` counts characters, not bytes. The cap exists to bound what
         // lands on disk, and a file of multi-byte characters can be several
         // times its character count, so the byte length is what gets checked.
-        content: z.string().refine(
-          (value) => Buffer.byteLength(value, "utf8") <= MAX_CONTEXT_BYTES,
-          { message: `Context must be ${MAX_CONTEXT_BYTES} bytes or fewer.` },
-        ),
+        content: z
+          .string()
+          // Cheap first-line guard so an absurd payload is rejected before the
+          // byte length is computed. The refine below stays the source of truth.
+          .max(MAX_CONTEXT_BYTES)
+          .refine(
+            (value) => Buffer.byteLength(value, "utf8") <= MAX_CONTEXT_BYTES,
+            { message: `Context must be ${MAX_CONTEXT_BYTES} bytes or fewer.` },
+          ),
       }),
     )
     .mutation(async ({ input }) => {

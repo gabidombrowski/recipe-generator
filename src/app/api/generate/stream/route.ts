@@ -6,7 +6,12 @@ import { excludedLower, listRecipes } from "~/server/db/queries";
 import { getProfile } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipe } from "~/server/db/recipes";
-import { upsertRecipeEmbedding, similarFavorites } from "~/server/embeddings";
+import {
+  embedQuery,
+  similarFavorites,
+  upsertRecipeEmbedding,
+} from "~/server/embeddings";
+import { similarContext } from "~/server/embeddings/context";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { encodeSse, type SseEvent } from "~/lib/sse";
 import { loggerFor } from "~/server/logger";
@@ -79,11 +84,14 @@ export async function POST(request: Request): Promise<Response> {
 
   const profile = getProfile();
   const favorites = listRecipes().filter((r) => r.favorite);
-  const exemplars = await similarFavorites(
-    [input.cuisine, input.mealType, input.note].filter(Boolean).join(" "),
-    favorites,
-    3,
-  );
+  const query = [input.cuisine, input.mealType, input.note]
+    .filter(Boolean)
+    .join(" ");
+  const queryVector = await embedQuery(query);
+  const [exemplars, contextNotes] = await Promise.all([
+    similarFavorites(query, favorites, 3, queryVector),
+    similarContext(query, 3, queryVector),
+  ]);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -103,6 +111,7 @@ export async function POST(request: Request): Promise<Response> {
             excluded: excludedLower(),
             config: getDietaryConfig(),
             exemplars,
+            contextNotes,
           },
           {
             // `request.signal` aborts when the client disconnects — closing

@@ -14,7 +14,7 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { isLlmConfigured } from "~/server/llm/client";
 import { generateRecipe } from "~/server/llm/generator";
-import { embed, similarFavorites } from "~/server/embeddings/index";
+import { embedQuery, similarFavorites } from "~/server/embeddings/index";
 import { similarContext } from "~/server/embeddings/context";
 import { planWeekWithAgent } from "~/server/llm/planner";
 import { loggerFor } from "~/server/logger";
@@ -224,7 +224,7 @@ async function fillWithNovelRecipes(args: {
     const query = `${cuisine} cook`;
     // Embed once per slot and share the vector; a week of slots would
     // otherwise run MiniLM twice over identical text for each one.
-    const queryVector = await embed(query);
+    const queryVector = await embedQuery(query);
     const [exemplars, contextNotes] = await Promise.all([
       similarFavorites(query, favorites, 3, queryVector),
       similarContext(query, 3, queryVector),

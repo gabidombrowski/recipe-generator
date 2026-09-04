@@ -70,6 +70,19 @@ export async function embed(text: string): Promise<Float32Array | null> {
 }
 
 /**
+ * Embed a retrieval query, or null when retrieval could not use it anyway.
+ *
+ * Call sites that share one vector across several lookups need the
+ * availability check *before* paying for the model, not inside each retriever
+ * after the fact — otherwise a platform without sqlite-vec loads MiniLM to
+ * produce a vector nothing can consume.
+ */
+export async function embedQuery(query: string): Promise<Float32Array | null> {
+  if (!vectorSearchAvailable()) return null;
+  return embed(query);
+}
+
+/**
  * What gets embedded: name, cuisine, meal type, and ingredient names.
  *
  * Steps are excluded on purpose — they are procedural text ("stir", "cover 3

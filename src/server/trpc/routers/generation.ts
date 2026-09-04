@@ -25,7 +25,7 @@ import {
 } from "~/server/llm/library-fill";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
 import {
-  embed,
+  embedQuery,
   similarFavorites,
   upsertRecipeEmbedding,
 } from "~/server/embeddings/index";
@@ -130,7 +130,7 @@ export const generationRouter = router({
       // large to inline, so it is retrieved rather than pasted. Embed once and
       // hand the vector to both: MiniLM over identical input is the expensive
       // half, and running it twice bought nothing.
-      const queryVector = await embed(query);
+      const queryVector = await embedQuery(query);
       const [exemplars, contextNotes] = await Promise.all([
         similarFavorites(query, favorites, 3, queryVector),
         similarContext(query, 3, queryVector),

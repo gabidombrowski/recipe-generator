@@ -55,7 +55,10 @@ Top-3 against the same request text the exemplar retrieval uses — cuisine, mea
 type, and any free-text note. Results are returned in **file order**, not score
 order, so several retrieved passages read the way they were written.
 
-Both generation paths use it: the interactive one and the weekly cron.
+Every generation path that answers a request uses it: the SSE route behind the
+generate tab, the tRPC mutation, and the weekly cron. The library fill is the
+deliberate exception — it seeds a starter library across cuisines rather than
+answering a request, and already passes no exemplars for the same reason.
 
 ## In the prompt
 
