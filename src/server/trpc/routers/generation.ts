@@ -125,10 +125,13 @@ export const generationRouter = router({
       const query = [input.cuisine, input.mealType, input.note]
         .filter(Boolean)
         .join(" ");
-      const exemplars = await similarFavorites(query, favorites, 3);
-      // The notes file is far too large to inline, so retrieve against the same
-      // request text rather than pasting all of it.
-      const contextNotes = await similarContext(query, 3);
+      // Two independent lookups against the same request text — the notes file
+      // is far too large to inline, so it is retrieved rather than pasted.
+      // Concurrent, so the slower one sets the latency instead of the sum.
+      const [exemplars, contextNotes] = await Promise.all([
+        similarFavorites(query, favorites, 3),
+        similarContext(query, 3),
+      ]);
 
       try {
         const result = await generateRecipe(

@@ -221,8 +221,11 @@ async function fillWithNovelRecipes(args: {
     // week: every slot here asks for a different cuisine, so the exemplars
     // should differ too. The interactive path has always done this; the cron
     // is the one that runs unattended and produces most of the library.
-    const exemplars = await similarFavorites(`${cuisine} cook`, favorites, 3);
-    const contextNotes = await similarContext(`${cuisine} cook`, 3);
+    const query = `${cuisine} cook`;
+    const [exemplars, contextNotes] = await Promise.all([
+      similarFavorites(query, favorites, 3),
+      similarContext(query, 3),
+    ]);
 
     try {
       const result = await generateRecipe(

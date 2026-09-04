@@ -42,7 +42,17 @@ export const contextRouter = router({
   }),
 
   save: protectedProcedure
-    .input(z.object({ content: z.string().max(MAX_CONTEXT_BYTES) }))
+    .input(
+      z.object({
+        // `.max()` counts characters, not bytes. The cap exists to bound what
+        // lands on disk, and a file of multi-byte characters can be several
+        // times its character count, so the byte length is what gets checked.
+        content: z.string().refine(
+          (value) => Buffer.byteLength(value, "utf8") <= MAX_CONTEXT_BYTES,
+          { message: `Context must be ${MAX_CONTEXT_BYTES} bytes or fewer.` },
+        ),
+      }),
+    )
     .mutation(async ({ input }) => {
       writeFileSync(CONTEXT_FILE, input.content, "utf8");
 

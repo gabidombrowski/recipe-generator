@@ -196,3 +196,19 @@ describe("the auth guard", () => {
     await expect(anonymous.plan.week({})).rejects.toThrow(/sign-in/i);
   });
 });
+
+describe("context.save", () => {
+  it("rejects a payload over the byte cap even when its character count is under it", async () => {
+    // 200k two-byte characters: well under a 262,144-*character* limit, which
+    // is what `z.string().max(MAX_CONTEXT_BYTES)` was actually enforcing, but
+    // ~400 KB once written as UTF-8.
+    const multibyte = "é".repeat(200_000);
+
+    expect(multibyte.length).toBeLessThan(256 * 1024);
+    expect(Buffer.byteLength(multibyte, "utf8")).toBeGreaterThan(256 * 1024);
+
+    // Rejected during input parsing, so nothing reaches the handler and no
+    // file is written — which is also why this test can run in the repo cwd.
+    await expect(h.caller.context.save({ content: multibyte })).rejects.toThrow();
+  });
+});
