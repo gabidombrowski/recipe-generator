@@ -28,6 +28,7 @@ import {
   similarFavorites,
   upsertRecipeEmbedding,
 } from "~/server/embeddings/index";
+import { similarContext } from "~/server/embeddings/context";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { loggerFor } from "~/server/logger";
 import { dayOfWeekFor } from "~/lib/days";
@@ -121,11 +122,13 @@ export const generationRouter = router({
       // Retrieve exemplars that resemble the request rather than arbitrary
       // favourites — the retrieval is what makes few-shot prompting useful here.
       const favorites = listRecipes().filter((r) => r.favorite);
-      const exemplars = await similarFavorites(
-        [input.cuisine, input.mealType, input.note].filter(Boolean).join(" "),
-        favorites,
-        3,
-      );
+      const query = [input.cuisine, input.mealType, input.note]
+        .filter(Boolean)
+        .join(" ");
+      const exemplars = await similarFavorites(query, favorites, 3);
+      // The notes file is far too large to inline, so retrieve against the same
+      // request text rather than pasting all of it.
+      const contextNotes = await similarContext(query, 3);
 
       try {
         const result = await generateRecipe(
@@ -136,6 +139,7 @@ export const generationRouter = router({
             excluded: excludedLower(),
             config: getDietaryConfig(),
             exemplars,
+            contextNotes,
           },
           // tRPC surfaces the request's own signal, so closing the tab or
           // navigating away stops the generation instead of leaving it to run

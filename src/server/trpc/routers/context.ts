@@ -10,6 +10,8 @@ import {
 } from "~/server/db/queries";
 import { getProfile, getSettings } from "~/server/db/state";
 import { computeMacroPlan } from "~/lib/macros";
+import { reindexContext } from "~/server/embeddings/context";
+import { loggerFor } from "~/server/logger";
 
 /**
  * The context bridge.
@@ -19,6 +21,8 @@ import { computeMacroPlan } from "~/lib/macros";
  * notes to bring to a coach. It is editable in the app and exportable as JSON,
  * so the data is portable rather than trapped in a SQLite file on one server.
  */
+
+const log = loggerFor("context");
 
 const CONTEXT_FILE = join(process.cwd(), "nutrition-context.md");
 const EXAMPLE_FILE = join(process.cwd(), "nutrition-context.example.md");
@@ -39,9 +43,24 @@ export const contextRouter = router({
 
   save: protectedProcedure
     .input(z.object({ content: z.string().max(MAX_CONTEXT_BYTES) }))
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       writeFileSync(CONTEXT_FILE, input.content, "utf8");
-      return { ok: true, bytes: Buffer.byteLength(input.content, "utf8") };
+
+      // Re-embed so the next generation retrieves against what was just saved.
+      // A failure here must not fail the save: the file is the source of truth
+      // and the index is a derivative that a later save will rebuild.
+      let indexedChunks = 0;
+      try {
+        indexedChunks = await reindexContext(input.content);
+      } catch (error) {
+        log.warn({ err: error }, "context saved but reindex failed");
+      }
+
+      return {
+        ok: true,
+        bytes: Buffer.byteLength(input.content, "utf8"),
+        indexedChunks,
+      };
     }),
 
   /** Everything worth taking elsewhere, as one JSON document. */

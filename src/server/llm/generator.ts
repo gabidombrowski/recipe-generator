@@ -11,6 +11,7 @@ import {
   withDeadline,
 } from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
+import type { ContextChunk } from "~/server/embeddings/context";
 import { loggerFor } from "~/server/logger";
 import {
   recordGeneration,
@@ -72,6 +73,11 @@ export interface GenerationContext {
   config: DietaryConfig;
   /** Favourite recipes to show as few-shot exemplars. */
   exemplars: readonly RecipeBody[];
+  /**
+   * Passages retrieved from the user's own notes. Optional, because a fresh
+   * install has no context file and generation must not depend on one.
+   */
+  contextNotes?: readonly ContextChunk[];
 }
 
 /** How to run the call, as opposed to what to ask for. */
@@ -170,6 +176,31 @@ function describeExemplars(exemplars: readonly RecipeBody[]): string {
   ].join("\n");
 }
 
+/**
+ * Retrieved passages from the user's free-text notes.
+ *
+ * Labelled explicitly as their words rather than folded in as more rules: the
+ * model should weigh a note like "chickpeas have been heavy lately" as a
+ * preference, not enforce it the way it enforces an exclusion.
+ */
+function describeContextNotes(notes: readonly ContextChunk[]): string {
+  if (notes.length === 0) return "";
+
+  const rendered = notes
+    .map((n) => (n.heading ? `### ${n.heading}\n\n${n.body}` : n.body))
+    .join("\n\n");
+
+  return [
+    "## Their own notes",
+    "",
+    "Passages they wrote about how things are going, retrieved because they look",
+    "relevant to this request. Treat them as preferences to honour where you can,",
+    "not as hard constraints — the rules above are the hard constraints.",
+    "",
+    rendered,
+  ].join("\n");
+}
+
 function describeRequest(request: GenerationRequest): string {
   const parts = [`A **${request.mealType}** recipe.`];
   if (request.cuisine) parts.push(`Cuisine: ${request.cuisine}.`);
@@ -191,6 +222,7 @@ export function buildSystemPrompt(
     GUIDELINES: describeConfig(context.config),
     REQUEST: describeRequest(request),
     EXEMPLARS: describeExemplars(context.exemplars),
+    CONTEXT: describeContextNotes(context.contextNotes ?? []),
   });
   return { system, promptHash: prompt.hash };
 }
