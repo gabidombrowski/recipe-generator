@@ -101,7 +101,7 @@ jobs:
       # A failing gate should be readable in the PR, not buried in a log.
       - name: Comment the summary on the PR
         if: always() && github.event_name == 'pull_request' && steps.armed.outputs.armed == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
