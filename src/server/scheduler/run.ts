@@ -194,6 +194,15 @@ async function fillWithNovelRecipes(args: {
     return 0;
   }
 
+  // `cuisineListSchema` permits an empty array, and every cuisine below is
+  // indexed out of this list. Empty meant `undefined` reached the request and
+  // the retrieval query read "undefined cook" — which embeds and matches
+  // against nonsense rather than failing loudly.
+  if (cuisines.length === 0) {
+    notes.push("aiNovelRecipesPerWeek is set but no cuisines are configured; skipped AI recipes.");
+    return 0;
+  }
+
   const profile = getProfile();
   const cookSlots = getWeekSlots(weekStart).filter((s) => s.mealSource === "cook");
   const targets = cookSlots.slice(0, novelCount);

@@ -53,7 +53,9 @@ export const contextRouter = router({
           .string()
           // Cheap first-line guard so an absurd payload is rejected before the
           // byte length is computed. The refine below stays the source of truth.
-          .max(MAX_CONTEXT_BYTES)
+          .max(MAX_CONTEXT_BYTES, {
+            message: `Context must be ${MAX_CONTEXT_BYTES} bytes or fewer.`,
+          })
           .refine(
             (value) => Buffer.byteLength(value, "utf8") <= MAX_CONTEXT_BYTES,
             { message: `Context must be ${MAX_CONTEXT_BYTES} bytes or fewer.` },
