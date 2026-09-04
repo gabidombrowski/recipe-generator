@@ -14,6 +14,8 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { isLlmConfigured } from "~/server/llm/client";
 import { generateRecipe } from "~/server/llm/generator";
+import { similarFavorites } from "~/server/embeddings/index";
+import { similarContext } from "~/server/embeddings/context";
 import { planWeekWithAgent } from "~/server/llm/planner";
 import { loggerFor } from "~/server/logger";
 import { recordPlannerFallback, recordSchedulerRun as recordRunMetric, withSpan } from "~/server/telemetry";
@@ -209,13 +211,18 @@ async function fillWithNovelRecipes(args: {
   // Rotate deterministically by week so successive weeks explore new cuisines.
   const offset = Number(weekStart.replaceAll("-", "")) % Math.max(1, freshCuisines.length);
 
-  const favorites = listRecipes()
-    .filter((r) => r.favorite)
-    .slice(0, 3);
+  const favorites = listRecipes().filter((r) => r.favorite);
 
   let created = 0;
   for (const [index, slot] of targets.entries()) {
     const cuisine = freshCuisines[(offset + index) % Math.max(1, freshCuisines.length)];
+
+    // Retrieve per slot rather than reusing one arbitrary trio for the whole
+    // week: every slot here asks for a different cuisine, so the exemplars
+    // should differ too. The interactive path has always done this; the cron
+    // is the one that runs unattended and produces most of the library.
+    const exemplars = await similarFavorites(`${cuisine} cook`, favorites, 3);
+    const contextNotes = await similarContext(`${cuisine} cook`, 3);
 
     try {
       const result = await generateRecipe(
@@ -225,7 +232,8 @@ async function fillWithNovelRecipes(args: {
           trainingDay: isTrainingDay(profile, dayOfWeekFor(slot.date)),
           excluded,
           config: getDietaryConfig(),
-          exemplars: favorites,
+          exemplars,
+          contextNotes,
         },
       );
 
