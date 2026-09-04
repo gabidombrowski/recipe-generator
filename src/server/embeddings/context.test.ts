@@ -24,6 +24,14 @@ describe("chunkContext", () => {
     expect(chunks[0]).toMatchObject({ heading: null, body: "No heading here." });
   });
 
+  it("treats a whitespace-only line as a paragraph break", () => {
+    // Valid Markdown: the "blank" line between these two holds a space, which
+    // a naive /\n{2,}/ split does not see, silently merging the paragraphs.
+    const chunks = chunkContext("# H\n\nFirst para.\n \t \nSecond para.");
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]?.body).toBe("First para.\n\nSecond para.");
+  });
+
   it("numbers chunks in file order", () => {
     const chunks = chunkContext("# A\n\nOne.\n\n# B\n\nTwo.\n\n# C\n\nThree.");
     expect(chunks.map((c) => c.ordinal)).toEqual([0, 1, 2]);

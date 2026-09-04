@@ -70,7 +70,9 @@ export function chunkContext(markdown: string): ContextChunk[] {
   for (const section of sections) {
     const paragraphs = section.lines
       .join("\n")
-      .split(/\n{2,}/)
+      // A blank line in Markdown may contain spaces or tabs, so `\n{2,}` alone
+      // silently merged paragraphs separated by one.
+      .split(/\n\s*\n/)
       .map((p) => p.trim())
       .filter(Boolean);
 
@@ -108,7 +110,28 @@ const asVecKey = (chunkId: number): bigint => BigInt(chunkId);
  * boundaries around anyway, and a stale chunk that no longer exists in the file
  * would silently keep influencing generation.
  */
-export async function reindexContext(markdown: string): Promise<number> {
+/**
+ * Reindexing is a destructive rebuild with awaited embedding calls in the
+ * middle, so two of them interleaving would leave the index neither the old
+ * content nor the new. Saves are queued behind each other instead.
+ *
+ * An in-process queue is the right scope: this is a single-instance app, the
+ * same reasoning the rate limiter documents.
+ */
+let reindexQueue: Promise<unknown> = Promise.resolve();
+
+export function reindexContext(markdown: string): Promise<number> {
+  const run = reindexQueue.then(
+    () => rebuildContextIndex(markdown),
+    () => rebuildContextIndex(markdown),
+  );
+  // Keep the chain alive after a rejection, or one failure blocks every save
+  // that follows it.
+  reindexQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function rebuildContextIndex(markdown: string): Promise<number> {
   // Clear first, and unconditionally. Returning early on an unavailable
   // extension used to leave the previous index in place, so notes edited while
   // sqlite-vec could not load stayed indexed under their old text — and were
