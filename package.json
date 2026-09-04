@@ -33,7 +33,7 @@
     "record-demo-fixtures": "node scripts/record-demo-fixtures.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.68.0",
+    "@anthropic-ai/sdk": "^0.120.0",
     "@huggingface/transformers": "^3.8.1",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-prometheus": "^0.221.0",
