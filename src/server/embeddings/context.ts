@@ -165,10 +165,14 @@ export async function reindexContext(markdown: string): Promise<number> {
  * Returned in file order rather than by score, so several retrieved passages
  * read the way they were written instead of in similarity order.
  */
-export async function similarContext(query: string, k = 3): Promise<ContextChunk[]> {
+export async function similarContext(
+  query: string,
+  k = 3,
+  queryVector?: Float32Array | null,
+): Promise<ContextChunk[]> {
   if (!vectorSearchAvailable()) return [];
 
-  const vector = await embed(query);
+  const vector = queryVector === undefined ? await embed(query) : queryVector;
   if (!vector) return [];
 
   const hits = sqlite

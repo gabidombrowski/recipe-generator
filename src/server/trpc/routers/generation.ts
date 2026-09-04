@@ -25,6 +25,7 @@ import {
 } from "~/server/llm/library-fill";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
 import {
+  embed,
   similarFavorites,
   upsertRecipeEmbedding,
 } from "~/server/embeddings/index";
@@ -125,12 +126,14 @@ export const generationRouter = router({
       const query = [input.cuisine, input.mealType, input.note]
         .filter(Boolean)
         .join(" ");
-      // Two independent lookups against the same request text — the notes file
-      // is far too large to inline, so it is retrieved rather than pasted.
-      // Concurrent, so the slower one sets the latency instead of the sum.
+      // Two lookups against the same request text — the notes file is far too
+      // large to inline, so it is retrieved rather than pasted. Embed once and
+      // hand the vector to both: MiniLM over identical input is the expensive
+      // half, and running it twice bought nothing.
+      const queryVector = await embed(query);
       const [exemplars, contextNotes] = await Promise.all([
-        similarFavorites(query, favorites, 3),
-        similarContext(query, 3),
+        similarFavorites(query, favorites, 3, queryVector),
+        similarContext(query, 3, queryVector),
       ]);
 
       try {

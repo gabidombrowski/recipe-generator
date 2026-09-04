@@ -148,11 +148,21 @@ export interface SemanticHit {
   distance: number;
 }
 
-/** Top-k nearest recipes to a free-text query. */
-export async function semanticSearch(query: string, k = 10): Promise<SemanticHit[]> {
+/**
+ * Top-k nearest recipes to a free-text query.
+ *
+ * `queryVector` lets a caller that has already embedded the text hand the
+ * vector in. Two retrievals against the same request would otherwise run
+ * MiniLM over identical input twice, and the embedding is the expensive half.
+ */
+export async function semanticSearch(
+  query: string,
+  k = 10,
+  queryVector?: Float32Array | null,
+): Promise<SemanticHit[]> {
   if (!vectorSearchAvailable()) return [];
 
-  const vector = await embed(query);
+  const vector = queryVector === undefined ? await embed(query) : queryVector;
   if (!vector) return [];
 
   const rows = sqlite
@@ -176,10 +186,11 @@ export async function similarFavorites(
   query: string,
   favorites: readonly Recipe[],
   k = 3,
+  queryVector?: Float32Array | null,
 ): Promise<Recipe[]> {
   if (favorites.length === 0) return [];
 
-  const hits = await semanticSearch(query, k * 4);
+  const hits = await semanticSearch(query, k * 4, queryVector);
   if (hits.length === 0) return favorites.slice(0, k);
 
   const favoriteIds = new Set(favorites.map((r) => r.id));
