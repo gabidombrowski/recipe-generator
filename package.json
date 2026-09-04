@@ -61,7 +61,7 @@
     "@storybook/nextjs": "^10.5.7",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.18.8",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
     "drizzle-kit": "^0.31.5",
