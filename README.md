@@ -109,6 +109,7 @@ The design decisions worth reading about, each in its own document:
 | [Dietary rules](docs/dietary-rules.md)                              | Why the rules are data the user owns, not code                             |
 | [Untrusted planner, trusted verifier](docs/planner-and-verifier.md) | The pattern that makes an LLM planner safe to trust on a Sunday morning    |
 | [Structured generation](docs/structured-generation.md)              | Forced tool use, schemas as instructions, retries on rejection             |
+| [Retrieval over the notes file](docs/context-retrieval.md)          | Chunking free text so the model sees only the relevant parts               |
 | [Evals](docs/evals.md)                                              | Fixtures, hard gates, and the judge                                        |
 | [Observability](docs/observability.md)                              | Traces, metrics, logs, health                                              |
 | [Look and feel](docs/look-and-feel.md)                              | Where the visual design comes from                                         |

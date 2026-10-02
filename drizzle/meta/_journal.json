@@ -57,6 +57,13 @@
       "when": 1786309820709,
       "tag": "0007_seed_cuisine_relabel",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788545049520,
+      "tag": "0008_parched_ogun",
+      "breakpoints": true
     }
   ]
 }
