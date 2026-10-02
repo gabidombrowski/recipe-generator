@@ -22,6 +22,16 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: react-dom
         update-types: [version-update:semver-major]
+      # Held on 6.0.x until typescript-eslint (via eslint-config-next)
+      # supports 7; its peer range stops at <6.1.0 and lint refuses to run.
+      - dependency-name: typescript
+        update-types:
+          [version-update:semver-major, version-update:semver-minor]
+      # Held on 9 until eslint-plugin-react and eslint-plugin-import (via
+      # eslint-config-next) support 10; react crashes on the removed
+      # context.getFilename().
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: "/"
