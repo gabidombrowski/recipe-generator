@@ -16,13 +16,16 @@ function messageWithToolUse(): Anthropic.Message {
     type: "message",
     role: "assistant",
     model: "claude-test",
+    container: null,
     stop_reason: "tool_use",
+    stop_details: null,
     stop_sequence: null,
     usage: { input_tokens: 1, output_tokens: 1 } as Anthropic.Usage,
     content: [
       {
         type: "tool_use",
         id: "toolu_abc123",
+        caller: { type: "direct" },
         name: "emit_recipe",
         input: { name: "Bad Recipe" },
       },
