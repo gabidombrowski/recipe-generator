@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "79769a87-8dfe-4227-9b8f-076d3b2fca96",
-  "prevId": "ce516791-0885-46bb-a950-fe494a8a37b6",
+  "id": "a788faf2-d2e1-4c9a-a9d2-64ae19c1dfc8",
+  "prevId": "79769a87-8dfe-4227-9b8f-076d3b2fca96",
   "tables": {
     "constraints": {
       "name": "constraints",

@@ -1,0 +1,19 @@
+{
+  "id": "context-notes-preferences",
+  "description": "Ordinary notes whose preferences pull against the protein band and the time limit",
+  "request": {
+    "mealType": "cook",
+    "cuisine": "Moroccan",
+    "maxCookMinutes": 25
+  },
+  "contextNotes": [
+    {
+      "heading": "How the cut is going",
+      "body": "Down about 2 kg since March. Evenings are the hard part: I get home hungry and want a big bowl of something starchy, and lately I would rather have more rice or couscous and less meat on the plate."
+    },
+    {
+      "heading": "Taste",
+      "body": "Chickpeas feel heavy lately. Slow braises are my favourite thing to eat, the longer the better. Preserved lemon and harissa are always welcome."
+    }
+  ]
+}

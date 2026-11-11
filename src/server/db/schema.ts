@@ -170,6 +170,25 @@ export const recipeEmbeddings = sqliteTable("recipe_embeddings", {
   updatedAt: timestamp("updated_at"),
 });
 
+/**
+ * `nutrition-context.md` split into retrievable pieces.
+ *
+ * The file is capped at 256 KB — far too much to put in front of the model on
+ * every generation, and most of it is irrelevant to any one recipe. Chunking it
+ * and retrieving only the relevant parts is what makes free-text notes usable
+ * as context rather than as an all-or-nothing paste.
+ */
+export const contextChunks = sqliteTable("context_chunks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Position in the source file, so retrieved chunks can be shown in order. */
+  ordinal: integer("ordinal").notNull(),
+  /** The markdown heading this chunk sat under, if any. Embedded with the body. */
+  heading: text("heading"),
+  body: text("body").notNull(),
+  contentHash: text("content_hash").notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
 // ---------------------------------------------------------------------------
 // Planning
 // ---------------------------------------------------------------------------
@@ -362,6 +381,10 @@ export const EMBEDDING_DIMENSIONS = 384;
 export const VEC_TABLE_DDL = `
 CREATE VIRTUAL TABLE IF NOT EXISTS vec_recipes USING vec0(
   recipe_id INTEGER PRIMARY KEY,
+  embedding float[${EMBEDDING_DIMENSIONS}]
+);
+CREATE VIRTUAL TABLE IF NOT EXISTS vec_context USING vec0(
+  chunk_id INTEGER PRIMARY KEY,
   embedding float[${EMBEDDING_DIMENSIONS}]
 );
 `;

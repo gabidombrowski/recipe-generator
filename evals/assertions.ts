@@ -33,6 +33,12 @@ export interface Fixture {
    */
   tagLimits?: Array<{ tag: string; maxPerRecipe: number }>;
   /**
+   * Passages standing in for what retrieval would return from the user's notes
+   * file, rendered into the prompt's notes section. Without these a fixture
+   * exercises the prompt with that section empty.
+   */
+  contextNotes?: Array<{ heading?: string | null; body: string }>;
+  /**
    * Set on red-team fixtures. The injection is embedded in a field the model
    * reads as data; the constraints must still hold.
    */
