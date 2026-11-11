@@ -10,7 +10,11 @@ import {
 import { judgeRecipe, type Grade } from "./judge";
 import { MODELS, TIMEOUTS } from "~/server/llm/client";
 import { mapWithConcurrency } from "~/lib/concurrency";
-import { buildSystemPrompt, generateRecipe } from "~/server/llm/generator";
+import {
+  buildSystemPrompt,
+  generateRecipe,
+  type GenerationContext,
+} from "~/server/llm/generator";
 import { loadPrompt, PROMPT_NAMES } from "~/server/llm/prompts";
 import { DEFAULT_PROFILE, type RecipeBody } from "~/lib/schemas";
 import {
@@ -37,8 +41,9 @@ export const RUNS_PER_FIXTURE = 3;
 /**
  * How many generations may be in flight at once.
  *
- * Thirty fixtures times three runs is ninety generations, each followed by a
- * judge call. Sequentially that is roughly half an hour of wall clock against
+ * Thirty-three fixtures times three runs is ninety-nine generations, each
+ * followed by a judge call. Sequentially that is over half an hour of wall
+ * clock against
  * a CI job capped at 45 minutes — the suite was sized to hit its own ceiling.
  * Five is chosen to stay well inside Anthropic's per-minute limits rather than
  * to go as fast as possible; `isRetryable` absorbs the occasional 429, but a
@@ -139,6 +144,35 @@ export function fixtureConfig(fixture: Fixture) {
   );
 }
 
+/**
+ * Everything a fixture's generation is given besides the request itself.
+ *
+ * Exported so the hermetic suite can check what a fixture actually puts in
+ * front of the model: a fixture whose notes never reached the prompt would
+ * pass every gate while measuring nothing.
+ */
+export function fixtureContext(fixture: Fixture): GenerationContext {
+  return {
+    profile: EVAL_PROFILE,
+    trainingDay: true,
+    excluded: fixture.excluded ?? [],
+    // Fixtures carry their own constraint set, which is what makes the
+    // Tier 1 gates test *the fixture's* rules rather than anyone's in
+    // particular. See REFERENCE_CONSTRAINTS for the shared default.
+    config: fixtureConfig(fixture),
+    // No exemplars: the evals measure the prompt, not the library.
+    exemplars: [],
+    // Notes are the exception to that, and for a reason: they are a section of
+    // the prompt in their own right and a free-text path into it, so a fixture
+    // states its own instead of depending on anyone's index.
+    contextNotes: (fixture.contextNotes ?? []).map((note, ordinal) => ({
+      ordinal,
+      heading: note.heading ?? null,
+      body: note.body,
+    })),
+  };
+}
+
 export function loadFixtures(): Fixture[] {
   return readdirSync(FIXTURES_DIR)
     .filter((f) => f.endsWith(".json"))
@@ -201,17 +235,7 @@ async function runOnce(fixture: Fixture, run: number): Promise<RunRecord> {
   try {
     const result = await generateRecipe(
       fixture.request,
-      {
-        profile: EVAL_PROFILE,
-        trainingDay: true,
-        excluded: fixture.excluded ?? [],
-        // Fixtures carry their own constraint set, which is what makes the
-        // Tier 1 gates test *the fixture's* rules rather than anyone's in
-        // particular. See REFERENCE_CONSTRAINTS for the shared default.
-        config: fixtureConfig(fixture),
-        // No exemplars: the evals measure the prompt, not the library.
-        exemplars: [],
-      },
+      fixtureContext(fixture),
       // A hung call would otherwise hold a concurrency slot for the whole run.
       { timeoutMs: TIMEOUTS.evals },
     );

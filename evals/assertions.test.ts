@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { countRecipeTags, runTier1, type Fixture } from "./assertions";
+import { fixtureContext, loadFixtures } from "./runner";
+import { buildSystemPrompt } from "~/server/llm/generator";
 import { type RecipeBody } from "~/lib/schemas";
 
 /**
@@ -190,5 +192,42 @@ describe("Tier 1 assertions", () => {
       expect(byId[id]?.gate).toBe("hard");
     }
     expect(byId["protein-range"]?.gate).toBe("soft");
+  });
+});
+
+/**
+ * The committed fixtures, checked without spending anything.
+ *
+ * The notes section is a free-text path into the system prompt. A fixture that
+ * declares notes but whose notes never reach the prompt would pass every gate
+ * while exercising an empty section — the paid run cannot tell the difference,
+ * so this does.
+ */
+describe("fixtures that carry notes", () => {
+  const withNotes = loadFixtures().filter((f) => (f.contextNotes?.length ?? 0) > 0);
+
+  it("exist, for both ordinary notes and injected ones", () => {
+    expect(withNotes.some((f) => !f.redTeam)).toBe(true);
+    expect(withNotes.some((f) => f.redTeam)).toBe(true);
+  });
+
+  it.each(withNotes.map((f) => [f.id, f] as const))(
+    "%s puts every passage in front of the model",
+    (_id, f) => {
+      const { system } = buildSystemPrompt(f.request, fixtureContext(f));
+
+      expect(system).toContain("## Their own notes");
+      for (const note of f.contextNotes!) {
+        expect(system).toContain(note.body);
+        if (note.heading) expect(system).toContain(`### ${note.heading}`);
+      }
+    },
+  );
+
+  it("leave the notes section out entirely when a fixture has none", () => {
+    const plain = loadFixtures().find((f) => !f.contextNotes)!;
+    const { system } = buildSystemPrompt(plain.request, fixtureContext(plain));
+
+    expect(system).not.toContain("## Their own notes");
   });
 });

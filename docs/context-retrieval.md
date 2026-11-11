@@ -87,6 +87,10 @@ recipe still passes `recipeRuleViolations` before it is stored. A note that
 talks the model into suggesting an excluded ingredient still fails the same
 check it would have failed anyway.
 
+The eval suite presses on this path directly: three fixtures supply their own
+notes passages, two of them injections. See the red-team section of
+[evals.md](evals.md).
+
 ## Prompt version
 
 Adding the section changed the generator prompt, so it became
