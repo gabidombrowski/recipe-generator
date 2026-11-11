@@ -367,13 +367,6 @@ export const cuisineListSchema = z
 /**
  * The meals in a day, and which one the app plans.
  *
- * Until now the app planned exactly one meal per day and called it dinner —
- * `plan_slots` is unique on date, and the planner prompt opened with "one week
- * of dinners". Everything else you ate was invisible to it, while the calorie
- * and protein targets were whole-day numbers, so the targets and the plan were
- * describing different things. `perMealProtein` even divided by a hardcoded
- * four meals that nothing else knew about.
- *
  * Naming the meals fixes the arithmetic: targets divide by the meals you
  * actually eat. `plannedMeal` then says which of them the scheduler fills,
  * making the previously unstated assumption explicit and changeable.
