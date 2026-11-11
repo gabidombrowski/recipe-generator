@@ -55,8 +55,13 @@ jobs:
 
       - run: npm ci
 
+      # No `--with-deps`: that flag apt-installs system packages, which makes
+      # this job depend on Ubuntu's package mirror being reachable from the
+      # runner. When the mirror stopped resolving, the job failed three times
+      # running before a single test started. The hosted image already carries
+      # the libraries Chromium needs to launch.
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Build
         run: npm run build
