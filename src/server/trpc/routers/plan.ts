@@ -12,6 +12,7 @@ import {
   listRecipes,
   recentRecipeIds,
   setSlotMealSource,
+  setSlotServings,
   weekIsPlanned,
   writeSlots,
 } from "~/server/db/queries";
@@ -20,7 +21,7 @@ import { getDietaryConfig } from "~/server/db/config";
 import { runWeeklyGeneration } from "~/server/scheduler/run";
 import { planWeekDeterministically } from "~/server/scheduler/deterministic";
 import { deriveSlotRoles, eligibleMealTypes } from "~/server/scheduler/rules";
-import { isLlmConfigured } from "~/server/llm/client";
+import { isAiAvailable } from "~/server/llm/availability";
 import {
   addDays,
   dayOfWeekFor,
@@ -34,7 +35,13 @@ import {
   isTrainingDay,
   splitAcrossMeals,
 } from "~/lib/macros";
-import { isoDateSchema, mealSourceSchema } from "~/lib/schemas";
+import {
+  isoDateSchema,
+  mealSourceSchema,
+  servingsCountSchema,
+} from "~/lib/schemas";
+import { defaultServingsFor, slotKey } from "~/lib/servings";
+import { weekPortions } from "~/server/servings";
 
 /**
  * The Today and Weekly plan views.
@@ -207,6 +214,15 @@ export const planRouter = router({
         meals: settings.plannedMeals,
         mainMeal: settings.mainMeal,
       });
+      const portions = weekPortions(weekStart, profile, settings);
+
+      /** What a leftover slot is eating: the cook day's recipe, by name. */
+      const cookedRecipeName = (date: string, meal: string) => {
+        const cookSlot = getSlot(date, meal);
+        return cookSlot?.recipeId
+          ? (getRecipe(cookSlot.recipeId)?.name ?? null)
+          : null;
+      };
 
       const days = weekDates(weekStart).map((date) => {
         const training = isTrainingDay(profile, dayOfWeekFor(date));
@@ -217,8 +233,25 @@ export const planRouter = router({
           .map(({ meal, mealSource }) => {
             const slot = byKey.get(`${date}|${meal}`);
             const role = slot?.mealSource ?? mealSource;
+            const portion = portions.get(slotKey(date, meal));
             return {
               meal,
+              /** People eating this slot, override or default. */
+              servings: portion?.eat ?? 1,
+              /** The slot's own override, null when it uses the default. */
+              servingsOverride: slot?.servings ?? null,
+              defaultServings: defaultServingsFor(meal, settings.mealServings),
+              /** Extra portions a cook day makes for the leftover days below. */
+              leftoverServings: portion?.leftover ?? 0,
+              leftoverDays: (portion?.leftoverDates ?? []).map(dayOfWeekFor),
+              /** For a leftover slot: the cook day it eats from. */
+              leftoverOf: portion?.cookedOn
+                ? {
+                    date: portion.cookedOn,
+                    day: dayOfWeekFor(portion.cookedOn),
+                    recipeName: cookedRecipeName(portion.cookedOn, meal),
+                  }
+                : null,
               isMain: meal === settings.mainMeal,
               mealSource: role,
               derivedMealSource: mealSource,
@@ -253,7 +286,7 @@ export const planRouter = router({
         days,
         flaggedTags: flaggedTags(),
         plannerMode: settings.plannerMode,
-        llmConfigured: isLlmConfigured(),
+        llmConfigured: isAiAvailable(),
         aiNovelRecipesPerWeek: settings.aiNovelRecipesPerWeek,
         lastRuns: latestSchedulerRuns(5),
       };
@@ -310,6 +343,37 @@ export const planRouter = router({
         input.meal ?? getSettings().mainMeal,
         input.mealSource,
       );
+      return { ok: true };
+    }),
+
+  /**
+   * How many people eat one slot. `null` returns it to the meal's default.
+   *
+   * On a leftover day this is what makes the cook day before it cook more: the
+   * grocery list and the Week page both read the run of leftover days.
+   */
+  setServings: protectedProcedure
+    .input(
+      z.object({
+        date: isoDateSchema,
+        meal: z.string().min(1).max(40),
+        servings: servingsCountSchema.nullable(),
+      }),
+    )
+    .mutation(({ input }) => {
+      const settings = getSettings();
+      // The role to create the slot with, if it does not exist yet: whatever
+      // the week would derive, exactly as `assign` does.
+      const role =
+        getSlot(input.date, input.meal)?.mealSource ??
+        deriveSlotRoles(
+          weekStartFor(input.date, settings.generationDay),
+          getProfile(),
+          { meals: settings.plannedMeals, mainMeal: settings.mainMeal },
+        ).find((s) => s.date === input.date && s.meal === input.meal)
+          ?.mealSource ??
+        "quick";
+      setSlotServings(input.date, input.meal, role, input.servings);
       return { ok: true };
     }),
 

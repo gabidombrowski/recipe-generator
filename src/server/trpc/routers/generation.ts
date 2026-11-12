@@ -17,7 +17,7 @@ import {
 import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipe } from "~/server/db/recipes";
-import { isLlmConfigured } from "~/server/llm/client";
+import { aiStatus } from "~/server/llm/availability";
 import {
   getLibraryFillStatus,
   startLibraryFill,
@@ -68,9 +68,15 @@ export const generateInputSchema = z.object({
 const FIXTURES_DIR = join(process.cwd(), "evals", "fixtures");
 
 export const generationRouter = router({
-  available: protectedProcedure.query(() => ({
-    configured: isLlmConfigured(),
-  })),
+  /**
+   * Whether generation can run. `configured` is kept as the name the pages
+   * already gate on, but it now means *available*: a key is set and AI is
+   * switched on in Settings. `reason` says which one is missing.
+   */
+  available: protectedProcedure.query(() => {
+    const ai = aiStatus();
+    return { configured: ai.available, reason: ai.reason };
+  }),
 
   // ---------------------------------------------------------------------------
   // Filling the library from the cuisine palette
@@ -94,11 +100,11 @@ export const generationRouter = router({
   generate: protectedProcedure
     .input(generateInputSchema)
     .mutation(async ({ ctx, input, signal }) => {
-      if (!isLlmConfigured()) {
+      const ai = aiStatus();
+      if (!ai.available) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message:
-            "ANTHROPIC_API_KEY is not set, so AI generation is unavailable.",
+          message: `${ai.reason}, so AI generation is unavailable.`,
         });
       }
 

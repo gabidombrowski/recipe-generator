@@ -128,11 +128,25 @@ async function call(path, type, input) {
 console.log("[fixtures] staging demo state");
 const state = await call("setup.state", "query");
 await call("setup.completeWizard", "mutation", {
-  profile: state.profile,
-  settings: state.settings,
+  // Two cook days, so the demo shows the cook -> leftover cycle and the
+  // servings it carries rather than a week of quick meals.
+  profile: { ...state.profile, cookDays: ["Monday", "Thursday"] },
+  settings: { ...state.settings, mealServings: { Dinner: 2 } },
   mealShapes: [],
 });
 await call("plan.generateWeek", "mutation", { force: true });
+
+// Mark the seeded pantry staples the week actually uses as on hand, so the
+// list shows pantry lines ticked and badged. Matching is the list's own.
+const before = await call("grocery.list", "query");
+const usedNames = new Set(
+  [...before.sections.flatMap((s) => s.lines), ...before.buyLater].map((l) => l.name),
+);
+for (const staple of await call("kitchen.pantry", "query")) {
+  if (usedNames.has(staple.name.trim().toLowerCase())) {
+    await call("kitchen.setPantryOnHand", "mutation", { id: staple.id, onHand: true });
+  }
+}
 await call("kitchen.storePortion", "mutation", {
   recipeName: "Gochujang Beef Bowl",
   storage: "fridge",
@@ -157,7 +171,7 @@ for (const path of QUERIES) {
 // the demo fakes generation client-side, and the gate would hide its best
 // feature. Overriding the single flag here keeps the lie small, local and
 // documented; everything else stays exactly as the server answered.
-fixtures["generation.available"] = { configured: true };
+fixtures["generation.available"] = { configured: true, reason: null };
 
 // The streaming transcript: a seed recipe replayed as the generator's
 // forced-tool JSON, chunked the way the real stream arrives.

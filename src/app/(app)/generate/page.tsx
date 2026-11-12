@@ -195,8 +195,8 @@ export default function GeneratePage() {
       <div className="space-y-5">
         <PageTitle>Generate</PageTitle>
         <Empty>
-          <code>ANTHROPIC_API_KEY</code> is not set, so recipe generation is
-          unavailable.
+          {available.data?.reason ?? "AI generation is unavailable"}, so
+          recipe generation is unavailable.
         </Empty>
       </div>
     );

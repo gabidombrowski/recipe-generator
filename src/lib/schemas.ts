@@ -398,6 +398,13 @@ export const mealNameListSchema = z
 export const unitSystemSchema = z.enum(["metric", "imperial"]);
 export type UnitSystem = z.infer<typeof unitSystemSchema>;
 
+export const servingsCountSchema = z.number().int().min(1).max(12);
+
+export const mealServingsSchema = z.record(
+  z.string().min(1).max(40),
+  servingsCountSchema,
+);
+
 export const settingsSchema = z.object({
   shoppingDay: dayOfWeekSchema,
   generationDay: dayOfWeekSchema,
@@ -431,6 +438,15 @@ export const settingsSchema = z.object({
     .trim()
     .min(1, "pick which meal the app cooks and plans around")
     .max(40),
+  /**
+   * How many people eat each meal, by meal name. A meal not listed serves 1.
+   * Individual slots can override it from the Week page.
+   */
+  mealServings: mealServingsSchema.default({}),
+  /** Off: the weekly cron fires but plans nothing. "Generate week now" still works. */
+  scheduledRunsEnabled: z.boolean().default(true),
+  /** Off: nothing calls the Claude API, scheduled or manual — so nothing is billed. */
+  aiEnabled: z.boolean().default(true),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -452,6 +468,9 @@ export const DEFAULT_SETTINGS: Settings = {
   meals: [...DEFAULT_MEALS],
   plannedMeals: ["Dinner"],
   mainMeal: "Dinner",
+  mealServings: {},
+  scheduledRunsEnabled: true,
+  aiEnabled: true,
 };
 
 /**
@@ -514,6 +533,8 @@ export const planSlotSchema = z.object({
   meal: z.string().min(1).max(40),
   mealSource: mealSourceSchema,
   recipeId: z.number().int().positive().nullable(),
+  /** Per-slot override of the meal's default servings; null = use default. */
+  servings: servingsCountSchema.nullable(),
 });
 export type PlanSlot = z.infer<typeof planSlotSchema>;
 
@@ -570,13 +591,16 @@ export const grocerySectionSchema = z.enum(GROCERY_SECTIONS);
 export type GrocerySection = z.infer<typeof grocerySectionSchema>;
 
 export const groceryLineSchema = z.object({
-  /** Stable identity across renders: `name|unit`, lowercased. */
+  /** Stable identity across renders: the canonical ingredient name. */
   key: z.string(),
+  /** Canonical name: "garlic", not "fresh garlic, minced". */
   name: z.string(),
-  qty: z.number(),
-  unit: z.string(),
+  /** One amount per unit family that could not be converted into another. */
+  amounts: z.array(z.object({ qty: z.number(), unit: z.string() })).min(1),
   section: grocerySectionSchema,
   checked: z.boolean(),
+  /** Covered by an on-hand pantry staple; starts ticked. */
+  pantry: z.boolean(),
   /** Culinary tags on this line that an active guideline limits. */
   flaggedTags: z.array(z.string()),
   /** Seafood is bought day-of or day-before, so it lists separately. */
@@ -597,7 +621,5 @@ export const groceryListSchema = z.object({
   ),
   /** Seafood lines, pulled out of the main sections. */
   buyLater: z.array(groceryLineSchema),
-  /** Pantry staples marked on-hand: verify rather than buy. */
-  checkYourSupply: z.array(z.string()),
 });
 export type GroceryList = z.infer<typeof groceryListSchema>;

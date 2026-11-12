@@ -75,6 +75,12 @@ export function getSettings(): SettingsWithSetup {
     meals: row.meals,
     plannedMeals: row.plannedMeals,
     mainMeal: row.mainMeal,
+    // `?? {}`: a dev server whose cached connection predates the column reads
+    // it as undefined until restarted; one person per meal is the right reading.
+    mealServings: row.mealServings ?? {},
+    // Same stale-connection guard: an unread column means "on", the old behaviour.
+    scheduledRunsEnabled: row.scheduledRunsEnabled ?? true,
+    aiEnabled: row.aiEnabled ?? true,
     setupComplete: row.setupComplete,
   };
 }

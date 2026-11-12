@@ -194,3 +194,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * A pointer on everything you can click. Tailwind v4's preflight resets
+ * buttons to the default arrow, and checkboxes and their labels never had a
+ * pointer — on the grocery list in particular, where the whole label toggles
+ * its box, nothing said so. In `base` so a utility class can still override.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)),
+  label[for] {
+    cursor: pointer;
+  }
+}

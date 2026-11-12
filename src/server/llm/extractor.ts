@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
 import { toToolInputSchema } from "./tool-schema";
-import { getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
+import { EFFORT, getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
 import { loggerFor } from "~/server/logger";
 import { recordGeneration, withSpan, type TokenUsage } from "~/server/telemetry";
@@ -144,13 +144,17 @@ export async function extractConstraints(
         max_tokens: MAX_TOKENS,
         system,
         tools: [EXTRACT_TOOL],
-        tool_choice: { type: "tool", name: EXTRACT_TOOL_NAME },
+        // Opus 5.5 rejects a forced `tool_choice`; the call is asked for in
+        // the user turn instead. A reply without one records as "invalid"
+        // and proposes nothing, the same outcome a bad call always had.
+        tool_choice: { type: "auto" },
+        output_config: { effort: EFFORT },
         messages: [
           {
             role: "user",
             // Delimited and labelled as data, matching the system prompt's
             // framing. The post-checks are what actually enforce it.
-            content: `Here is how they described their needs.\n\n<description>\n${description}\n</description>`,
+            content: `Here is how they described their needs. Answer by calling ${EXTRACT_TOOL_NAME}.\n\n<description>\n${description}\n</description>`,
           },
         ],
       });

@@ -183,6 +183,7 @@ export function getWeekSlots(weekStart: IsoDate): PlanSlot[] {
       meal: row.meal,
       mealSource: row.mealSource,
       recipeId: row.recipeId,
+      servings: row.servings,
     }));
 }
 
@@ -300,8 +301,29 @@ export function getSlot(date: IsoDate, meal: string): PlanSlot | null {
         meal: row.meal,
         mealSource: row.mealSource,
         recipeId: row.recipeId,
+        servings: row.servings,
       }
     : null;
+}
+
+/**
+ * Sets how many people eat one slot, creating the slot if the scheduler has
+ * not written it yet (the same upsert reasoning as `setSlotMealSource`).
+ * `null` goes back to the meal's default.
+ */
+export function setSlotServings(
+  date: IsoDate,
+  meal: string,
+  mealSource: MealSource,
+  servings: number | null,
+): void {
+  db.insert(planSlots)
+    .values({ date, meal, mealSource, recipeId: null, servings })
+    .onConflictDoUpdate({
+      target: [planSlots.date, planSlots.meal],
+      set: { servings },
+    })
+    .run();
 }
 
 /**
@@ -333,12 +355,14 @@ export function getWeekMeals(
   weekStart: IsoDate,
   /** Restricts to these meals; omit for every slot in the week. */
   plannedMeals?: readonly string[],
-): PlannedMeal[] {
+): Array<PlannedMeal & { date: IsoDate; meal: string }> {
   const byId = recipesById();
   const wanted = plannedMeals ? new Set(plannedMeals) : null;
   return getWeekSlots(weekStart)
     .filter((slot) => wanted === null || wanted.has(slot.meal))
     .map((slot) => ({
+      date: slot.date,
+      meal: slot.meal,
       mealSource: slot.mealSource,
       recipe: slot.recipeId !== null ? (byId.get(slot.recipeId) ?? null) : null,
     }));
@@ -356,6 +380,21 @@ export function checkedLineKeys(weekStart: IsoDate): Set<string> {
       and(
         eq(groceryChecks.weekStart, weekStart),
         eq(groceryChecks.checked, true),
+      ),
+    )
+    .all();
+  return new Set(rows.map((r) => r.lineKey));
+}
+
+/** Keys explicitly unticked — the only way a pantry line stays unticked. */
+export function uncheckedLineKeys(weekStart: IsoDate): Set<string> {
+  const rows = db
+    .select()
+    .from(groceryChecks)
+    .where(
+      and(
+        eq(groceryChecks.weekStart, weekStart),
+        eq(groceryChecks.checked, false),
       ),
     )
     .all();
@@ -484,6 +523,7 @@ export function slotsBefore(date: IsoDate, days: number): PlanSlot[] {
       meal: row.meal,
       mealSource: row.mealSource,
       recipeId: row.recipeId,
+      servings: row.servings,
     }));
 }
 

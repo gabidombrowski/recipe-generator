@@ -101,6 +101,21 @@ export const settings = sqliteTable("settings", {
     .default(sql`'[]'`),
   /** The one meal carrying the cook -> leftover cycle. */
   mainMeal: text("main_meal").notNull().default("Dinner"),
+  /** Whether the weekly cron plans the week at all. */
+  scheduledRunsEnabled: integer("scheduled_runs_enabled", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  /**
+   * Master switch for every Claude API call: manual generation, library fill,
+   * the rule extractor, the agentic planner and AI recipes in scheduled runs.
+   * Off, the app behaves exactly as if no API key were set — and costs nothing.
+   */
+  aiEnabled: integer("ai_enabled", { mode: "boolean" }).notNull().default(true),
+  /** Default people eating each meal, by meal name; a missing meal is 1. */
+  mealServings: text("meal_servings", { mode: "json" })
+    .$type<Record<string, number>>()
+    .notNull()
+    .default(sql`'{}'`),
   /** Flipped once the first-run wizard completes or a local seed is loaded. */
   setupComplete: integer("setup_complete", { mode: "boolean" })
     .notNull()
@@ -204,6 +219,12 @@ export const planSlots = sqliteTable(
     recipeId: integer("recipe_id").references(() => recipes.id, {
       onDelete: "set null",
     }),
+    /**
+     * People eating this one meal, overriding the per-meal default. On a cook
+     * day it is only tonight's plate count: the leftover days it feeds add
+     * their own servings on top (see `~/lib/servings`).
+     */
+    servings: integer("servings"),
     createdAt: timestamp("created_at"),
   },
   (t) => [

@@ -14,6 +14,7 @@ import {
 import { Card, InfoHint } from "~/components/molecules";
 import { cx } from "~/components/cx";
 import { formatLongDate } from "~/lib/days";
+import { formatAmounts } from "~/lib/ingredients";
 import { type GroceryLine } from "~/lib/schemas";
 
 /**
@@ -22,6 +23,10 @@ import { type GroceryLine } from "~/lib/schemas";
  * Derived live from the week's plan — there is deliberately no "generate"
  * button here, only "reset list", which drops every tick and leaves the full
  * list. If a line looks wrong, the plan is wrong.
+ *
+ * Pantry staples marked on hand appear ticked with a "pantry" badge rather
+ * than being hidden, so the list shows everything the week uses; untick one to
+ * buy it after all.
  */
 export default function GroceryPage() {
   const trpc = useTRPC();
@@ -56,6 +61,12 @@ export default function GroceryPage() {
 
   const data = list.data;
 
+  // Ticked lines sink below unticked ones. The server already orders them
+  // this way; sorting here too keeps a tick moving instantly in the demo,
+  // whose in-memory data never re-sorts. Stable, so names stay alphabetical.
+  const ordered = (lines: readonly GroceryLine[]) =>
+    [...lines].sort((a, b) => Number(a.checked) - Number(b.checked));
+
   // Roomier than the rest of the app on purpose: this is the one screen used
   // one-handed, walking, in a shop. `py-2` gives the label — which toggles the
   // box via `htmlFor` — a 44px-tall target on a phone.
@@ -82,9 +93,10 @@ export default function GroceryPage() {
         )}
       >
         <span className="font-mono text-xs tabular-nums text-ink-muted">
-          {line.qty} {line.unit}
+          {formatAmounts(line.amounts)}
         </span>
         <span>{line.name}</span>
+        {line.pantry && <Badge tone="accent">pantry</Badge>}
         {line.flaggedTags.map((tag) => (
           <Badge key={tag} tone="flagged">
             {tag}
@@ -141,7 +153,7 @@ export default function GroceryPage() {
         data.sections.map((group) => (
           <Card key={group.section} title={group.section}>
             <ul className="divide-y divide-border">
-              {group.lines.map((line) => (
+              {ordered(group.lines).map((line) => (
                 <Line key={line.key} line={line} />
               ))}
             </ul>
@@ -155,28 +167,13 @@ export default function GroceryPage() {
             Buy day-of or day-before cooking.
           </p>
           <ul className="divide-y divide-border">
-            {data.buyLater.map((line) => (
+            {ordered(data.buyLater).map((line) => (
               <Line key={line.key} line={line} />
             ))}
           </ul>
         </Card>
       )}
 
-      {data.checkYourSupply.length > 0 && (
-        <Card title="Check your supply">
-          <p className="mb-2 text-xs text-ink-muted">
-            Marked on hand in the pantry, so not on the list — glance at them
-            before you go.
-          </p>
-          <ul className="flex flex-wrap gap-1.5">
-            {data.checkYourSupply.map((name) => (
-              <li key={name}>
-                <Badge>{name}</Badge>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
     </div>
   );
 }

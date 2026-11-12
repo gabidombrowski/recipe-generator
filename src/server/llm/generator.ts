@@ -5,7 +5,8 @@ import {
   getClient,
   isAborted,
   isRetryable,
-  MAX_TOKENS,
+  EFFORT,
+  STREAMING_MAX_TOKENS,
   MODELS,
   TIMEOUTS,
   withDeadline,
@@ -28,7 +29,7 @@ import {
 } from "~/lib/schemas";
 
 /**
- * AI recipe generation via forced tool use.
+ * AI recipe generation via tool use.
  *
  * The Recipe zod schema is defined exactly once (`~/lib/schemas`) and converted
  * to a JSON Schema here for the tool definition. That is the whole point: the
@@ -37,8 +38,9 @@ import {
  * because they are the same object.
  *
  * Output is read from the tool-use block and validated with the same zod
- * schema. There is no prose parsing — a model that ignores a forced tool call
- * is a failure to surface, not a string to regex.
+ * schema. The tool is requested, not forced — Opus 5.5 rejects a forced
+ * `tool_choice` — so a reply without the call is possible, and it goes through
+ * the same repair loop as a schema failure rather than being parsed as prose.
  */
 
 const log = loggerFor("generator");
@@ -257,15 +259,15 @@ const MAX_ATTEMPTS = 4;
  * with the re-prompt as a separate text block after it.
  */
 export function repairTurns(
-  message: AnthropicNS.Message,
+  message: AnthropicNS.Beta.BetaMessage,
   rejection: string,
   instruction: string,
-): AnthropicNS.MessageParam[] {
+): AnthropicNS.Beta.BetaMessageParam[] {
   const toolUse = message.content.find(
-    (block): block is AnthropicNS.ToolUseBlock => block.type === "tool_use",
+    (block): block is AnthropicNS.Beta.BetaToolUseBlock => block.type === "tool_use",
   );
 
-  const content: AnthropicNS.ContentBlockParam[] = toolUse
+  const content: AnthropicNS.Beta.BetaContentBlockParam[] = toolUse
     ? [
         {
           type: "tool_result",
@@ -275,8 +277,8 @@ export function repairTurns(
         },
         { type: "text", text: instruction },
       ]
-    : // No tool_use to answer (forced tool_choice should make this
-      // unreachable) — a plain text turn is then the correct shape.
+    : // No tool_use to answer (the model replied without calling the
+      // tool) — a plain text turn is then the correct shape.
       [{ type: "text", text: `${rejection}\n${instruction}` }];
 
   return [
@@ -286,21 +288,21 @@ export function repairTurns(
 }
 
 function extractToolInput(
-  message: AnthropicNS.Message,
+  message: AnthropicNS.Beta.BetaMessage,
 ):
   | { ok: true; input: unknown; toolUseId: string }
   | { ok: false; reason: string } {
   const toolUse = message.content.find(
-    (block): block is AnthropicNS.ToolUseBlock =>
+    (block): block is AnthropicNS.Beta.BetaToolUseBlock =>
       block.type === "tool_use" && block.name === RECIPE_TOOL_NAME,
   );
   if (toolUse) return { ok: true, input: toolUse.input, toolUseId: toolUse.id };
 
-  // Defensive fallback only. A forced tool_choice should make this unreachable;
-  // if it fires, something changed upstream and we want it visible in the logs
-  // rather than silently working via a parser nobody remembers writing.
+  // Defensive fallback only. The prompt asks for the tool call, so this should
+  // be rare; if it fires we want it visible in the logs rather than silently
+  // working via a parser nobody remembers writing.
   const text = message.content
-    .filter((block): block is AnthropicNS.TextBlock => block.type === "text")
+    .filter((block): block is AnthropicNS.Beta.BetaTextBlock => block.type === "text")
     .map((block) => block.text)
     .join("\n");
 
@@ -337,32 +339,41 @@ export async function generateRecipe(
     const startedAt = Date.now();
 
     const usage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
-    const messages: AnthropicNS.MessageParam[] = [
+    const messages: AnthropicNS.Beta.BetaMessageParam[] = [
       {
         role: "user",
-        content: `Write the recipe. ${describeRequest(request)}`,
+        content: `Write the recipe and return it by calling ${RECIPE_TOOL_NAME}. ${describeRequest(request)}`,
       },
     ];
 
     let lastIssues: string[] = [];
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-      let message: AnthropicNS.Message;
+      let message: AnthropicNS.Beta.BetaMessage;
       try {
         options.onAttempt?.(attempt);
         // Streamed even when nobody listens: the request shape and the final
         // message are identical, one code path stays honest, and a stream
         // cannot sit silently against the HTTP timeout the way a large
         // non-streaming response can.
-        const stream = client.messages.stream(
+        const stream = client.beta.messages.stream(
           {
             model: MODELS.generation,
-            max_tokens: MAX_TOKENS,
+            max_tokens: STREAMING_MAX_TOKENS,
             system,
             tools: [RECIPE_TOOL],
-            // Forcing the tool is what removes prose from the output surface
-            // entirely — the model has no path that returns anything else.
-            tool_choice: { type: "tool", name: RECIPE_TOOL_NAME },
+            // Opus 5.5 rejects a forced `tool_choice` with a 400, so the tool
+            // is requested in the user turn instead and `auto` lets the model
+            // call it. Prose-instead-of-a-call is still caught: no tool_use
+            // block means `extractToolInput` fails and the repair loop asks
+            // again, exactly as it does for a schema failure.
+            tool_choice: { type: "auto" },
+            output_config: { effort: EFFORT },
+            // If a safety classifier declines (a false positive on a recipe is
+            // unlikely but not impossible), the API re-runs the request on the
+            // fallback model Anthropic recommends instead of failing it.
+            betas: ["server-side-fallback-2026-07-01"],
+            fallbacks: "default",
             messages,
           },
           // A fresh deadline per attempt: a retry after a slow first try
@@ -411,6 +422,22 @@ export async function generateRecipe(
       usage.cacheReadInputTokens =
         (usage.cacheReadInputTokens ?? 0) +
         (message.usage.cache_read_input_tokens ?? 0);
+
+      // A safety decline that even the fallback model upheld. Asking again
+      // with the same request would only be declined again, so stop here.
+      if (message.stop_reason === "refusal") {
+        recordGeneration({
+          model: MODELS.generation,
+          operation: "recipe",
+          usage,
+          latencyMs: Date.now() - startedAt,
+          retries: attempt - 1,
+          status: "invalid",
+        });
+        throw new GenerationError("The model declined to write this recipe", attempt, [
+          `refused (${message.stop_details?.category ?? "no category"})`,
+        ]);
+      }
 
       const extracted = extractToolInput(message);
       if (!extracted.ok) {

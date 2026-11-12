@@ -26,7 +26,7 @@ import {
   setConstraintActive,
 } from "~/server/db/config";
 import { extractConstraints } from "~/server/llm/extractor";
-import { isLlmConfigured } from "~/server/llm/client";
+import { aiStatus } from "~/server/llm/availability";
 import { RATE_LIMITS, rateLimit } from "~/server/rate-limit";
 import { FRIDGE_SAFE_DAYS } from "./plan";
 import { daysBetween, todayInTimezone } from "~/lib/days";
@@ -131,10 +131,11 @@ export const kitchenRouter = router({
   proposeConstraints: protectedProcedure
     .input(z.object({ description: z.string().min(10).max(2000) }))
     .mutation(async ({ ctx, input }) => {
-      if (!isLlmConfigured()) {
+      const ai = aiStatus();
+      if (!ai.available) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "ANTHROPIC_API_KEY is not set, so the setup interview is unavailable.",
+          message: `${ai.reason}, so the setup interview is unavailable.`,
         });
       }
 
