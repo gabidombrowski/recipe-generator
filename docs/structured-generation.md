@@ -9,13 +9,21 @@ definition is:
 - converted via `zod-to-json-schema` into the tool definition handed to Claude
 - what the eval assertions validate against
 
-Generation uses a **forced tool call** (`tool_choice: { type: "tool", name:
-"save_recipe" }`), so the model has no output path that isn't the schema. Output
-is read from the tool-use block and re-validated with the same zod schema; on a
-validation failure the specific issues are fed back and it retries, because the
-model usually needs to fix one field rather than rewrite the dish. There is a
-defensive prose-parsing fallback for the case where the tool block is absent
-entirely, and it logs loudly if it ever fires.
+Generation asks for a **tool call** and reads the recipe from it. It used to
+force one (`tool_choice: { type: "tool" }`), but Claude Opus 5.5 rejects forced
+tool use, so the request now uses `tool_choice: { type: "auto" }` and the user
+turn says to call the tool. Output is read from the tool-use block and
+re-validated with the same zod schema; on a validation failure — or a reply
+with no tool call at all — the specific issue is fed back and it retries,
+because the model usually needs to fix one field rather than rewrite the dish.
+There is a defensive prose-parsing fallback for the case where the tool block is
+absent entirely, and it logs loudly if it ever fires.
+
+The model is set in `src/server/llm/client.ts`: Claude Opus 5.5 for generation,
+planning and rule extraction, at an explicit `medium` effort (it always thinks,
+and effort is the only control), with server-side fallback enabled so a safety
+false positive is retried on another model instead of failing. The eval judge
+stays on Claude Haiku 5.5 so the generator never grades itself.
 
 Derived fields — `tagCounts`, the ingredient search blob — are computed
 on write in `src/server/db/recipes.ts` and never accepted from a caller. A client

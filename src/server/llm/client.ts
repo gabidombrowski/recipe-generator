@@ -14,14 +14,37 @@ import Anthropic from "@anthropic-ai/sdk";
  * eval reports and the cost dashboard agree with what actually ran.
  */
 export const MODELS = {
-  /** Recipe generation and the agentic planner. */
-  generation: "claude-sonnet-4-6",
-  /** Tier 2 eval grading. Cheap, and its scores are report-only. */
-  judge: "claude-haiku-4-5-20251001",
+  /** Recipe generation, the agentic planner and the rule extractor. */
+  generation: "claude-opus-5-5",
+  /**
+   * Tier 2 eval grading. Deliberately *not* the generation model: a model
+   * grading its own output is a known source of self-preference bias, and the
+   * judge runs once per eval generation, so Haiku keeps a report-only score
+   * from costing as much as the thing it grades.
+   */
+  judge: "claude-haiku-5-5",
 } as const;
 
-/** Non-streaming ceiling that stays under the SDK's HTTP timeout. */
-export const MAX_TOKENS = 8_000;
+/**
+ * How hard the generation model thinks. Opus 5.5 always thinks — it cannot be
+ * turned off — and `effort` is the control. Its API default is `medium`; it
+ * is set explicitly so a future default change cannot silently move cost or
+ * quality. Recipes are short structured outputs: if evals hold at `low`, that
+ * is the cheaper setting to try next.
+ */
+export const EFFORT = "medium" as const;
+
+/**
+ * Output ceiling per call, including the model's thinking — which counts
+ * against `max_tokens` even though its text is not returned. 8K was sized for
+ * a model that did not think and would now cut recipes off mid-JSON. Calls
+ * above ~21K must stream; the generator does, the planner and extractor stay
+ * at this non-streaming size.
+ */
+export const MAX_TOKENS = 16_000;
+
+/** The generator streams, so it can afford room for long thinking. */
+export const STREAMING_MAX_TOKENS = 32_000;
 
 /**
  * Per-request deadlines, in milliseconds.
