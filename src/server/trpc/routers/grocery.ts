@@ -8,8 +8,11 @@ import {
   getWeekMeals,
   listPantry,
   setLineChecked,
+  uncheckedLineKeys,
 } from "~/server/db/queries";
-import { getSettings } from "~/server/db/state";
+import { getProfile, getSettings } from "~/server/db/state";
+import { weekPortions } from "~/server/servings";
+import { slotKey } from "~/lib/servings";
 import { getDietaryConfig } from "~/server/db/config";
 import { buildGroceryList, groceryListToMarkdown, groceryListToText } from "~/server/grocery";
 import { todayInTimezone, weekStartFor } from "~/lib/days";
@@ -39,6 +42,9 @@ function listFor(weekStart?: string) {
   const resolved =
     weekStart ?? weekStartFor(todayInTimezone(settings.timezone), settings.generationDay);
 
+  // Each cook day buys for its own plates plus the leftover days it feeds.
+  const portions = weekPortions(resolved, getProfile(), settings);
+
   return buildGroceryList({
     weekStart: resolved,
     settings,
@@ -46,13 +52,17 @@ function listFor(weekStart?: string) {
     // un-planned stay in the table — deleting a user's plan because they
     // unticked a checkbox would be worse — but their food must not keep
     // appearing on the shopping list.
-    meals: getWeekMeals(resolved, settings.plannedMeals),
+    meals: getWeekMeals(resolved, settings.plannedMeals).map((meal) => ({
+      ...meal,
+      servings: portions.get(slotKey(meal.date, meal.meal))?.total,
+    })),
     excluded: excludedLower(),
     pantryStaples: listPantry(),
     flaggedTags: flaggedTags(),
     dailyStaples: config.dailyStaples,
     mealShapes: config.mealShapes,
     checkedKeys: checkedLineKeys(resolved),
+    uncheckedKeys: uncheckedLineKeys(resolved),
   });
 }
 

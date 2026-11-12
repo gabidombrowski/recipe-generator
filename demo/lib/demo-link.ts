@@ -64,6 +64,32 @@ const mutations: Record<string, (input: Json) => unknown> = {
     announce("List reset — everything unticked");
     return { ok: true };
   },
+  "plan.setServings": (input) => {
+    // Only the plate count changes here. The cook day's leftover total and the
+    // grocery quantities are computed server-side, so the demo leaves them as
+    // recorded rather than reimplementing the portion plan in the browser.
+    const week = data["plan.week"] as {
+      days: {
+        date: string;
+        meals: {
+          meal: string;
+          servings: number;
+          servingsOverride: number | null;
+          defaultServings: number;
+        }[];
+      }[];
+    };
+    const entry = week.days
+      .find((d) => d.date === input.date)
+      ?.meals.find((m) => m.meal === input.meal);
+    if (entry) {
+      const servings = input.servings == null ? null : Number(input.servings);
+      entry.servingsOverride = servings;
+      entry.servings = servings ?? entry.defaultServings;
+    }
+    announce("Servings changed — in the demo, the grocery list stays as recorded");
+    return { ok: true };
+  },
   "plan.setMealSource": (input) => {
     const today = data["plan.today"] as {
       date: string;

@@ -12,7 +12,7 @@ import {
 } from "~/server/db/queries";
 import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
-import { isLlmConfigured } from "~/server/llm/client";
+import { aiStatus } from "~/server/llm/availability";
 import { generateRecipe } from "~/server/llm/generator";
 import { embedQuery, similarFavorites } from "~/server/embeddings/index";
 import { similarContext } from "~/server/embeddings/context";
@@ -89,10 +89,11 @@ export async function runWeeklyGeneration(options: RunOptions): Promise<RunSumma
     let fellBack = false;
     const notes: string[] = [];
 
-    const useAgent = settings.plannerMode === "ai" && isLlmConfigured();
-    if (settings.plannerMode === "ai" && !isLlmConfigured()) {
+    const ai = aiStatus();
+    const useAgent = settings.plannerMode === "ai" && ai.available;
+    if (settings.plannerMode === "ai" && !ai.available) {
       fellBack = true;
-      notes.push("Planner mode is 'ai' but ANTHROPIC_API_KEY is not set; planned deterministically.");
+      notes.push(`Planner mode is 'ai' but ${ai.reason}; planned deterministically.`);
       recordPlannerFallback("no_api_key");
     }
 
@@ -189,8 +190,9 @@ async function fillWithNovelRecipes(args: {
   const { weekStart, novelCount, excluded, notes, cuisines } = args;
   if (novelCount <= 0) return 0;
 
-  if (!isLlmConfigured()) {
-    notes.push("aiNovelRecipesPerWeek is set but ANTHROPIC_API_KEY is not; skipped AI recipes.");
+  const ai = aiStatus();
+  if (!ai.available) {
+    notes.push(`aiNovelRecipesPerWeek is set but ${ai.reason}; skipped AI recipes.`);
     return 0;
   }
 

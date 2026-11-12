@@ -9,6 +9,13 @@ import {
   type Settings,
 } from "~/lib/schemas";
 import { formatLongDate, type IsoDate } from "~/lib/days";
+import {
+  canonicalIngredientName,
+  formatAmounts,
+  pantryCovers,
+  sumAmounts,
+  type Amount,
+} from "~/lib/ingredients";
 
 /**
  * The grocery list.
@@ -171,9 +178,16 @@ function isSeafood(name: string): boolean {
 // Building the list
 // ---------------------------------------------------------------------------
 
-/** Merged lines are identified by name and unit, both lowercased. */
-export function lineKey(name: string, unit: string): string {
-  return `${name.trim().toLowerCase()}|${unit.trim().toLowerCase()}`;
+/**
+ * Merged lines are identified by the ingredient's canonical name alone.
+ *
+ * This used to be `name|unit`, which is exactly why "fresh garlic, minced" in
+ * cloves and "garlic" in cloves were two lines: different names, and the same
+ * name in two units was two more. One thing to buy is one line; its amounts in
+ * incompatible units sit side by side on it.
+ */
+export function lineKey(name: string): string {
+  return canonicalIngredientName(name);
 }
 
 /**
@@ -200,6 +214,13 @@ function servingsFor(
 export interface PlannedMeal {
   mealSource: MealSource;
   recipe: Recipe | null;
+  /**
+   * Portions to buy for this slot: the people eating it, plus, on a cook day,
+   * everyone eating the leftover days it feeds. Resolved by the caller from the
+   * per-meal servings (see `~/lib/servings`); when absent, the meal-shape
+   * yield applies.
+   */
+  servings?: number;
 }
 
 export interface BuildGroceryListInput {
@@ -208,6 +229,10 @@ export interface BuildGroceryListInput {
   meals: readonly PlannedMeal[];
   /** Lowercased excluded ingredient names. */
   excluded: readonly string[];
+  /**
+   * On-hand staples still appear on the list, ticked and badged, rather than
+   * vanishing — you can see what the week uses and untick anything that ran out.
+   */
   pantryStaples: ReadonlyArray<{ name: string; onHand: boolean }>;
   /** Culinary tags an active cap applies to; badged on the list. */
   flaggedTags: readonly string[];
@@ -217,12 +242,16 @@ export interface BuildGroceryListInput {
   mealShapes: ReadonlyArray<{ mealType: MealType; servings: number | null }>;
   /** Line keys already ticked for this week. */
   checkedKeys: ReadonlySet<string>;
+  /**
+   * Line keys explicitly unticked. Only matters for pantry lines, which start
+   * ticked: unticking one ("I'm out of cumin") has to stick.
+   */
+  uncheckedKeys?: ReadonlySet<string>;
 }
 
 interface Accumulator {
   name: string;
-  unit: string;
-  qty: number;
+  amounts: Amount[];
   tags: Set<string>;
   sources: Set<string>;
 }
@@ -252,6 +281,7 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
     excluded,
     pantryStaples,
     checkedKeys,
+    uncheckedKeys = new Set<string>(),
     flaggedTags,
     dailyStaples,
     mealShapes,
@@ -259,11 +289,9 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
 
   const flagged = new Set(flaggedTags.map((t) => t.trim().toLowerCase()));
 
-  const onHand = new Set(
-    pantryStaples
-      .filter((s) => s.onHand)
-      .map((s) => s.name.trim().toLowerCase()),
-  );
+  const onHand = pantryStaples.filter((s) => s.onHand).map((s) => s.name);
+  const inPantry = (name: string) =>
+    onHand.some((staple) => pantryCovers(staple, name));
 
   const accumulated = new Map<string, Accumulator>();
 
@@ -274,23 +302,23 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
   ): void => {
     if (isExcluded(ingredient, excluded)) return;
 
-    const key = lineKey(ingredient.name, ingredient.unit);
-    const existing = accumulated.get(key);
+    const key = lineKey(ingredient.name);
+    const amount = { qty: ingredient.qty * factor, unit: ingredient.unit };
     const ingredientTags = ingredient.tags
       .map((t) => t.trim().toLowerCase())
       .filter((t) => flagged.has(t));
 
+    const existing = accumulated.get(key);
     if (existing) {
-      existing.qty += ingredient.qty * factor;
+      existing.amounts.push(amount);
       for (const tag of ingredientTags) existing.tags.add(tag);
       existing.sources.add(source);
       return;
     }
 
     accumulated.set(key, {
-      name: ingredient.name,
-      unit: ingredient.unit,
-      qty: ingredient.qty * factor,
+      name: key,
+      amounts: [amount],
       tags: new Set(ingredientTags),
       sources: new Set([source]),
     });
@@ -308,8 +336,8 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
 
     const { recipe } = meal;
     // Scale the recipe's own yield up or down to what this slot needs.
-    const factor =
-      servingsFor(meal.mealSource, mealShapes) / Math.max(1, recipe.servings);
+    const portions = meal.servings ?? servingsFor(meal.mealSource, mealShapes);
+    const factor = portions / Math.max(1, recipe.servings);
     for (const ingredient of recipe.ingredients) {
       add(ingredient, factor, recipe.name);
     }
@@ -319,32 +347,27 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
     add({ ...staple, tags: [] }, DAYS_IN_WEEK, "Daily staples");
   }
 
-  // Split into things to buy and things to verify at home.
   const toBuy: GroceryLine[] = [];
-  const checkYourSupply: string[] = [];
-
   for (const [key, acc] of accumulated) {
-    if (onHand.has(acc.name.trim().toLowerCase())) {
-      checkYourSupply.push(acc.name);
-      continue;
-    }
-
+    const pantry = inPantry(acc.name);
     toBuy.push({
       key,
       name: acc.name,
-      // Trailing-zero-free quantities: `1.5 cup`, not `1.50 cup`.
-      qty: Math.round(acc.qty * 100) / 100,
-      unit: acc.unit,
+      amounts: sumAmounts(acc.amounts),
       section: classifySection(acc.name),
-      checked: checkedKeys.has(key),
+      // A pantry line starts ticked — you have it — until you untick it.
+      checked: checkedKeys.has(key) || (pantry && !uncheckedKeys.has(key)),
+      pantry,
       flaggedTags: [...acc.tags].sort(),
       buyLater: isSeafood(acc.name),
       sources: [...acc.sources].sort(),
     });
   }
 
+  // Unticked first, then ticked, each alphabetical: what is left to find stays
+  // at the top of every section while you shop.
   const byName = (a: GroceryLine, b: GroceryLine) =>
-    a.name.localeCompare(b.name);
+    Number(a.checked) - Number(b.checked) || a.name.localeCompare(b.name);
   const buyLater = toBuy.filter((l) => l.buyLater).sort(byName);
   const regular = toBuy.filter((l) => !l.buyLater);
 
@@ -365,7 +388,6 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
     shoppingDay: settings.shoppingDay,
     sections,
     buyLater,
-    checkYourSupply: checkYourSupply.sort(),
   };
 }
 
@@ -373,10 +395,12 @@ export function buildGroceryList(input: BuildGroceryListInput): GroceryList {
 export function groceryListToText(list: GroceryList): string {
   const lines: string[] = [`Shopping day: ${list.shoppingDay}`, ""];
 
-  const renderLine = (l: GroceryLine) =>
-    `  [${l.checked ? "x" : " "}] ${l.qty} ${l.unit} ${l.name}${
-      l.flaggedTags.length > 0 ? ` (${l.flaggedTags.join(", ")})` : ""
+  const renderLine = (l: GroceryLine) => {
+    const notes = [...(l.pantry ? ["pantry"] : []), ...l.flaggedTags];
+    return `  [${l.checked ? "x" : " "}] ${formatAmounts(l.amounts)} ${l.name}${
+      notes.length > 0 ? ` (${notes.join(", ")})` : ""
     }`;
+  };
 
   for (const group of list.sections) {
     lines.push(group.section, ...group.lines.map(renderLine), "");
@@ -387,13 +411,6 @@ export function groceryListToText(list: GroceryList): string {
       "Buy later in the week (buy day-of or day-before cooking)",
       ...list.buyLater.map(renderLine),
       "",
-    );
-  }
-
-  if (list.checkYourSupply.length > 0) {
-    lines.push(
-      "Check your supply (marked on hand)",
-      ...list.checkYourSupply.map((n) => `  - ${n}`),
     );
   }
 
@@ -438,7 +455,8 @@ export function groceryListToMarkdown(list: GroceryList): string {
       l.flaggedTags.length > 0
         ? ` ${l.flaggedTags.map((t) => `\`${escapeMarkdown(t)}\``).join(" ")}`
         : "";
-    return `- [${l.checked ? "x" : " "}] ${l.qty} ${escapeMarkdown(l.unit)} ${escapeMarkdown(l.name)}${tags}`;
+    const pantry = l.pantry ? " _(pantry)_" : "";
+    return `- [${l.checked ? "x" : " "}] ${escapeMarkdown(formatAmounts(l.amounts))} ${escapeMarkdown(l.name)}${pantry}${tags}`;
   };
 
   for (const group of list.sections) {
@@ -458,18 +476,6 @@ export function groceryListToMarkdown(list: GroceryList): string {
       "",
       ...list.buyLater.map(renderLine),
       "",
-    );
-  }
-
-  if (list.checkYourSupply.length > 0) {
-    lines.push(
-      "## Check your supply",
-      "",
-      "_Marked on hand in the pantry, so not on the list._",
-      "",
-      // Not a task list: these are a glance-before-you-go reminder, not things
-      // to tick off.
-      ...list.checkYourSupply.map((n) => `- ${escapeMarkdown(n)}`),
     );
   }
 

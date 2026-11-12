@@ -1,7 +1,8 @@
 import { auth } from "~/server/auth";
 import { generateInputSchema } from "~/server/trpc/routers/generation";
 import { generateRecipe, GenerationError } from "~/server/llm/generator";
-import { isAborted, isLlmConfigured } from "~/server/llm/client";
+import { isAborted } from "~/server/llm/client";
+import { aiStatus } from "~/server/llm/availability";
 import { excludedLower, listRecipes } from "~/server/db/queries";
 import { getProfile } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
@@ -52,11 +53,10 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Sign-in required." }, { status: 401 });
   }
 
-  if (!isLlmConfigured()) {
+  const ai = aiStatus();
+  if (!ai.available) {
     return Response.json(
-      {
-        error: "ANTHROPIC_API_KEY is not set, so AI generation is unavailable.",
-      },
+      { error: `${ai.reason}, so AI generation is unavailable.` },
       { status: 412 },
     );
   }

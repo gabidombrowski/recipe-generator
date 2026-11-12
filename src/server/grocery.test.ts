@@ -7,6 +7,7 @@ import {
   type PlannedMeal,
 } from "./grocery";
 import { type Recipe } from "~/lib/schemas";
+import { canonicalIngredientName } from "~/lib/ingredients";
 
 function recipe(
   overrides: Partial<Recipe> & { id: number; name: string },
@@ -52,7 +53,7 @@ const base = {
 /** Finds a line by name across every section plus the buy-later list. */
 function findLine(list: ReturnType<typeof buildGroceryList>, name: string) {
   return [...list.sections.flatMap((s) => s.lines), ...list.buyLater].find(
-    (l) => l.name === name,
+    (l) => l.name === canonicalIngredientName(name),
   );
 }
 
@@ -73,7 +74,7 @@ describe("grocery list", () => {
       },
     ];
     const list = buildGroceryList({ ...base, meals });
-    expect(findLine(list, "chicken breast")?.qty).toBe(12);
+    expect(findLine(list, "chicken breast")?.amounts[0]?.qty).toBe(12);
   });
 
   it("leaves an already-two-serving cook recipe alone", () => {
@@ -91,7 +92,8 @@ describe("grocery list", () => {
       },
     ];
     expect(
-      findLine(buildGroceryList({ ...base, meals }), "chicken breast")?.qty,
+      findLine(buildGroceryList({ ...base, meals }), "chicken breast")
+        ?.amounts[0]?.qty,
     ).toBe(12);
   });
 
@@ -150,11 +152,11 @@ describe("grocery list", () => {
       },
     ];
     const line = findLine(buildGroceryList({ ...base, meals }), "garlic");
-    expect(line?.qty).toBe(10);
+    expect(line?.amounts[0]?.qty).toBe(10);
     expect(line?.sources).toEqual(["A", "B"]);
   });
 
-  it("does not merge the same name in different units", () => {
+  it("merges the same ingredient across convertible units", () => {
     const meals: PlannedMeal[] = [
       {
         mealSource: "cook",
@@ -172,19 +174,65 @@ describe("grocery list", () => {
     const oils = list.sections
       .flatMap((s) => s.lines)
       .filter((l) => l.name === "olive oil");
-    expect(oils).toHaveLength(2);
+    expect(oils).toHaveLength(1);
+    // 4 tsp + 1 tbsp = 7 tsp = 2.33 tbsp, rounded up to the next quarter.
+    expect(oils[0]?.amounts).toEqual([{ qty: 2.5, unit: "tbsp" }]);
+  });
+
+  it("merges prep variants of one ingredient into a single line", () => {
+    // The screenshot that prompted this: three garlic lines and two ginger
+    // lines for what is, at the shop, one head of garlic and one knob of ginger.
+    const meals: PlannedMeal[] = [
+      {
+        mealSource: "cook",
+        recipe: recipe({
+          id: 1,
+          name: "Power Bowl",
+          ingredients: [
+            { name: "fresh garlic, finely grated", qty: 2, unit: "cloves", tags: [] },
+            { name: "fresh ginger, finely grated", qty: 0.5, unit: "tsp", tags: [] },
+          ],
+        }),
+      },
+      {
+        mealSource: "cook",
+        recipe: recipe({
+          id: 2,
+          name: "Lomo Saltado",
+          ingredients: [
+            { name: "garlic cloves, minced", qty: 4, unit: "cloves", tags: [] },
+            { name: "fresh ginger, grated", qty: 2, unit: "tsp", tags: [] },
+            { name: "fresh ginger, grated", qty: 5, unit: "g", tags: [] },
+          ],
+        }),
+      },
+    ];
+    const lines = buildGroceryList({ ...base, meals, dailyStaples: [] })
+      .sections.flatMap((s) => s.lines);
+    expect(lines.map((l) => l.name).sort()).toEqual(["garlic", "ginger"]);
+    expect(findLine({ ...buildGroceryList({ ...base, meals, dailyStaples: [] }) }, "garlic")?.amounts)
+      .toEqual([{ qty: 6, unit: "clove" }]);
+    // Volume and weight cannot be added without a density, so they share a line.
+    expect(lines.find((l) => l.name === "ginger")?.amounts).toEqual([
+      { qty: 2.5, unit: "tsp" },
+      { qty: 5, unit: "g" },
+    ]);
+    expect(lines.find((l) => l.name === "ginger")?.sources).toEqual([
+      "Lomo Saltado",
+      "Power Bowl",
+    ]);
   });
 
   it("appends the daily staples seven times", () => {
     const list = buildGroceryList({ ...base, meals: [] });
-    expect(findLine(list, "pea protein powder")?.qty).toBe(280); // 40 g x 7
-    expect(findLine(list, "oat milk")?.qty).toBe(7);
-    expect(findLine(list, "banana")?.qty).toBe(7);
-    expect(findLine(list, "frozen berries")?.qty).toBe(5.25); // 0.75 x 7
-    expect(findLine(list, "casein")?.qty).toBe(210); // 30 g x 7
+    expect(findLine(list, "pea protein powder")?.amounts[0]?.qty).toBe(280); // 40 g x 7
+    expect(findLine(list, "oat milk")?.amounts[0]?.qty).toBe(7);
+    expect(findLine(list, "banana")?.amounts[0]?.qty).toBe(7);
+    expect(findLine(list, "frozen berries")?.amounts[0]?.qty).toBe(5.25); // 0.75 x 7
+    expect(findLine(list, "casein")?.amounts[0]?.qty).toBe(210); // 30 g x 7
   });
 
-  it("collapses on-hand pantry staples into check-your-supply", () => {
+  it("lists on-hand pantry staples ticked and badged", () => {
     const list = buildGroceryList({
       ...base,
       meals: [],
@@ -193,9 +241,66 @@ describe("grocery list", () => {
         { name: "casein", onHand: false },
       ],
     });
-    expect(list.checkYourSupply).toContain("oat milk");
-    expect(findLine(list, "oat milk")).toBeUndefined();
-    expect(findLine(list, "casein")).toBeDefined();
+    expect(findLine(list, "oat milk")).toMatchObject({
+      pantry: true,
+      checked: true,
+    });
+    expect(findLine(list, "casein")).toMatchObject({
+      pantry: false,
+      checked: false,
+    });
+  });
+
+  it("lets a pantry line be unticked", () => {
+    const list = buildGroceryList({
+      ...base,
+      meals: [],
+      pantryStaples: [{ name: "oat milk", onHand: true }],
+      uncheckedKeys: new Set([lineKey("oat milk")]),
+    });
+    expect(findLine(list, "oat milk")?.checked).toBe(false);
+  });
+
+  it("matches pantry staples on the purchasable name, not the exact string", () => {
+    const meals: PlannedMeal[] = [
+      {
+        mealSource: "cook",
+        recipe: recipe({
+          id: 1,
+          name: "A",
+          ingredients: [
+            { name: "garlic cloves, minced", qty: 2, unit: "clove", tags: [] },
+            { name: "extra virgin olive oil", qty: 1, unit: "tbsp", tags: [] },
+            { name: "bell pepper", qty: 1, unit: "each", tags: [] },
+          ],
+        }),
+      },
+    ];
+    const list = buildGroceryList({
+      ...base,
+      meals,
+      pantryStaples: [
+        { name: "Garlic", onHand: true },
+        { name: "olive oil", onHand: true },
+        // A one-word staple must not swallow a longer name.
+        { name: "pepper", onHand: true },
+      ],
+    });
+    expect(findLine(list, "garlic")?.pantry).toBe(true);
+    expect(findLine(list, "extra virgin olive oil")?.pantry).toBe(true);
+    expect(findLine(list, "bell pepper")?.pantry).toBe(false);
+  });
+
+  it("sinks ticked lines below unticked ones", () => {
+    const list = buildGroceryList({
+      ...base,
+      meals: [],
+      checkedKeys: new Set([lineKey("banana")]),
+    });
+    const names = list.sections.flatMap((s) => s.lines.map((l) => l.name));
+    const produce = list.sections.find((s) => s.section === "Produce")!;
+    expect(produce.lines.at(-1)?.name).toBe("banana");
+    expect(names).toContain("banana");
   });
 
   it("never lists an excluded ingredient", () => {
@@ -267,10 +372,11 @@ describe("grocery list", () => {
       },
     ];
     const list = buildGroceryList({ ...base, meals });
-    expect(list.buyLater.map((l) => l.name)).toEqual(["fresh salmon"]);
+    // "fresh" is preparation, not a different purchase: the line is salmon.
+    expect(list.buyLater.map((l) => l.name)).toEqual(["salmon"]);
     expect(
       list.sections.flatMap((s) => s.lines).map((l) => l.name),
-    ).not.toContain("fresh salmon");
+    ).not.toContain("salmon");
   });
 
   it("does not treat shelf-stable sauces as seafood", () => {
@@ -314,13 +420,13 @@ describe("grocery list", () => {
       ]),
     );
     expect(sections["Produce"]).toContain("tomato");
-    expect(sections["Proteins & Dairy"]).toContain("chicken thighs");
+    expect(sections["Proteins & Dairy"]).toContain("chicken thigh");
     expect(sections["Pantry"]).toContain("cumin");
-    expect(sections["Frozen"]).toContain("frozen berries");
+    expect(sections["Frozen"]).toContain("frozen berry");
   });
 
   it("reflects persisted check state", () => {
-    const key = lineKey("banana", "each");
+    const key = lineKey("banana");
     const list = buildGroceryList({
       ...base,
       meals: [],
@@ -354,7 +460,7 @@ describe("configured servings per meal type", () => {
       ...base,
       meals: oneServingCook("Default"),
     });
-    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+    expect(findLine(list, "chicken breast")?.amounts[0]?.qty).toBe(8);
   });
 
   it("buys for the configured yield instead of the hardcoded one", () => {
@@ -365,7 +471,7 @@ describe("configured servings per meal type", () => {
       meals: oneServingCook("Configured"),
       mealShapes: [{ mealType: "cook", servings: 3 }],
     });
-    expect(findLine(list, "chicken breast")?.qty).toBe(12);
+    expect(findLine(list, "chicken breast")?.amounts[0]?.qty).toBe(12);
   });
 
   it("falls back to the default when the shape sets no servings", () => {
@@ -374,7 +480,7 @@ describe("configured servings per meal type", () => {
       meals: oneServingCook("NoServings"),
       mealShapes: [{ mealType: "cook", servings: null }],
     });
-    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+    expect(findLine(list, "chicken breast")?.amounts[0]?.qty).toBe(8);
   });
 
   it("scales a non-cook meal type too", () => {
@@ -396,7 +502,7 @@ describe("configured servings per meal type", () => {
       ],
       mealShapes: [{ mealType: "quick", servings: 2 }],
     });
-    expect(findLine(list, "chicken breast")?.qty).toBe(8);
+    expect(findLine(list, "chicken breast")?.amounts[0]?.qty).toBe(8);
   });
 });
 
@@ -415,11 +521,11 @@ describe("markdown rendering", () => {
       buildGroceryList({
         ...base,
         meals: [],
-        checkedKeys: new Set([lineKey("banana", "each")]),
+        checkedKeys: new Set([lineKey("banana")]),
       }),
     );
     // Daily staples are multiplied across the seven days, so 1/day is 7 here.
-    expect(md).toMatch(/^- \[x\] 7 each banana$/m);
+    expect(md).toMatch(/^- \[x\] 7 banana$/m);
     expect(md).toMatch(/^- \[ \] 7 cup oat milk$/m);
   });
 
@@ -463,20 +569,14 @@ describe("markdown rendering", () => {
     expect(md).not.toMatch(/[^\\]\*chile/);
   });
 
-  it("lists check-your-supply items as plain bullets, not checkboxes", () => {
-    // These are a glance-before-you-go reminder, not things to tick off.
+  it("renders pantry lines as ticked tasks marked pantry", () => {
     const md = groceryListToMarkdown(
       buildGroceryList({
         ...base,
         meals: [],
-        // Must be something the list would otherwise contain — an on-hand
-        // staple nothing uses never reaches check-your-supply at all.
         pantryStaples: [{ name: "oat milk", onHand: true }],
       }),
     );
-    expect(md).toContain("## Check your supply");
-    expect(md).toMatch(/^- oat milk$/m);
-    // Plain bullet, not a checkbox.
-    expect(md).not.toMatch(/^- \[[ x]\] oat milk$/m);
+    expect(md).toMatch(/^- \[x\] 7 cup oat milk _\(pantry\)_$/m);
   });
 });

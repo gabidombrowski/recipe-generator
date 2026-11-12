@@ -134,6 +134,49 @@ export default function SettingsPage() {
           onChange={setSettingsDraft}
           llmConfigured={state.data.llmConfigured}
         />
+
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-medium">Runs</legend>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-accent"
+              checked={settings.scheduledRunsEnabled}
+              onChange={(event) =>
+                setSettingsDraft({
+                  ...settings,
+                  scheduledRunsEnabled: event.target.checked,
+                })
+              }
+            />
+            <span>
+              Plan the week automatically on {settings.generationDay} at{" "}
+              {settings.generationTime}
+              <span className="block text-xs text-ink-muted">
+                Off: nothing runs on the schedule. &ldquo;Generate week
+                now&rdquo; on the Week page still works.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-accent"
+              checked={settings.aiEnabled}
+              onChange={(event) =>
+                setSettingsDraft({ ...settings, aiEnabled: event.target.checked })
+              }
+            />
+            <span>
+              Use AI (Claude API) for generating and planning
+              <span className="block text-xs text-ink-muted">
+                Off: no API calls at all, scheduled or manual — no new AI
+                recipes, no library fill, no rule interview, and the planner
+                runs deterministically. Nothing is billed.
+              </span>
+            </span>
+          </label>
+        </fieldset>
       </Card>
 
       <Card title="Your day">
@@ -150,6 +193,41 @@ export default function SettingsPage() {
             setSettingsDraft({ ...settings, meals, plannedMeals, mainMeal })
           }
         />
+
+        <fieldset className="mt-4">
+          <legend className="text-sm font-medium">Servings per meal</legend>
+          <p className="mb-2 text-xs text-ink-muted">
+            How many people usually eat each planned meal. A cook day cooks
+            enough for itself and every leftover day after it. Change a single
+            day on the Week page.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {settings.plannedMeals.map((meal) => (
+              <label key={meal} className="flex items-center gap-2 text-sm">
+                {meal}
+                <select
+                  className="min-h-11 rounded-lg border border-border bg-surface px-2 py-1 text-base sm:min-h-0 sm:text-sm"
+                  value={settings.mealServings[meal] ?? 1}
+                  onChange={(event) =>
+                    setSettingsDraft({
+                      ...settings,
+                      mealServings: {
+                        ...settings.mealServings,
+                        [meal]: Number(event.target.value),
+                      },
+                    })
+                  }
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </Card>
 
       <Card title="Cuisines">
