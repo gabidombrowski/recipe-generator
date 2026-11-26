@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { countRecipeTags, runTier1, type Fixture } from "./assertions";
-import { failClosedDetail, fixtureContext, loadFixtures } from "./runner";
+import {
+  failClosedDetail,
+  fixtureContext,
+  loadFixtures,
+  parseRunsPerFixture,
+} from "./runner";
 import { buildSystemPrompt, GenerationError } from "~/server/llm/generator";
 import { type RecipeBody } from "~/lib/schemas";
 
@@ -267,5 +272,27 @@ describe("fail-closed refusals", () => {
       ),
     ).toBeNull();
     expect(failClosedDetail("declined to write this recipe")).toBeNull();
+  });
+});
+
+/**
+ * Manual runs pick 1 or 3 runs per fixture; PR and scheduled runs pass an empty
+ * value and must keep the default. A typo must stop the run before it spends
+ * anything, not silently run zero or NaN generations.
+ */
+describe("runs per fixture", () => {
+  it("defaults to 3 when unset or empty", () => {
+    expect(parseRunsPerFixture(undefined)).toBe(3);
+    expect(parseRunsPerFixture("")).toBe(3);
+    expect(parseRunsPerFixture("  ")).toBe(3);
+  });
+
+  it("accepts the manual-run choices", () => {
+    expect(parseRunsPerFixture("1")).toBe(1);
+    expect(parseRunsPerFixture("3")).toBe(3);
+  });
+
+  it.each(["0", "11", "1.5", "-1", "three"])("rejects %s", (value) => {
+    expect(() => parseRunsPerFixture(value)).toThrow(/EVAL_RUNS_PER_FIXTURE/);
   });
 });
