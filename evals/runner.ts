@@ -34,9 +34,26 @@ import {
  * Each fixture runs several times because generation is non-deterministic: a
  * constraint that holds once may not hold three times, and it is the pass
  * *rate* that tells you whether the prompt works.
+ *
+ * Three is the default and what PR and scheduled runs use. A manual run can
+ * set EVAL_RUNS_PER_FIXTURE=1 for a cheap smoke check at about a third of the
+ * cost; it proves the suite runs and the gates hold once, but one run per
+ * fixture is not a pass rate.
  */
+export function parseRunsPerFixture(value: string | undefined): number {
+  if (value === undefined || value.trim() === "") return 3;
+  const runs = Number(value);
+  if (!Number.isInteger(runs) || runs < 1 || runs > 10) {
+    throw new Error(
+      `EVAL_RUNS_PER_FIXTURE must be a whole number from 1 to 10, got "${value}"`,
+    );
+  }
+  return runs;
+}
 
-export const RUNS_PER_FIXTURE = 3;
+export const RUNS_PER_FIXTURE = parseRunsPerFixture(
+  process.env.EVAL_RUNS_PER_FIXTURE,
+);
 
 /**
  * How many generations may be in flight at once.
