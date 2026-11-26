@@ -41,6 +41,9 @@ export default function WeekPage() {
   const generateWeek = useMutation(
     trpc.plan.generateWeek.mutationOptions({ onSuccess: invalidate }),
   );
+  const setServings = useMutation(
+    trpc.plan.setServings.mutationOptions({ onSuccess: invalidate }),
+  );
 
   if (week.isPending) return <Spinner />;
   if (week.isError)
@@ -63,7 +66,7 @@ export default function WeekPage() {
             <strong>{data.plannerMode}</strong>
             {data.plannerMode === "ai" &&
               !data.llmConfigured &&
-              " (no API key — running deterministically)"}
+              " (AI unavailable — running deterministically)"}
             {data.aiNovelRecipesPerWeek > 0 &&
               ` · ${data.aiNovelRecipesPerWeek} AI recipe/week`}
           </p>
@@ -180,6 +183,51 @@ export default function WeekPage() {
                     )}
                   </div>
 
+                  {entry.mealSource !== "eat_out" && (
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                      <label
+                        htmlFor={`servings-${day.date}-${entry.meal}`}
+                        className="text-ink-muted"
+                      >
+                        Servings
+                      </label>
+                      <select
+                        id={`servings-${day.date}-${entry.meal}`}
+                        className="min-h-11 rounded-lg border border-border bg-surface px-2 py-1 text-base sm:min-h-0 sm:text-sm"
+                        value={entry.servingsOverride ?? ""}
+                        disabled={setServings.isPending}
+                        onChange={(event) =>
+                          setServings.mutate({
+                            date: day.date,
+                            meal: entry.meal,
+                            servings: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
+                      >
+                        <option value="">
+                          {entry.defaultServings} (default)
+                        </option>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                          (n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                      {entry.mealSource === "cook" &&
+                        entry.leftoverServings > 0 && (
+                          <span className="text-xs text-ink-muted">
+                            Cook {entry.servings + entry.leftoverServings}:{" "}
+                            {entry.servings} now + {entry.leftoverServings} for
+                            leftovers on {entry.leftoverDays.join(", ")}
+                          </span>
+                        )}
+                    </div>
+                  )}
+
                   {entry.mealSource === "eat_out" ? (
                     <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
                       Eating out — nothing to plan here, and nothing lands on
@@ -187,8 +235,15 @@ export default function WeekPage() {
                     </p>
                   ) : entry.mealSource === "leftover" ? (
                     <p className="rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-muted">
-                      Eating yesterday&rsquo;s refrigerated portion — nothing to
-                      assign, and nothing added to the grocery list.
+                      {entry.leftoverOf
+                        ? `Leftovers from ${entry.leftoverOf.day}${
+                            entry.leftoverOf.recipeName
+                              ? `: ${entry.leftoverOf.recipeName}`
+                              : ""
+                          }. `
+                        : "Eating a refrigerated portion. "}
+                      The cook day buys and cooks these servings, so nothing
+                      extra lands on the grocery list.
                     </p>
                   ) : (
                     <div className="flex flex-wrap items-center gap-2">

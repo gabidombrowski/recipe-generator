@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { toToolInputSchema } from "./tool-schema";
 import { type Anthropic as AnthropicNS } from "@anthropic-ai/sdk";
-import { getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
+import { EFFORT, getClient, isRetryable, MAX_TOKENS, MODELS } from "./client";
 import { loadPrompt, PROMPT_NAMES, renderPrompt } from "./prompts";
 import { loggerFor } from "~/server/logger";
 import {
@@ -282,6 +282,7 @@ export async function planWeekWithAgent(args: {
           max_tokens: MAX_TOKENS,
           system,
           tools: PLANNER_TOOLS,
+          output_config: { effort: EFFORT },
           messages,
         });
       } catch (error) {

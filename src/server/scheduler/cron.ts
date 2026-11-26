@@ -40,6 +40,12 @@ export function registerScheduler(): void {
   globalForCron.__schedulerTask = cron.schedule(
     expression,
     () => {
+      // Read at fire time, not registration time, so switching scheduled
+      // runs off in Settings takes effect without re-registering anything.
+      if (!getSettings().scheduledRunsEnabled) {
+        log.info({ expression }, "scheduler fired; scheduled runs are off, skipping");
+        return;
+      }
       log.info({ expression, timezone: settings.timezone }, "scheduler fired");
       void runWeeklyGeneration({ trigger: "cron" }).catch((error: unknown) => {
         // runWeeklyGeneration handles its own failures; anything reaching here

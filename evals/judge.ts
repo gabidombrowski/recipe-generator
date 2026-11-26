@@ -62,14 +62,20 @@ export async function judgeRecipe(recipe: RecipeBody): Promise<JudgeResult> {
     const message = await getClient().messages.create(
       {
         model: MODELS.judge,
-        max_tokens: 1024,
+        // Room for Haiku 5.5's thinking, which is on by default and counts
+        // against this limit; at `low` effort it stays short.
+        max_tokens: 4096,
+        output_config: { effort: "low" },
         system: prompt.text,
         tools: [GRADE_TOOL],
-        tool_choice: { type: "tool", name: "grade_recipe" },
+        // Not forced: thinking is on for Haiku 5.5, and the call is asked
+        // for in the user turn. A reply without one is reported as an error
+        // like any other judge failure — grading is report-only.
+        tool_choice: { type: "auto" },
         messages: [
           {
             role: "user",
-            content: `Grade this recipe:\n\n${JSON.stringify(recipe, null, 2)}`,
+            content: `Grade this recipe by calling grade_recipe:\n\n${JSON.stringify(recipe, null, 2)}`,
           },
         ],
       },

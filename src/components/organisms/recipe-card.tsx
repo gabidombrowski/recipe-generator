@@ -130,12 +130,9 @@ export function RecipeCard({
                 <li key={index}>{step}</li>
               ))}
             </ol>
-            {recipe.modelString && (
-              <p className="mt-4 font-mono text-xs text-ink-muted">
-                {recipe.modelString}
-                {recipe.promptHash ? ` · prompt ${recipe.promptHash}` : ""}
-              </p>
-            )}
+            {/* `modelString` and `promptHash` are still stored with the recipe
+                for feedback and evals; they are provenance for debugging, not
+                something to read while cooking, so the card leaves them out. */}
           </div>
         </div>
       )}

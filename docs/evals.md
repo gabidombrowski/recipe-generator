@@ -34,7 +34,7 @@ Two of these are subtler than they look:
 
 ### Tier 2 — model-graded, report only
 
-Step coherence and seasoning boldness, scored 1–5 by Haiku 4.5. **These never
+Step coherence and seasoning boldness, scored 1–5 by Haiku 5.5. **These never
 block a merge**, and that is a design decision rather than an oversight: a judge
 is itself a model, with its own variance, and gating a pipeline on one makes the
 pipeline as flaky as the judge. Tier 1 checks what can be checked exactly; Tier 2

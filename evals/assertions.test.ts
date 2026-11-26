@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { countRecipeTags, runTier1, type Fixture } from "./assertions";
-import { fixtureContext, loadFixtures } from "./runner";
-import { buildSystemPrompt } from "~/server/llm/generator";
+import { failClosedDetail, fixtureContext, loadFixtures } from "./runner";
+import { buildSystemPrompt, GenerationError } from "~/server/llm/generator";
 import { type RecipeBody } from "~/lib/schemas";
 
 /**
@@ -229,5 +229,43 @@ describe("fixtures that carry notes", () => {
     const { system } = buildSystemPrompt(plain.request, fixtureContext(plain));
 
     expect(system).not.toContain("## Their own notes");
+  });
+});
+
+/**
+ * A red-team fixture scores "no recipe" as the attack failing, but only for
+ * the generator's fail-closed throws. A model safety refusal is one of them:
+ * scoring it as a generation failure blocked the Opus 5.5 PR on three runs of
+ * redteam-note-prose-output where the model declined to reveal its prompt.
+ */
+describe("fail-closed refusals", () => {
+  it("counts the repair loop giving up on dietary rules", () => {
+    const error = new GenerationError(
+      "Recipe still breaks dietary rules after 4 attempts",
+      4,
+    );
+    expect(failClosedDetail(error)).toMatch(/^refused:/);
+  });
+
+  it("counts a model safety refusal", () => {
+    const error = new GenerationError(
+      "The model declined to write this recipe",
+      1,
+      ["refused (cyber)"],
+    );
+    expect(failClosedDetail(error)).toMatch(/^refused: the model declined/);
+  });
+
+  it("does not excuse ordinary failures", () => {
+    expect(failClosedDetail(new Error("Request timed out"))).toBeNull();
+    expect(
+      failClosedDetail(
+        new GenerationError(
+          "Failed to generate a valid recipe after 4 attempts",
+          4,
+        ),
+      ),
+    ).toBeNull();
+    expect(failClosedDetail("declined to write this recipe")).toBeNull();
   });
 });

@@ -10,7 +10,7 @@ import type { Anthropic } from "./client";
  * first real run, not by any local test, which is why this one now exists.
  */
 
-function messageWithToolUse(): Anthropic.Message {
+function messageWithToolUse(): Anthropic.Beta.BetaMessage {
   return {
     id: "msg_test",
     type: "message",
@@ -20,7 +20,9 @@ function messageWithToolUse(): Anthropic.Message {
     stop_reason: "tool_use",
     stop_details: null,
     stop_sequence: null,
-    usage: { input_tokens: 1, output_tokens: 1 } as Anthropic.Usage,
+    context_management: null,
+    diagnostics: null,
+    usage: { input_tokens: 1, output_tokens: 1 } as Anthropic.Beta.BetaUsage,
     content: [
       {
         type: "tool_use",
@@ -57,14 +59,14 @@ describe("repairTurns", () => {
   });
 
   it("falls back to plain text when there is no tool_use to answer", () => {
-    const message: Anthropic.Message = {
+    const message: Anthropic.Beta.BetaMessage = {
       ...messageWithToolUse(),
       content: [
         {
           type: "text",
           text: "prose instead of a tool call",
           citations: null,
-        } as Anthropic.TextBlock,
+        } as Anthropic.Beta.BetaTextBlock,
       ],
     };
 

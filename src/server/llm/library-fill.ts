@@ -3,7 +3,8 @@ import { getProfile, getSettings } from "~/server/db/state";
 import { getDietaryConfig } from "~/server/db/config";
 import { insertRecipeIfAbsent } from "~/server/db/recipes";
 import { upsertRecipeEmbedding } from "~/server/embeddings/index";
-import { isLlmConfigured, TIMEOUTS } from "./client";
+import { TIMEOUTS } from "./client";
+import { aiStatus } from "./availability";
 import { mapWithConcurrency } from "~/lib/concurrency";
 import { generateRecipe } from "./generator";
 import { loggerFor } from "~/server/logger";
@@ -96,10 +97,11 @@ const MINUTES_FOR: Record<MealType, number> = {
 export function startLibraryFill(): LibraryFillStatus {
   if (status.running) return getLibraryFillStatus();
 
-  if (!isLlmConfigured()) {
+  const ai = aiStatus();
+  if (!ai.available) {
     status = {
       ...IDLE,
-      error: "ANTHROPIC_API_KEY is not set, so nothing can be generated.",
+      error: `${ai.reason}, so nothing can be generated.`,
     };
     return getLibraryFillStatus();
   }

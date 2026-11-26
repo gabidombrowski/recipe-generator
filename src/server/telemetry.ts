@@ -22,6 +22,8 @@ interface ModelPricing {
   inputPerMTok: number;
   /** USD per million output tokens. */
   outputPerMTok: number;
+  /** Cache reads as a fraction of the input rate; 0.1 unless stated. */
+  cacheReadMultiplier?: number;
 }
 
 /**
@@ -32,9 +34,18 @@ interface ModelPricing {
  * Anthropic changes them. The date is recorded so a reader knows how much to
  * trust the number.
  */
-export const PRICING_AS_OF = "2026-06-24";
+export const PRICING_AS_OF = "2026-11-12";
 
 const PRICING: Record<string, ModelPricing> = {
+  // Opus 5.5 reads cache at 0.05x, half the usual discount.
+  "claude-opus-5-5": {
+    inputPerMTok: 4.0,
+    outputPerMTok: 20.0,
+    cacheReadMultiplier: 0.05,
+  },
+  // The <=100K-token prompt rate; eval judge prompts are far below that.
+  "claude-haiku-5-5": { inputPerMTok: 0.1, outputPerMTok: 0.5 },
+  // Kept so cost rows recorded before the switch still price correctly.
   "claude-sonnet-4-6": { inputPerMTok: 3.0, outputPerMTok: 15.0 },
   "claude-haiku-4-5-20251001": { inputPerMTok: 1.0, outputPerMTok: 5.0 },
 };
@@ -63,7 +74,9 @@ export function computeCostUsd(model: string, usage: TokenUsage): number {
     usage.inputTokens * perInputToken +
     usage.outputTokens * perOutputToken +
     (usage.cacheCreationInputTokens ?? 0) * perInputToken * 1.25 +
-    (usage.cacheReadInputTokens ?? 0) * perInputToken * 0.1
+    (usage.cacheReadInputTokens ?? 0) *
+      perInputToken *
+      (pricing.cacheReadMultiplier ?? 0.1)
   );
 }
 
